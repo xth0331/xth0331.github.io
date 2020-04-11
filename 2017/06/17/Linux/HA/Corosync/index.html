@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://www.sysctl.me').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","width":320,"display":"post","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="前提：  本配置共有两个测试节点，分别node1.test.com和node2.test.com，相的IP地址分别为192.168.10.7和192.168.10.8； 集群服务为apache的httpd服务； 提供web服务的地址为192.168.10.11，即vip； 系统为CentOS 6.5 64bits">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Corosync On CentOS">
+<meta property="og:url" content="https://www.sysctl.me/2017/06/17/Linux/HA/Corosync/index.html">
+<meta property="og:site_name" content="Sysctl">
+<meta property="og:description" content="前提：  本配置共有两个测试节点，分别node1.test.com和node2.test.com，相的IP地址分别为192.168.10.7和192.168.10.8； 集群服务为apache的httpd服务； 提供web服务的地址为192.168.10.11，即vip； 系统为CentOS 6.5 64bits">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2017-06-17T15:48:13.000Z">
+<meta property="article:modified_time" content="2020-01-22T14:33:14.782Z">
+<meta property="article:author" content="Goooo">
+<meta property="article:tag" content="Corosync">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://www.sysctl.me/2017/06/17/Linux/HA/Corosync/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>Corosync On CentOS | Sysctl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Sysctl" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Sysctl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">观察指南，博客</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="搜索..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/xth0331" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.sysctl.me/2017/06/17/Linux/HA/Corosync/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/img.png">
+      <meta itemprop="name" content="Goooo">
+      <meta itemprop="description" content="一条啥也不会点废鱼">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Sysctl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Corosync On CentOS
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2017-06-17 23:48:13" itemprop="dateCreated datePublished" datetime="2017-06-17T23:48:13+08:00">2017-06-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-01-22 22:33:14" itemprop="dateModified" datetime="2020-01-22T22:33:14+08:00">2020-01-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2017/06/17/Linux/HA/Corosync/#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2017/06/17/Linux/HA/Corosync/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>前提：</p>
+<ol>
+<li>本配置共有两个测试节点，分别node1.test.com和node2.test.com，相的IP地址分别为192.168.10.7和192.168.10.8；</li>
+<li>集群服务为apache的httpd服务；</li>
+<li>提供web服务的地址为192.168.10.11，即vip；</li>
+<li>系统为CentOS 6.5 64bits<a id="more"></a>
+<h1 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h1></li>
+</ol>
+<p>为了配置一台Linux主机成为HA的节点，通常需要做出如下的准备工作：</p>
+<p>1.所有节点的主机名称和对应的IP地址解析服务可以正常工作，且每个节点的主机名称需要跟”uname -n“命令的结果保持一致；因此，需要保证两个节点上的/etc/hosts文件均为下面的内容：</p>
+<blockquote>
+<p>192.168.10.7   node1.test.com node1<br>192.168.10.8   node2.test.com node2</p>
+</blockquote>
+<p>为了使得重新启动系统后仍能保持如上的主机名称，还分别需要在各节点执行类似如下的命令：</p>
+<p>Node1:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sed -i <span class="string">'s@\(HOSTNAME=\).*@\1node1.test.com@g'</span>  /etc/sysconfig/network</span><br><span class="line">hostname node1.test.com</span><br></pre></td></tr></table></figure>
+<p>Node2：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sed -i <span class="string">'s@\(HOSTNAME=\).*@\1node2.test.com@g'</span> /etc/sysconfig/network</span><br><span class="line">hostname node2.test.com</span><br></pre></td></tr></table></figure>
+<p><em>注：也可用hostnamectl set-hostname HOSTNAME</em><br>2.设定两个节点可以基于密钥进行ssh通信，这可以通过类似如下的命令实现：<br>Node1:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># ssh-keygen -t rsa</span></span><br><span class="line"><span class="comment"># ssh-copy-id -i ~/.ssh/id_rsa.pub root@node2</span></span><br></pre></td></tr></table></figure>
+<p>Node2:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># ssh-keygen -t rsa</span></span><br><span class="line"><span class="comment"># ssh-copy-id -i ~/.ssh/id_rsa.pub root@node1</span></span><br></pre></td></tr></table></figure>
+<h1 id="配置corosync，（以下命令在node1-test-com上执行）"><a href="#配置corosync，（以下命令在node1-test-com上执行）" class="headerlink" title="配置corosync，（以下命令在node1.test.com上执行）"></a>配置corosync，（以下命令在node1.test.com上执行）</h1><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># cd /etc/corosync</span></span><br><span class="line"><span class="comment"># cp corosync.conf.example corosync.conf</span></span><br></pre></td></tr></table></figure>
+<p>接着编辑corosync.conf，添加如下内容：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">service &#123;</span><br><span class="line">  ver:  0</span><br><span class="line">  name: pacemaker</span><br><span class="line">  <span class="comment"># use_mgmtd: yes</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">aisexec &#123;</span><br><span class="line">  user: root</span><br><span class="line">  group:  root</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>并设定此配置文件中 bindnetaddr后面的IP地址为你的网卡所在网络的网络地址，我们这里的两个节点在192.168.10.0网络，因此这里将其设定为192.168.10.0；如下</p>
+<blockquote>
+<p>bindnetaddr: 192.168.10.0</p>
+</blockquote>
+<p>生成节点间通信时用到的认证密钥文件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># corosync-keygen</span></span><br></pre></td></tr></table></figure>
+<p>将corosync和authkey复制至node2:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># scp -p corosync authkey  node2:/etc/corosync/</span></span><br></pre></td></tr></table></figure>
+<p>分别为两个节点创建corosync生成的日志所在的目录：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># mkdir /var/log/cluster</span></span><br><span class="line"><span class="comment"># ssh node2  'mkdir /var/log/cluster'</span></span><br></pre></td></tr></table></figure>
+<h1 id="安装crmsh"><a href="#安装crmsh" class="headerlink" title="安装crmsh"></a>安装crmsh</h1><p>RHEL自6.4起不再提供集群的命令行配置工具crmsh，转而使用pcs；如果你习惯了使用crm命令，可下载相关的程序包自行安装即可。crmsh依赖于pssh，因此需要一并下载。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># cd /root/cluster</span></span><br><span class="line"><span class="comment"># yum -y --nogpgcheck localinstall crmsh*.rpm pssh*.rpm</span></span><br></pre></td></tr></table></figure>
+<h1 id="启动corosync（以下命令在node1上执行）："><a href="#启动corosync（以下命令在node1上执行）：" class="headerlink" title="启动corosync（以下命令在node1上执行）："></a>启动corosync（以下命令在node1上执行）：</h1><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># /etc/init.d/corosync start</span></span><br></pre></td></tr></table></figure>
+<p>查看corosync引擎是否正常启动：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># grep -e "Corosync Cluster Engine" -e "configuration file" /var/log/cluster/corosync.log</span></span><br><span class="line"></span><br><span class="line">Sep 15 11:37:39 corosync [MAIN  ] Corosync Cluster Engine (<span class="string">'1.4.1'</span>): started and ready to provide service.</span><br><span class="line">Sep 15 11:37:39 corosync [MAIN  ] Successfully <span class="built_in">read</span> main configuration file <span class="string">'/etc/corosync/corosync.conf'</span>.</span><br></pre></td></tr></table></figure>
+<p>查看初始化成员节点通知是否正常发出：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># grep  TOTEM  /var/log/cluster/corosync.log</span></span><br><span class="line"></span><br><span class="line">Sep 15 11:37:39 corosync [TOTEM ] Initializing transport (UDP/IP Multicast).</span><br><span class="line">Sep 15 11:37:39 corosync [TOTEM ] Initializing transmit/receive security: libtomcrypt SOBER128/SHA1HMAC (mode 0).</span><br><span class="line">Sep 15 11:37:39 corosync [TOTEM ] The network interface [192.168.10.7] is now up.</span><br><span class="line">Sep 15 11:37:39 corosync [TOTEM ] A processor joined or left the membership and a new membership was formed.</span><br><span class="line">Sep 15 11:37:39 corosync [TOTEM ] A processor joined or left the membership and a new membership was formed.</span><br></pre></td></tr></table></figure>
+<p>检查启动过程中是否有错误产生。下面的错误信息表示packmaker不久之后将不再作为corosync的插件运行，因此，建议使用cman作为集群基础架构服务；此处可安全忽略。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># grep ERROR: /var/log/cluster/corosync.log | grep -v unpack_resources</span></span><br><span class="line"></span><br><span class="line">Sep 15 11:37:39 corosync [pcmk  ] ERROR: process_ais_conf: You have configured a cluster using the Pacemaker plugin <span class="keyword">for</span> Corosync. The plugin is not supported <span class="keyword">in</span> this environment and will be removed very soon.</span><br><span class="line">Sep 15 11:37:39 corosync [pcmk  ] ERROR: process_ais_conf:  Please see Chapter 8 of <span class="string">'Clusters from Scratch'</span> (http://www.clusterlabs.org/doc) <span class="keyword">for</span> details on using Pacemaker with CMAN</span><br><span class="line">Sep 15 11:37:40 corosync [pcmk  ] ERROR: pcmk_wait_dispatch: Child process mgmtd exited (pid=2375, rc=100)</span><br></pre></td></tr></table></figure>
+<p>查看pacemaker是否正常启动：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># grep pcmk_startup /var/log/cluster/corosync.log</span></span><br><span class="line"></span><br><span class="line">Sep 15 11:37:39 corosync [pcmk  ] info: pcmk_startup: CRM: Initialized</span><br><span class="line">Sep 15 11:37:39 corosync [pcmk  ] Logging: Initialized pcmk_startup</span><br><span class="line">Sep 15 11:37:39 corosync [pcmk  ] info: pcmk_startup: Maximum core file size is: 18446744073709551615</span><br><span class="line">Sep 15 11:37:39 corosync [pcmk  ] info: pcmk_startup: Service: 9</span><br><span class="line">Sep 15 11:37:39 corosync [pcmk  ] info: pcmk_startup: Local hostname: node1.test.com</span><br></pre></td></tr></table></figure>
+<p>如果上面命令执行均没有问题，接着可以执行如下命令启动node2上的corosync</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># ssh node2 -- /etc/init.d/corosync start</span></span><br></pre></td></tr></table></figure>
+<p>注意：启动node2需要在node1上使用如上命令进行，不要在node2节点上直接启动。下面是node1上的相关日志。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># tail /var/log/cluster/corosync.log</span></span><br><span class="line"></span><br><span class="line">Sep 15 12:10:00 [2688] node1.test.com       crmd:     info: do_te_control:  Transitioner is now inactive</span><br><span class="line">Sep 15 12:10:00 [2688] node1.test.com       crmd:     info: update_dc:  Set DC to node2.test.com (3.0.7)</span><br><span class="line">Sep 15 12:10:00 [2683] node1.test.com        cib:     info: cib_process_replace:  Digest matched on replace from node2.test.com: a221b8ae3386d35b263633d8b1fe213f</span><br><span class="line">Sep 15 12:10:00 [2683] node1.test.com        cib:     info: cib_process_replace:  Replaced 0.8.7 with 0.8.7 from node2.test.com</span><br><span class="line">Sep 15 12:10:00 [2688] node1.test.com       crmd:     info: erase_status_tag:   Deleting xpath: //node_state[@uname=<span class="string">'node1.test.com'</span>]/transient_attributes</span><br><span class="line">Sep 15 12:10:00 [2688] node1.test.com       crmd:     info: update_attrd:   Connecting to attrd... 5 retries remaining</span><br><span class="line">Sep 15 12:10:00 [2688] node1.test.com       crmd:   notice: do_state_transition:  State transition S_PENDING -&gt; S_NOT_DC [ input=I_NOT_DC cause=C_HA_MESSAGE origin=do_cl_join_finalize_respond ]</span><br><span class="line">Sep 15 12:10:00 [2686] node1.test.com      attrd:   notice: attrd_local_callback:   Sending full refresh (origin=crmd)</span><br><span class="line">Sep 15 12:10:01 [2686] node1.test.com      attrd:   notice: attrd_trigger_update:   Sending flush op to all hosts <span class="keyword">for</span>: probe_complete (<span class="literal">true</span>)</span><br><span class="line">Sep 15 12:10:01 [2686] node1.test.com      attrd:   notice: attrd_perform_update:   Sent update 5: probe_complete=<span class="literal">true</span></span><br></pre></td></tr></table></figure>
+<p>如果安装了crmsh，可使用如下命令查看集群节点的启动状态：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># crm status</span></span><br><span class="line"></span><br><span class="line">Last updated: Sun Sep 15 12:12:25 2013</span><br><span class="line">Last change: Sun Sep 15 12:12:18 2013 via cibadmin on node1.test.com</span><br><span class="line">Stack: classic openais (with plugin)</span><br><span class="line">Current DC: node2.test.com - partition with quorum</span><br><span class="line">Version: 1.1.8-7.el6-394e906</span><br><span class="line">2 Nodes configured, 3 expected votes</span><br><span class="line">0 Resources configured.</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Online: [ node1.test.com node2.test.com ]</span><br></pre></td></tr></table></figure>
+<p>从上面的信息可以看出两个节点都已经正常启动，并且集群已经处于正常工作状态。</p>
+<p>执行ps auxf命令可以查看corosync启动的各相关进程。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">root      2677  0.5  0.9 618244  4680 ?        Ssl  12:09   0:01 corosync</span><br><span class="line">495       2683  0.3  1.5  87456  7552 ?        S    12:09   0:00  \_ /usr/libexec/pacemaker/cib</span><br><span class="line">root      2684  0.0  0.6  81432  3244 ?        S    12:09   0:00  \_ /usr/libexec/pacemaker/stonithd</span><br><span class="line">root      2685  0.0  0.6  73088  3120 ?        S    12:09   0:00  \_ /usr/libexec/pacemaker/lrmd</span><br><span class="line">495       2686  0.0  0.6  85736  3228 ?        S    12:09   0:00  \_ /usr/libexec/pacemaker/attrd</span><br><span class="line">495       2687  0.0  0.5  80876  2764 ?        S    12:09   0:00  \_ /usr/libexec/pacemaker/pengine</span><br><span class="line">495       2688  0.0  0.8 102724  4084 ?        S    12:09   0:00  \_ /usr/libexec/pacemaker/crmd</span><br></pre></td></tr></table></figure>
+<h1 id="配置集群的工作属性，禁用stonith"><a href="#配置集群的工作属性，禁用stonith" class="headerlink" title="配置集群的工作属性，禁用stonith"></a>配置集群的工作属性，禁用stonith</h1><p>corosync默认启用了stonith，而当前集群并没有相应的stonith设备，因此此默认配置目前尚不可用，这可以通过如下命令验正：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># crm_verify -L -V</span></span><br><span class="line">   error: unpack_resources:   Resource start-up disabled since no STONITH resources have been defined</span><br><span class="line">   error: unpack_resources:   Either configure some or <span class="built_in">disable</span> STONITH with the stonith-enabled option</span><br><span class="line">   error: unpack_resources:   NOTE: Clusters with shared data need STONITH to ensure data integrity</span><br><span class="line">Errors found during check: config not valid</span><br><span class="line">  -V may provide more details</span><br></pre></td></tr></table></figure>
+<p>我们里可以通过如下命令先禁用stonith：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># crm configure property stonith-enabled=false</span></span><br></pre></td></tr></table></figure>
+<p>使用如下命令查看当前的配置信息：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># crm configure show</span></span><br><span class="line">node node1.test.com</span><br><span class="line">node node2.test.com</span><br><span class="line">property <span class="variable">$id</span>=<span class="string">"cib-bootstrap-options"</span> \</span><br><span class="line">  dc-version=<span class="string">"1.1.8-7.el6-394e906"</span> \</span><br><span class="line">  cluster-infrastructure=<span class="string">"classic openais (with plugin)"</span> \</span><br><span class="line">  expected-quorum-votes=<span class="string">"2"</span> \</span><br><span class="line">  stonith-enabled=<span class="string">"false"</span></span><br></pre></td></tr></table></figure>
+<p>从中可以看出stonith已经被禁用。</p>
+<p>上面的crm，crm_verify命令是1.0后的版本的pacemaker提供的基于命令行的集群管理工具；可以在集群中的任何一个节点上执行。</p>
+<h1 id="为集群添加集群资源"><a href="#为集群添加集群资源" class="headerlink" title="为集群添加集群资源"></a>为集群添加集群资源</h1><p>corosync支持heartbeat，LSB和ocf等类型的资源代理，目前较为常用的类型为LSB和OCF两类，stonith类专为配置stonith设备而用；</p>
+<p>可以通过如下命令查看当前集群系统所支持的类型：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># crm ra classes</span></span><br><span class="line">heartbeat</span><br><span class="line">lsb</span><br><span class="line">ocf / heartbeat pacemaker</span><br><span class="line">stonith</span><br></pre></td></tr></table></figure>
+<p>如果想要查看某种类别下的所用资源代理的列表，可以使用类似如下命令实现：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># crm ra list lsb</span></span><br><span class="line"><span class="comment"># crm ra list ocf heartbeat</span></span><br><span class="line"><span class="comment"># crm ra list ocf pacemaker</span></span><br><span class="line"><span class="comment"># crm ra list stonith</span></span><br><span class="line"><span class="comment"># crm ra info [class:[provider:]]resource_agent</span></span><br></pre></td></tr></table></figure>
+<p>例如：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># crm ra info ocf:heartbeat:IPaddr</span></span><br></pre></td></tr></table></figure>
+<p>接下来要创建的web集群创建一个IP地址资源，以在通过集群提供web服务时使用；这可以通过如下方式实现：</p>
+<p>语法：</p>
+<p>例子：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">primitive apcfence stonith:apcsmart \</span><br><span class="line">         params ttydev=/dev/ttyS0 hostlist=<span class="string">"node1 node2"</span> \</span><br><span class="line">         op start timeout=60s \</span><br><span class="line">         op monitor interval=30m timeout=60s</span><br></pre></td></tr></table></figure>
+<h1 id="应用："><a href="#应用：" class="headerlink" title="应用："></a>应用：</h1><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># crm configure primitive WebIP ocf:heartbeat:IPaddr params ip=192.168.10.11</span></span><br></pre></td></tr></table></figure>
+<p>通过如下的命令执行结果可以看出此资源已经在node1.test.com上启动：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># crm status</span></span><br><span class="line">Last updated: Sun Sep 15 12:25:54 2013</span><br><span class="line">Last change: Sun Sep 15 12:25:50 2013 via cibadmin on node1.test.com</span><br><span class="line">Stack: classic openais (with plugin)</span><br><span class="line">Current DC: node2.test.com - partition with quorum</span><br><span class="line">Version: 1.1.8-7.el6-394e906</span><br><span class="line">2 Nodes configured, 2 expected votes</span><br><span class="line">1 Resources configured.</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Online: [ node1.test.com node2.test.com ]</span><br><span class="line">WebIP  (ocf::heartbeat:IPaddr):  Started node1.test.com</span><br></pre></td></tr></table></figure>
+<p>当然，也可以在node1上执行ifconfig命令看到此地址已经在eth0的别名上生效：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment"># ifconfig</span></span><br><span class="line">eth0:0    Link encap:Ethernet  HWaddr 00:0C:29:62:DE:4C  </span><br><span class="line">          inet addr:192.168.10.11  Bcast:192.168.0.255  Mask:255.255.255.0</span><br><span class="line">          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1</span><br></pre></td></tr></table></figure>
+<p>而后我们到node2上通过如下命令停止node1上的corosync服务：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># ssh node1 -- /etc/init.d/corosync stop</span></span><br></pre></td></tr></table></figure>
+<p>查看集群工作状态：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># crm status</span></span><br><span class="line">Last updated: Sun Sep 15 12:32:10 2013</span><br><span class="line">Last change: Sun Sep 15 12:31:46 2013 via cibadmin on node1.test.com</span><br><span class="line">Stack: classic openais (with plugin)</span><br><span class="line">Current DC: node2.test.com - partition WITHOUT quorum</span><br><span class="line">Version: 1.1.8-7.el6-394e906</span><br><span class="line">2 Nodes configured, 2 expected votes</span><br><span class="line">1 Resources configured.</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Online: [ node2.test.com ]</span><br><span class="line">OFFLINE: [ node1.test.com ]</span><br></pre></td></tr></table></figure>
+<p>上面的信息显示node1.test.com已经离线，但资源WebIP却没能在node2.test.com上启动。这是因为此时的集群状态为”WITHOUT quorum”，即已经失去了quorum，此时集群服务本身已经不满足正常运行的条件，这对于只有两节点的集群来讲是不合理的。因此，我们可以通过如下的命令来修改忽略quorum不能满足的集群状态检查：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># crm configure property no-quorum-policy=ignore</span></span><br></pre></td></tr></table></figure>
+<p>片刻之后，集群就会在目前仍在运行中的节点node2上启动此资源了，如下所示：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># crm status</span></span><br><span class="line">Last updated: Mon Jul  8 19:14:30 2013</span><br><span class="line">Last change: Sun Sep 15 15:16:37 2013 via cibadmin on node2.test.com</span><br><span class="line">Stack: classic openais (with plugin)</span><br><span class="line">Current DC: node1.test.com - partition with quorum</span><br><span class="line">Version: 1.1.8-7.el6-394e906</span><br><span class="line">2 Nodes configured, 2 expected votes</span><br><span class="line">1 Resources configured.</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Online: [ node1.test.com node2.test.com ]</span><br><span class="line"></span><br><span class="line">WebIP  (ocf::heartbeat:IPaddr):  Started node2.test.com</span><br></pre></td></tr></table></figure>
+<p>好了，验正完成后，我们正常启动node1.test.com:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># ssh node1 -- /etc/init.d/corosync start</span></span><br></pre></td></tr></table></figure>
+<p>正常启动node1.test.com后，集群资源WebIP很可能会重新从node2.test.com转移回node1.test.com。资源的这种在节点间每一次的来回流动都会造成那段时间内其无法正常被访问，所以，我们有时候需要在资源因为节点故障转移到其它节点后，即便原来的节点恢复正常也禁止资源再次流转回来。这可以通过定义资源的黏性(stickiness)来实现。在创建资源时或在创建资源后，都可以指定指定资源黏性。</p>
+<p>资源黏性值范围及其作用：<br>0：这是默认选项。资源放置在系统中的最适合位置。这意味着当负载能力“较好”或较差的节点变得可用时才转移资源。此选项的作用基本等同于自动故障回复，只是资源可能会转移到非之前活动的节点上；<br>大于0：资源更愿意留在当前位置，但是如果有更合适的节点可用时会移动。值越高表示资源越愿意留在当前位置；<br>小于0：资源更愿意移离当前位置。绝对值越高表示资源越愿意离开当前位置；<br>INFINITY：如果不是因节点不适合运行资源（节点关机、节点待机、达到migration-threshold 或配置更改）而强制资源转移，资源总是留在当前位置。此选项的作用几乎等同于完全禁用自动故障回复；<br>-INFINITY：资源总是移离当前位置；</p>
+<p>我们这里可以通过以下方式为资源指定默认黏性值：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># crm configure rsc_defaults resource-stickiness=100</span></span><br></pre></td></tr></table></figure>
+<p>结合上面已经配置好的IP地址资源，将此集群配置成为一个active/passive模型的web（httpd）服务集群</p>
+<p>为了将此集群启用为web（httpd）服务器集群，我们得先在各节点上安装httpd，并配置其能在本地各自提供一个测试页面。</p>
+<p>Node1:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># yum -y install httpd</span></span><br><span class="line"><span class="comment"># echo "&lt;h1&gt;node1.test.com&lt;/h1&gt;" &gt; /var/www/html/index.html</span></span><br></pre></td></tr></table></figure>
+<p>Node2:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># yum -y install httpd</span></span><br><span class="line"><span class="comment"># echo "&lt;h1&gt;node2.test.com&lt;/h1&gt;" &gt; /var/www/html/index.html</span></span><br></pre></td></tr></table></figure>
+<p>而后在各节点手动启动httpd服务，并确认其可以正常提供服务。接着使用下面的命令停止httpd服务，并确保其不会自动启动（在两个节点各执行一遍）：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># /etc/init.d/httpd stop</span></span><br><span class="line"><span class="comment"># chkconfig httpd off</span></span><br></pre></td></tr></table></figure>
+<p>接下来我们将此httpd服务添加为集群资源。将httpd添加为集群资源有两处资源代理可用：lsb和ocf:heartbeat，为了简单起见，我们这里使用lsb类型：</p>
+<p>首先可以使用如下命令查看lsb类型的httpd资源的语法格式：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># crm ra info lsb:httpd</span></span><br><span class="line">start and stop Apache HTTP Server (lsb:httpd)</span><br><span class="line"></span><br><span class="line">The Apache HTTP Server is an efficient and extensible  \</span><br><span class="line">         server implementing the current HTTP standards.</span><br><span class="line"></span><br><span class="line">Operations<span class="string">' defaults (advisory minimum):</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    start         timeout=15</span></span><br><span class="line"><span class="string">    stop          timeout=15</span></span><br><span class="line"><span class="string">    status        timeout=15</span></span><br><span class="line"><span class="string">    restart       timeout=15</span></span><br><span class="line"><span class="string">    force-reload  timeout=15</span></span><br><span class="line"><span class="string">    monitor       timeout=15 interval=15</span></span><br></pre></td></tr></table></figure>
+<p>接下来新建资源WebSite：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># crm configure primitive WebServer lsb:httpd</span></span><br><span class="line"></span><br><span class="line">查看配置文件中生成的定义：</span><br><span class="line">node node1.test.com</span><br><span class="line">node node2.test.com</span><br><span class="line">primitive WebIP ocf:heartbeat:IPaddr \</span><br><span class="line">  params ip=<span class="string">"192.168.10.11"</span></span><br><span class="line">primitive WebServer lsb:httpd</span><br><span class="line">property <span class="variable">$id</span>=<span class="string">"cib-bootstrap-options"</span> \</span><br><span class="line">  dc-version=<span class="string">"1.1.8-7.el6-394e906"</span> \</span><br><span class="line">  cluster-infrastructure=<span class="string">"classic openais (with plugin)"</span> \</span><br><span class="line">  expected-quorum-votes=<span class="string">"2"</span> \</span><br><span class="line">  stonith-enabled=<span class="string">"false"</span> \</span><br><span class="line">  no-quorum-policy=<span class="string">"ignore"</span> \</span><br><span class="line">  last-lrm-refresh=<span class="string">"1373281380"</span></span><br><span class="line">rsc_defaults <span class="variable">$id</span>=<span class="string">"rsc-options"</span> \</span><br><span class="line">  resource-stickiness=<span class="string">"100"</span></span><br></pre></td></tr></table></figure>
+<p>查看资源的启用状态：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># crm status</span></span><br><span class="line">Last updated: Mon Jul  8 19:21:29 2013</span><br><span class="line">Last change: Sun Sep 15 15:22:13 2013 via cibadmin on node2.test.com</span><br><span class="line">Stack: classic openais (with plugin)</span><br><span class="line">Current DC: node1.test.com - partition with quorum</span><br><span class="line">Version: 1.1.8-7.el6-394e906</span><br><span class="line">2 Nodes configured, 2 expected votes</span><br><span class="line">2 Resources configured.</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Online: [ node1.test.com node2.test.com ]</span><br><span class="line"></span><br><span class="line">WebIP  (ocf::heartbeat:IPaddr):  Started node1.test.com</span><br><span class="line">WebServer  (lsb:httpd):  Started node2.test.com</span><br></pre></td></tr></table></figure>
+<p>从上面的信息中可以看出WebIP和WebServer有可能会分别运行于两个节点上，这对于通过此IP提供Web服务的应用来说是不成立的，即此两者资源必须同时运行在某节点上。</p>
+<p>由此可见，即便集群拥有所有必需资源，但它可能还无法进行正确处理。资源约束则用以指定在哪些群集节点上运行资源，以何种顺序装载资源，以及特定资源依赖于哪些其它资源。pacemaker共给我们提供了三种资源约束方法：</p>
+<ol>
+<li>Resource Location（资源位置）：定义资源可以、不可以或尽可能在哪些节点上运行；</li>
+<li>Resource Collocation（资源排列）：排列约束用以定义集群资源可以或不可以在某个节点上同时运行；</li>
+<li>Resource Order（资源顺序）：顺序约束定义集群资源在节点上启动的顺序；</li>
+</ol>
+<p>定义约束时，还需要指定分数。各种分数是集群工作方式的重要组成部分。其实，从迁移资源到决定在已降级集群中停止哪些资源的整个过程是通过以某种方式修改分数来实现的。分数按每个资源来计算，资源分数为负的任何节点都无法运行该资源。在计算出资源分数后，集群选择分数最高的节点。INFINITY（无穷大）目前定义为 1,000,000。加减无穷大遵循以下3个基本规则：</p>
+<ol>
+<li>任何值 + 无穷大 = 无穷大</li>
+<li>任何值 - 无穷大 = -无穷大</li>
+<li>无穷大 - 无穷大 = -无穷大</li>
+</ol>
+<p>定义资源约束时，也可以指定每个约束的分数。分数表示指派给此资源约束的值。分数较高的约束先应用，分数较低的约束后应用。通过使用不同的分数为既定资源创建更多位置约束，可以指定资源要故障转移至的目标节点的顺序。</p>
+<p>因此，对于前述的WebIP和WebServer可能会运行于不同节点的问题，可以通过以下命令来解决：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># crm configure colocation websserver-with-webip INFINITY: WebServer WebIP</span></span><br></pre></td></tr></table></figure>
+<p>如下的状态信息显示，两个资源已然运行于同一个节点。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># crm status</span></span><br><span class="line">Last updated: Mon Jul  8 19:27:47 2013</span><br><span class="line">Last change: Sun Sep 15 15:29:55 2013 via cibadmin on node2.test.com</span><br><span class="line">Stack: classic openais (with plugin)</span><br><span class="line">Current DC: node1.test.com - partition with quorum</span><br><span class="line">Version: 1.1.8-7.el6-394e906</span><br><span class="line">2 Nodes configured, 2 expected votes</span><br><span class="line">2 Resources configured.</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Online: [ node1.test.com node2.test.com ]</span><br><span class="line"></span><br><span class="line">WebIP  (ocf::heartbeat:IPaddr):  Started node1.test.com</span><br><span class="line">WebServer  (lsb:httpd):  Started node1.test.com</span><br></pre></td></tr></table></figure>
+<p>接着，我们还得确保WebSite在某节点启动之前得先启动WebIP，这可以使用如下命令实现：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># crm configure order webserver-after-webip mandatory: WebIP WebServer</span></span><br></pre></td></tr></table></figure>
+<p>此外，由于HA集群本身并不强制每个节点的性能相同或相近，所以，某些时候我们可能希望在正常时服务总能在某个性能较强的节点上运行，这可以通过位置约束来实现：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># crm configure location prefer-node1 WebServer rule 200: node1.test.com</span></span><br></pre></td></tr></table></figure>
+<p>这条命令实现了将WebSite约束在node1上，且指定其分数为200；</p>
+<p>最终的配置结果如下所示：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># crm configure show</span></span><br><span class="line">node node1.test.com</span><br><span class="line">node node2.test.com \</span><br><span class="line">  attributes standby=<span class="string">"off"</span></span><br><span class="line">primitive WebIP ocf:heartbeat:IPaddr \</span><br><span class="line">  params ip=<span class="string">"192.168.10.11"</span></span><br><span class="line">primitive WebServer lsb:httpd</span><br><span class="line">location prefer-node1 WebServer \</span><br><span class="line">  rule <span class="variable">$id</span>=<span class="string">"prefer-node1-rule"</span> 200: <span class="comment">#uname eq node1.test.com</span></span><br><span class="line">colocation websserver-with-webip inf: WebServer WebIP</span><br><span class="line">order webserver-after-webip inf: WebIP WebServer</span><br><span class="line">property <span class="variable">$id</span>=<span class="string">"cib-bootstrap-options"</span> \</span><br><span class="line">  dc-version=<span class="string">"1.1.8-7.el6-394e906"</span> \</span><br><span class="line">  cluster-infrastructure=<span class="string">"classic openais (with plugin)"</span> \</span><br><span class="line">  expected-quorum-votes=<span class="string">"2"</span> \</span><br><span class="line">  stonith-enabled=<span class="string">"false"</span> \</span><br><span class="line">  no-quorum-policy=<span class="string">"ignore"</span> \</span><br><span class="line">  last-lrm-refresh=<span class="string">"1373281380"</span></span><br><span class="line">rsc_defaults <span class="variable">$id</span>=<span class="string">"rsc-options"</span> \</span><br><span class="line">  resource-stickiness=<span class="string">"100"</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>补充知识：<br>多播地址(multicast address)即组播地址，是一组主机的标示符，它已经加入到一个多播组中。在以太网中，多播地址是一个48位的标示符，命名了一组应该在这个网络中应用接收到一个分组的站点。在IPv4中，它历史上被叫做D类地址，一种类型的IP地址，它的范围从224.0.0.0到239.255.255.255，或，等同的，在224.0.0.0/4。在IPv6，多播地址都有前缀ff00::/8。</p>
+<p>多播是第一个字节的最低位为1的所有地址，例如01-12-0f-00-00-02。广播地址是全1的48位地址，也属于多播地址。但是广播又是多播中的特例，就像是正方形属于长方形，但是正方形有长方形没有的特点。</p>
+</blockquote>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>Goooo
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.sysctl.me/2017/06/17/Linux/HA/Corosync/" title="Corosync On CentOS">https://www.sysctl.me/2017/06/17/Linux/HA/Corosync/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/en" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Corosync/" rel="tag"># Corosync</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2017/06/17/Linux/Cobbler/" rel="prev" title="Cobbler">
+      <i class="fa fa-chevron-left"></i> Cobbler
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2017/07/07/vim/" rel="next" title="Vim Table">
+      Vim Table <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#准备工作"><span class="nav-number">1.</span> <span class="nav-text">准备工作</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#配置corosync，（以下命令在node1-test-com上执行）"><span class="nav-number">2.</span> <span class="nav-text">配置corosync，（以下命令在node1.test.com上执行）</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#安装crmsh"><span class="nav-number">3.</span> <span class="nav-text">安装crmsh</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#启动corosync（以下命令在node1上执行）："><span class="nav-number">4.</span> <span class="nav-text">启动corosync（以下命令在node1上执行）：</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#配置集群的工作属性，禁用stonith"><span class="nav-number">5.</span> <span class="nav-text">配置集群的工作属性，禁用stonith</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#为集群添加集群资源"><span class="nav-number">6.</span> <span class="nav-text">为集群添加集群资源</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#应用："><span class="nav-number">7.</span> <span class="nav-text">应用：</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Goooo"
+      src="/images/img.png">
+  <p class="site-author-name" itemprop="name">Goooo</p>
+  <div class="site-description" itemprop="description">一条啥也不会点废鱼</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">109</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">22</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">71</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/xth0331" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;xth0331" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:xietianhao0331@gmail.com" title="E-Mail → mailto:xietianhao0331@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/en" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+        
+        <script type="text/javascript" charset="utf-8" src="/js/tagcloud.js"></script>
+        <script type="text/javascript" charset="utf-8" src="/js/tagcanvas.js"></script>
+        <div class="widget-wrap">
+            <h3 class="widget-title">标签们</h3>
+            <div id="myCanvasContainer" class="widget tagcloud">
+                <canvas width="250" height="250" id="resCanvas" style="width=100%">
+                    <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ansible/" rel="tag">Ansible</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Backup/" rel="tag">Backup</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Bond/" rel="tag">Bond</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CPU/" rel="tag">CPU</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ceph/" rel="tag">Ceph</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cobbler/" rel="tag">Cobbler</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Coffee/" rel="tag">Coffee</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Corosync/" rel="tag">Corosync</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cyclic-invariant/" rel="tag">Cyclic invariant</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Docker/" rel="tag">Docker</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Effectiveness/" rel="tag">Effectiveness</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Exhaustion/" rel="tag">Exhaustion</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Filesystem/" rel="tag">Filesystem</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HAProxy/" rel="tag">HAProxy</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hardware/" rel="tag">Hardware</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Https/" rel="tag">Https</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ICMP/" rel="tag">ICMP</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JDK/" rel="tag">JDK</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Jenkins/" rel="tag">Jenkins</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JunOS/" rel="tag">JunOS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/KEEPALIVED/" rel="tag">KEEPALIVED</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Keepalived/" rel="tag">Keepalived</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/" rel="tag">Linux</a><span class="tag-list-count">19</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Log/" rel="tag">Log</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Markdown/" rel="tag">Markdown</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Modular-Programming/" rel="tag">Modular Programming</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Monitoring/" rel="tag">Monitoring</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Netconf/" rel="tag">Netconf</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Network/" rel="tag">Network</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Networking/" rel="tag">Networking</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Nginx/" rel="tag">Nginx</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OS/" rel="tag">OS</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OpenStack/" rel="tag">OpenStack</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Package-Manager/" rel="tag">Package Manager</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Partition/" rel="tag">Partition</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Programming/" rel="tag">Programming</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Python/" rel="tag">Python</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RAM/" rel="tag">RAM</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RHCS/" rel="tag">RHCS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RPM/" rel="tag">RPM</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Recursion/" rel="tag">Recursion</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Recursive/" rel="tag">Recursive</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Redirect/" rel="tag">Redirect</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Route/" rel="tag">Route</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SSH/" rel="tag">SSH</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Storage/" rel="tag">Storage</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Storage-and-Filesystem/" rel="tag">Storage and Filesystem</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Swap/" rel="tag">Swap</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Sys/" rel="tag">Sys</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Systemd/" rel="tag">Systemd</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Terminal/" rel="tag">Terminal</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Terraform/" rel="tag">Terraform</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Tools/" rel="tag">Tools</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ubuntu/" rel="tag">Ubuntu</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Veeam/" rel="tag">Veeam</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vim/" rel="tag">Vim</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Virtualization/" rel="tag">Virtualization</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vmware/" rel="tag">Vmware</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vsphere/" rel="tag">Vsphere</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Windows/" rel="tag">Windows</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Yum/" rel="tag">Yum</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/apple/" rel="tag">apple</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/elasticsearch/" rel="tag">elasticsearch</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/iteration/" rel="tag">iteration</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/logs/" rel="tag">logs</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/oop/" rel="tag">oop</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tools/" rel="tag">tools</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%88%86%E6%B2%BB/" rel="tag">分治</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E5%8E%8B%E7%BC%A9/" rel="tag">数据压缩</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%84%99%E8%A7%86%E9%93%BE/" rel="tag">鄙视链</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%87%8D%E5%A4%8D%E6%95%B0%E6%8D%AE%E5%88%A0%E9%99%A4/" rel="tag">重复数据删除</a><span class="tag-list-count">1</span></li></ul>
+                </canvas>
+            </div>
+        </div>
+        
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Goooo</span>
+</div>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.7.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://www-sysctl-me-1.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "https://www.sysctl.me/2017/06/17/Linux/HA/Corosync/";
+    this.page.identifier = "2017/06/17/Linux/HA/Corosync/";
+    this.page.title = "Corosync On CentOS";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://www-sysctl-me-1.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/koharu.model.json"},"display":{"position":"left","width":300,"height":600},"mobile":{"show":false},"react":{"opacity":0.7}});</script></body>
+</html>

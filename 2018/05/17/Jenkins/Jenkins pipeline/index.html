@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://www.sysctl.me').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","width":320,"display":"post","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="Jenkins PipelineJenkins Pipeline是一套插件，支持在Jenkins中实现和集成持续交付管道。 一个持续交付（CD）管道是将软件从版本控制直接传递给用户和客户的过程的自动化表达。对软件的每次更改（在源代码管理中提交）都会在发布的过程中经历一个复杂的过程。此过程涉及以可靠且可重复的方式构建软件，以及通过多个测试和部署阶段推进构建的软件。 Pipline提供了一组可拓展的工">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Jenkins Pipeline">
+<meta property="og:url" content="https://www.sysctl.me/2018/05/17/Jenkins/Jenkins%20pipeline/index.html">
+<meta property="og:site_name" content="Sysctl">
+<meta property="og:description" content="Jenkins PipelineJenkins Pipeline是一套插件，支持在Jenkins中实现和集成持续交付管道。 一个持续交付（CD）管道是将软件从版本控制直接传递给用户和客户的过程的自动化表达。对软件的每次更改（在源代码管理中提交）都会在发布的过程中经历一个复杂的过程。此过程涉及以可靠且可重复的方式构建软件，以及通过多个测试和部署阶段推进构建的软件。 Pipline提供了一组可拓展的工">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/realworld-pipeline-flow.png">
+<meta property="article:published_time" content="2018-05-17T01:10:00.000Z">
+<meta property="article:modified_time" content="2020-01-22T14:30:45.614Z">
+<meta property="article:author" content="Goooo">
+<meta property="article:tag" content="Jenkins">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog-image.nos-eastchina1.126.net/realworld-pipeline-flow.png">
+
+<link rel="canonical" href="https://www.sysctl.me/2018/05/17/Jenkins/Jenkins%20pipeline/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>Jenkins Pipeline | Sysctl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Sysctl" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Sysctl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">观察指南，博客</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="搜索..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/xth0331" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.sysctl.me/2018/05/17/Jenkins/Jenkins%20pipeline/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/img.png">
+      <meta itemprop="name" content="Goooo">
+      <meta itemprop="description" content="一条啥也不会点废鱼">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Sysctl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Jenkins Pipeline
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-05-17 09:10:00" itemprop="dateCreated datePublished" datetime="2018-05-17T09:10:00+08:00">2018-05-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-01-22 22:30:45" itemprop="dateModified" datetime="2020-01-22T22:30:45+08:00">2020-01-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/DevOps/" itemprop="url" rel="index">
+                    <span itemprop="name">DevOps</span>
+                  </a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2018/05/17/Jenkins/Jenkins%20pipeline/#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2018/05/17/Jenkins/Jenkins pipeline/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="Jenkins-Pipeline"><a href="#Jenkins-Pipeline" class="headerlink" title="Jenkins Pipeline"></a>Jenkins Pipeline</h1><p>Jenkins Pipeline是一套插件，支持在Jenkins中实现和集成<em>持续交付管道</em>。</p>
+<p>一个持续交付（CD）管道是将软件从版本控制直接传递给用户和客户的过程的自动化表达。对软件的每次更改（在源代码管理中提交）都会在发布的过程中经历一个复杂的过程。此过程涉及以可靠且可重复的方式构建软件，以及通过多个测试和部署阶段推进构建的软件。</p>
+<p>Pipline提供了一组可拓展的工具，用于通过管道特定域语言（DSL）语法“作为代码”对简单到复杂的传输管道进行建模。</p>
+<p>Jenkins Pipeline 的定义被写入一个文本文件（Jenkinsfile），该文件可以提交给项目的源代码控制库。这是“Pipeline as code”的基础；将CD管道视为应用程序的一部分，以便像任何其他代码一样进行版本控制和审查。</p>
+<p>创建<code>jenkinsfile</code>并将其提交给源代码管理提供了许多直接的好处：</p>
+<ul>
+<li>自动为所有分支和拉取和请求创建Pipeline构建过程。</li>
+<li>Pipeline上的代码审查/迭代（以及剩余的源代码）。</li>
+<li>Pipeline的审计跟踪。</li>
+<li>Pipeline的单一数据来源，可由项目的多个成员查看和编辑。</li>
+</ul>
+<p>虽然在Web UI或<code>Jenkinsfile</code>中定义Pipeline的语法是相同的，但通常认为最佳做法是在<code>Jenkinsfile</code>中定义Pipeline并检查其中的源码管理。<br><a id="more"></a></p>
+<h1 id="声明式与校本化Pipeline语法"><a href="#声明式与校本化Pipeline语法" class="headerlink" title="声明式与校本化Pipeline语法"></a>声明式与校本化Pipeline语法</h1><p>一个<code>Jenkinsfile</code>可以使用两种语法编写 - Declarative和Scripted。</p>
+<p>生命性和脚本化Pipeline的构造从根本上不同，生命性管道是Jenkins管道的最新特性，它具有：</p>
+<ul>
+<li>提供比Scripted Pipeline语法更丰富的语法功能，以及</li>
+<li>旨在使写作和阅读Pipeline代码更容易。</li>
+</ul>
+<p>然而，写入<code>Jenkinsfile</code>文件的许多单独的语法组件（步骤）对应Declarative和ScriptedPipeline都是通用的。在下面的管道概念和管道语法概述中，详细了解这两种语法的不同之处。</p>
+<h1 id="Why-Pipeline？"><a href="#Why-Pipeline？" class="headerlink" title="Why Pipeline？"></a>Why Pipeline？</h1><p>从根本上说，Jenkins是一个支持多种自动化模式的自动化引擎。Pipeline为Jenkins添加了一套功能强大的自动化工具，支持从简单的持续集成到全面的CD Pipeline的用例。通过对一系列相关任务建模，用户可以利用Pipeline的许多功能：</p>
+<ul>
+<li>代码：管理在代码中实现，通常检查到源代码控制，使团队能够编辑，审查和迭代其交付Pipeline。</li>
+<li>持久： Pipeline可以在Jenkins master 的计划内核计划外重启中存活。</li>
+<li>暂停：在继续Pipeline运行之前，Pipeline可以选择停止等待输入或批准。</li>
+<li>多功能：Pipeline支持复杂的实际CD要求，包括并行分支/连接，循环和执行工作的能力。</li>
+<li>可拓展：Pipeline插件支持其DSL自定义拓展和多个与其他插件集成的选项。</li>
+</ul>
+<p>虽然Jenkins总是允许将自由式工作链接在一起的基本形式来执行顺序任务，Pipeline使这个概念成为Jenkins的一等公民。</p>
+<p>基于Jenkins和兴的可拓展性，Pipeline也可以通过<em>Pipeline shared libraries</em>和插件开发人员进行拓展。</p>
+<p>下面的刘承宇是在Jenkins管道中轻松建模的一个CD场景的示例：</p>
+<p><img src="https://blog-image.nos-eastchina1.126.net/realworld-pipeline-flow.png" alt="CD "></p>
+<h1 id="Pipeline概念"><a href="#Pipeline概念" class="headerlink" title="Pipeline概念"></a>Pipeline概念</h1><blockquote>
+<p>以下概念是Jenkins Pipeline的关键方面，它与Pipeline语法密切相关</p>
+</blockquote>
+<h2 id="Pipeline"><a href="#Pipeline" class="headerlink" title="Pipeline"></a>Pipeline</h2><p>Pipeline是CD Pipeline的用户定义模型。Pipeline的代码定义了整个构建过程，通常包括构建应用程序，测试然后交付应用程序的阶段。</p>
+<p><em>此外，<code>pipeline</code>block 是Declarative Pipeline语法的关键部分。</em></p>
+<h2 id="Node"><a href="#Node" class="headerlink" title="Node"></a>Node</h2><p>Node是一个机器，是Jenkins环境的一部分，能够执行Pipeline。</p>
+<p><em>此外，<code>node</code> block是Scripted Pipeline语法的关键部分。</em></p>
+<h2 id="Stage"><a href="#Stage" class="headerlink" title="Stage"></a>Stage</h2><p><code>stage</code> block定义了通过整个Pipeline执行的概念上不同的任务子集（例如“构建”、“测试”和“部署”阶段），许多插件使用它来可视化或呈现管道状态/进度。</p>
+<h2 id="Step"><a href="#Step" class="headerlink" title="Step"></a>Step</h2><p>一项任务。从根本上说，一个步骤告诉Jenkins在特定时间点做什么（或者在过程中“步骤”）。例如，要执行shell命令<code>make</code>用<code>sh</code>,setp: sh‘ make’。当插件拓展Pipeline DSL时，通常意味着插件已经实现了一个新步骤。</p>
+<h1 id="Pipeline-语法概述"><a href="#Pipeline-语法概述" class="headerlink" title="Pipeline 语法概述"></a>Pipeline 语法概述</h1><p>一下Pipeline代码框架说明了Declarative Pipeline语法和Scripted Pipeline语法之间的 区别。</p>
+<h2 id="声明式Pipeline基础"><a href="#声明式Pipeline基础" class="headerlink" title="声明式Pipeline基础"></a>声明式Pipeline基础</h2><p>在Declarative Pipeline语法中，<code>pipeline</code>block定义了整个Pipeline中完成的所有工作。</p>
+<p>Jenkinsfile (Declarative Pipeline)</p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">pipeline &#123;</span><br><span class="line">    agent any </span><br><span class="line">    stages &#123;</span><br><span class="line">        stage(<span class="string">'Build'</span>) &#123; </span><br><span class="line">            steps &#123;</span><br><span class="line">                <span class="comment">// </span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        stage(<span class="string">'Test'</span>) &#123; </span><br><span class="line">            steps &#123;</span><br><span class="line">                <span class="comment">// </span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        stage(<span class="string">'Deploy'</span>) &#123; </span><br><span class="line">            steps &#123;</span><br><span class="line">                <span class="comment">// </span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>agent any</code></td>
+<td>在任何可用的代理上执行此Pipeline或其任何阶段</td>
+</tr>
+<tr>
+<td><code>stage(&#39;Bulid&#39;)</code></td>
+<td>定义构建阶段</td>
+</tr>
+<tr>
+<td><code>//</code></td>
+<td>执行阶段相关的一些步骤</td>
+</tr>
+<tr>
+<td><code>stage(&#39;Test&#39;)</code></td>
+<td>定义测试阶段</td>
+</tr>
+<tr>
+<td><code>//</code></td>
+<td>执行测试阶段相关的一些步骤</td>
+</tr>
+<tr>
+<td><code>stage(&#39;Deploy)</code></td>
+<td>定义部署阶段</td>
+</tr>
+<tr>
+<td><code>//</code></td>
+<td>执行部署阶段相关的 一些步骤</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="脚本式Pipeline基础"><a href="#脚本式Pipeline基础" class="headerlink" title="　脚本式Pipeline基础"></a>　脚本式Pipeline基础</h2><p>在Scripted Pipeline语法中，一个或多个<code>node</code>在整个Pipeline中执行核心工作，虽然这不是Scripted Pipeline语法的强制要求，但将Pipeline的工作限制在<code>node</code>块内部有两个作用：</p>
+<ol>
+<li>通过向Jenkins队列添加项目来计划要运行的块中包含的步骤。只要执行程序在节点上空闲，步骤就会运行。</li>
+<li>创建工作空间（特定于该特定Pipeline的目录），可以对从源控件检出的文件执行工作。</li>
+</ol>
+<p>Jenkinsfile (Scripted Pipeline)</p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">node &#123;  </span><br><span class="line">    stage(<span class="string">'Build'</span>) &#123; </span><br><span class="line">        <span class="comment">// </span></span><br><span class="line">    &#125;</span><br><span class="line">    stage(<span class="string">'Test'</span>) &#123; </span><br><span class="line">        <span class="comment">// </span></span><br><span class="line">    &#125;</span><br><span class="line">    stage(<span class="string">'Deploy'</span>) &#123; </span><br><span class="line">        <span class="comment">// </span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>node</code></td>
+<td>在任何可用的代理上执行此Pipeline或其任何阶段</td>
+</tr>
+<tr>
+<td><code>stage(&#39;Build&#39;)</code></td>
+<td>定义构建阶段</td>
+</tr>
+<tr>
+<td><code>//</code></td>
+<td>执行阶段相关的一些步骤</td>
+</tr>
+<tr>
+<td><code>stage(&#39;Test&#39;)</code></td>
+<td>定义测试阶段</td>
+</tr>
+<tr>
+<td><code>//</code></td>
+<td>执行测试阶段相关的一些步骤</td>
+</tr>
+<tr>
+<td><code>stage(&#39;Deploy&#39;)</code></td>
+<td>定义部署阶段</td>
+</tr>
+<tr>
+<td><code>//</code></td>
+<td>执行部署阶段相关的 一些步骤</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h1 id="管道示例"><a href="#管道示例" class="headerlink" title="管道示例"></a>管道示例</h1><p>下面是<code>Jenkinsfile</code>使用Declarative Pipeline 语法和Scripted Pipeline的示例：</p>
+<p>Jenkinsfile (Declarative Pipeline)</p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">pipeline &#123; </span><br><span class="line">    agent any </span><br><span class="line">    stages &#123;</span><br><span class="line">        stage(<span class="string">'Build'</span>) &#123; </span><br><span class="line">            steps &#123; </span><br><span class="line">                sh <span class="string">'make'</span> </span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        stage(<span class="string">'Test'</span>)&#123;</span><br><span class="line">            steps &#123;</span><br><span class="line">                sh <span class="string">'make check'</span></span><br><span class="line">                junit <span class="string">'reports/**/*.xml'</span> </span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        stage(<span class="string">'Deploy'</span>) &#123;</span><br><span class="line">            steps &#123;</span><br><span class="line">                sh <span class="string">'make publish'</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Jenkinsfile (Scripted Pipeline)</p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">node &#123; </span><br><span class="line">    stage(<span class="string">'Build'</span>) &#123; </span><br><span class="line">        sh <span class="string">'make'</span> </span><br><span class="line">    &#125;</span><br><span class="line">    stage(<span class="string">'Test'</span>) &#123;</span><br><span class="line">        sh <span class="string">'make check'</span></span><br><span class="line">        junit <span class="string">'reports/**/*.xml'</span> </span><br><span class="line">    &#125;</span><br><span class="line">    stage(<span class="string">'Deploy'</span>) &#123;</span><br><span class="line">        sh <span class="string">'make publish'</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">参数</th>
+<th style="text-align:left">含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><code>pipeline</code></td>
+<td style="text-align:left">Declarative Pipeline特定语法，定义一个块，包含用于执行整个管道的内容和指令</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>agent</code></td>
+<td style="text-align:left">Declarative Pipeline特定语法，指定Jenkins为整个Pipeline分配执行程序和工作空间</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>stage</code></td>
+<td style="text-align:left">描述此Pipeline的一个阶段</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>steps</code></td>
+<td style="text-align:left">Declarative Pipeline特定语法，描述了stage</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>sh</code></td>
+<td style="text-align:left">步骤，执行给定的shell命令</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>junit</code></td>
+<td style="text-align:left">另一个Pipelline步骤，用于聚合测试报告</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>node</code></td>
+<td style="text-align:left">Scripted Pipeline特定语法，指定了Jenkins在任何可用的代理/节点上执行此Pipeline</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>Goooo
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.sysctl.me/2018/05/17/Jenkins/Jenkins%20pipeline/" title="Jenkins Pipeline">https://www.sysctl.me/2018/05/17/Jenkins/Jenkins pipeline/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/en" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Jenkins/" rel="tag"># Jenkins</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/05/16/Jenkins/Jenkins%20credentials/" rel="prev" title="Jenkins credentials">
+      <i class="fa fa-chevron-left"></i> Jenkins credentials
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/05/18/Linux/ES/filebeat/" rel="next" title="Elasticsearch指南">
+      Elasticsearch指南 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Jenkins-Pipeline"><span class="nav-number">1.</span> <span class="nav-text">Jenkins Pipeline</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#声明式与校本化Pipeline语法"><span class="nav-number">2.</span> <span class="nav-text">声明式与校本化Pipeline语法</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Why-Pipeline？"><span class="nav-number">3.</span> <span class="nav-text">Why Pipeline？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Pipeline概念"><span class="nav-number">4.</span> <span class="nav-text">Pipeline概念</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Pipeline"><span class="nav-number">4.1.</span> <span class="nav-text">Pipeline</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Node"><span class="nav-number">4.2.</span> <span class="nav-text">Node</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Stage"><span class="nav-number">4.3.</span> <span class="nav-text">Stage</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Step"><span class="nav-number">4.4.</span> <span class="nav-text">Step</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Pipeline-语法概述"><span class="nav-number">5.</span> <span class="nav-text">Pipeline 语法概述</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#声明式Pipeline基础"><span class="nav-number">5.1.</span> <span class="nav-text">声明式Pipeline基础</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#脚本式Pipeline基础"><span class="nav-number">5.2.</span> <span class="nav-text">　脚本式Pipeline基础</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#管道示例"><span class="nav-number">6.</span> <span class="nav-text">管道示例</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Goooo"
+      src="/images/img.png">
+  <p class="site-author-name" itemprop="name">Goooo</p>
+  <div class="site-description" itemprop="description">一条啥也不会点废鱼</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">109</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">22</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">71</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/xth0331" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;xth0331" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:xietianhao0331@gmail.com" title="E-Mail → mailto:xietianhao0331@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/en" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+        
+        <script type="text/javascript" charset="utf-8" src="/js/tagcloud.js"></script>
+        <script type="text/javascript" charset="utf-8" src="/js/tagcanvas.js"></script>
+        <div class="widget-wrap">
+            <h3 class="widget-title">标签们</h3>
+            <div id="myCanvasContainer" class="widget tagcloud">
+                <canvas width="250" height="250" id="resCanvas" style="width=100%">
+                    <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ansible/" rel="tag">Ansible</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Backup/" rel="tag">Backup</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Bond/" rel="tag">Bond</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CPU/" rel="tag">CPU</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ceph/" rel="tag">Ceph</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cobbler/" rel="tag">Cobbler</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Coffee/" rel="tag">Coffee</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Corosync/" rel="tag">Corosync</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cyclic-invariant/" rel="tag">Cyclic invariant</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Docker/" rel="tag">Docker</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Effectiveness/" rel="tag">Effectiveness</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Exhaustion/" rel="tag">Exhaustion</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Filesystem/" rel="tag">Filesystem</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HAProxy/" rel="tag">HAProxy</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hardware/" rel="tag">Hardware</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Https/" rel="tag">Https</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ICMP/" rel="tag">ICMP</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JDK/" rel="tag">JDK</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Jenkins/" rel="tag">Jenkins</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JunOS/" rel="tag">JunOS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/KEEPALIVED/" rel="tag">KEEPALIVED</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Keepalived/" rel="tag">Keepalived</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/" rel="tag">Linux</a><span class="tag-list-count">19</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Log/" rel="tag">Log</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Markdown/" rel="tag">Markdown</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Modular-Programming/" rel="tag">Modular Programming</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Monitoring/" rel="tag">Monitoring</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Netconf/" rel="tag">Netconf</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Network/" rel="tag">Network</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Networking/" rel="tag">Networking</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Nginx/" rel="tag">Nginx</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OS/" rel="tag">OS</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OpenStack/" rel="tag">OpenStack</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Package-Manager/" rel="tag">Package Manager</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Partition/" rel="tag">Partition</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Programming/" rel="tag">Programming</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Python/" rel="tag">Python</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RAM/" rel="tag">RAM</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RHCS/" rel="tag">RHCS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RPM/" rel="tag">RPM</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Recursion/" rel="tag">Recursion</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Recursive/" rel="tag">Recursive</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Redirect/" rel="tag">Redirect</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Route/" rel="tag">Route</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SSH/" rel="tag">SSH</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Storage/" rel="tag">Storage</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Storage-and-Filesystem/" rel="tag">Storage and Filesystem</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Swap/" rel="tag">Swap</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Sys/" rel="tag">Sys</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Systemd/" rel="tag">Systemd</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Terminal/" rel="tag">Terminal</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Terraform/" rel="tag">Terraform</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Tools/" rel="tag">Tools</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ubuntu/" rel="tag">Ubuntu</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Veeam/" rel="tag">Veeam</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vim/" rel="tag">Vim</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Virtualization/" rel="tag">Virtualization</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vmware/" rel="tag">Vmware</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vsphere/" rel="tag">Vsphere</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Windows/" rel="tag">Windows</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Yum/" rel="tag">Yum</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/apple/" rel="tag">apple</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/elasticsearch/" rel="tag">elasticsearch</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/iteration/" rel="tag">iteration</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/logs/" rel="tag">logs</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/oop/" rel="tag">oop</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tools/" rel="tag">tools</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%88%86%E6%B2%BB/" rel="tag">分治</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E5%8E%8B%E7%BC%A9/" rel="tag">数据压缩</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%84%99%E8%A7%86%E9%93%BE/" rel="tag">鄙视链</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%87%8D%E5%A4%8D%E6%95%B0%E6%8D%AE%E5%88%A0%E9%99%A4/" rel="tag">重复数据删除</a><span class="tag-list-count">1</span></li></ul>
+                </canvas>
+            </div>
+        </div>
+        
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Goooo</span>
+</div>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.7.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://www-sysctl-me-1.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "https://www.sysctl.me/2018/05/17/Jenkins/Jenkins%20pipeline/";
+    this.page.identifier = "2018/05/17/Jenkins/Jenkins pipeline/";
+    this.page.title = "Jenkins Pipeline";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://www-sysctl-me-1.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/koharu.model.json"},"display":{"position":"left","width":300,"height":600},"mobile":{"show":false},"react":{"opacity":0.7}});</script></body>
+</html>

@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://www.sysctl.me').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","width":320,"display":"post","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="介绍Python OS模块os模块是两大核心系统模块中较大的那个。它包含了在C程序和shell脚本中经常用到的所有操作系统调用。它的调用设计目录、进程和shell变量等。准确地说，该模块提供了POSIX工具，操作系统调用的跨平台移植标准，以及不依赖平台的目录处理工具，如内嵌模块os.path便携的脚本通常无需改动即可在其他平台上运行。某些平台，os还包括了专属该平台的额外工具。不过总的来说，只要技">
+<meta property="og:type" content="article">
+<meta property="og:title" content="介绍OS模块（Python）">
+<meta property="og:url" content="https://www.sysctl.me/2018/08/20/Program-design/Python/OS-Module/index.html">
+<meta property="og:site_name" content="Sysctl">
+<meta property="og:description" content="介绍Python OS模块os模块是两大核心系统模块中较大的那个。它包含了在C程序和shell脚本中经常用到的所有操作系统调用。它的调用设计目录、进程和shell变量等。准确地说，该模块提供了POSIX工具，操作系统调用的跨平台移植标准，以及不依赖平台的目录处理工具，如内嵌模块os.path便携的脚本通常无需改动即可在其他平台上运行。某些平台，os还包括了专属该平台的额外工具。不过总的来说，只要技">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2018-08-20T11:25:00.000Z">
+<meta property="article:modified_time" content="2020-01-22T14:37:10.323Z">
+<meta property="article:author" content="Goooo">
+<meta property="article:tag" content="OS">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://www.sysctl.me/2018/08/20/Program-design/Python/OS-Module/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>介绍OS模块（Python） | Sysctl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Sysctl" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Sysctl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">观察指南，博客</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="搜索..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/xth0331" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.sysctl.me/2018/08/20/Program-design/Python/OS-Module/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/img.png">
+      <meta itemprop="name" content="Goooo">
+      <meta itemprop="description" content="一条啥也不会点废鱼">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Sysctl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          介绍OS模块（Python）
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-08-20 19:25:00" itemprop="dateCreated datePublished" datetime="2018-08-20T19:25:00+08:00">2018-08-20</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-01-22 22:37:10" itemprop="dateModified" datetime="2020-01-22T22:37:10+08:00">2020-01-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Python/" itemprop="url" rel="index">
+                    <span itemprop="name">Python</span>
+                  </a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2018/08/20/Program-design/Python/OS-Module/#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2018/08/20/Program-design/Python/OS-Module/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="介绍Python-OS模块"><a href="#介绍Python-OS模块" class="headerlink" title="介绍Python OS模块"></a>介绍Python OS模块</h1><p><code>os</code>模块是两大核心系统模块中较大的那个。它包含了在C程序和shell脚本中经常用到的所有操作系统调用。它的调用设计目录、进程和shell变量等。准确地说，该模块提供了<em>POSIX</em>工具，操作系统调用的跨平台移植标准，以及不依赖平台的目录处理工具，如内嵌模块<code>os.path</code>便携的脚本通常无需改动即可在其他平台上运行。某些平台，os还包括了专属该平台的额外工具。不过总的来说，只要技术上可行，os都能做到跨平台。</p>
+<a id="more"></a>
+<h2 id="os模块中的工具"><a href="#os模块中的工具" class="headerlink" title="os模块中的工具"></a>os模块中的工具</h2><p>os模块中常用的一些工具：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>任务</th>
+<th>工具</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Shell变量</td>
+<td><code>os.enviros</code></td>
+</tr>
+<tr>
+<td>运行程序</td>
+<td><code>os.system</code>,  <code>os.popen</code>,  <code>os.execv</code>,  <code>os.swawnv</code></td>
+</tr>
+<tr>
+<td>派生</td>
+<td><code>os.fork</code>,  <code>os.pipe</code>,  <code>os.waitpid</code>, <code>os.kill</code></td>
+</tr>
+<tr>
+<td>文件描述符，文件锁</td>
+<td><code>os.open</code>, <code>os.read</code> , <code>os.write</code></td>
+</tr>
+<tr>
+<td>文件处理</td>
+<td><code>os.remove</code>, <code>os.rename</code>, <code>os.mkfifo</code>, <code>os.mkdir</code>, <code>os.rmdir</code></td>
+</tr>
+<tr>
+<td>管理工具</td>
+<td><code>os.getcwd</code>, <code>os.chdir</code>, <code>os.chmod</code>, <code>os.getpid</code>, <code>os.listdir</code>, <code>os.access</code></td>
+</tr>
+<tr>
+<td>移植工具</td>
+<td><code>os.sep</code> , <code>os.pathsep</code>, <code>os.curdir</code>, <code>os.path.split</code>, <code>os.path.join</code></td>
+</tr>
+<tr>
+<td>路径名工具</td>
+<td><code>os.path.exists(&#39;path&#39;)</code>, <code>os.path.isdir(&#39;path&#39;)</code>, <code>os.path.getsize(&#39;path&#39;)</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<hr>
+<p>如果交互地查看这个模块的属性， 你会得到一大串名称， 他们会因Python的版本和运行平台而异，所以你必须了解每一个名称的意义才能很好地利用他们：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line">dir(os)</span><br><span class="line">[<span class="string">'CLD_CONTINUED'</span>, <span class="string">'CLD_DUMPED'</span>, <span class="string">'CLD_EXITED'</span>, <span class="string">'CLD_TRAPPED'</span>, <span class="string">'DirEntry'</span>, <span class="string">'EX_CANTCREAT'</span>, <span class="string">'EX_CONFIG'</span>, <span class="string">'EX_DATAERR'</span>, <span class="string">'EX_IOERR'</span>, <span class="string">'EX_NOHOST'</span>, <span class="string">'EX_NOINPUT'</span>, <span class="string">'EX_NOPERM'</span>, <span class="string">'EX_NOUSER'</span>, <span class="string">'EX_OK'</span>, <span class="string">'EX_OSERR'</span>, <span class="string">'EX_OSFILE'</span>, <span class="string">'EX_PROTOCOL'</span>, <span class="string">'EX_SOFTWARE'</span>, <span class="string">'EX_TEMPFAIL'</span>, <span class="string">'EX_UNAVAILABLE'</span>, <span class="string">'EX_USAGE'</span>, <span class="string">'F_LOCK'</span>, <span class="string">'F_OK'</span>, <span class="string">'F_TEST'</span>, <span class="string">'F_TLOCK'</span>, <span class="string">'F_ULOCK'</span>, <span class="string">'GRND_NONBLOCK'</span>, <span class="string">'GRND_RANDOM'</span>, <span class="string">'MutableMapping'</span>, <span class="string">'NGROUPS_MAX'</span>, <span class="string">'O_ACCMODE'</span>, <span class="string">'O_APPEND'</span>, <span class="string">'O_ASYNC'</span>, <span class="string">'O_CLOEXEC'</span>, <span class="string">'O_CREAT'</span>, <span class="string">'O_DIRECT'</span>, <span class="string">'O_DIRECTORY'</span>, <span class="string">'O_DSYNC'</span>, <span class="string">'O_EXCL'</span>, <span class="string">'O_LARGEFILE'</span>, <span class="string">'O_NDELAY'</span>, <span class="string">'O_NOATIME'</span>, <span class="string">'O_NOCTTY'</span>, <span class="string">'O_NOFOLLOW'</span>, <span class="string">'O_NONBLOCK'</span>, <span class="string">'O_PATH'</span>, <span class="string">'O_RDONLY'</span>, <span class="string">'O_RDWR'</span>, <span class="string">'O_RSYNC'</span>, <span class="string">'O_SYNC'</span>, <span class="string">'O_TMPFILE'</span>, <span class="string">'O_TRUNC'</span>, <span class="string">'O_WRONLY'</span>, <span class="string">'POSIX_FADV_DONTNEED'</span>, <span class="string">'POSIX_FADV_NOREUSE'</span>, <span class="string">'POSIX_FADV_NORMAL'</span>, <span class="string">'POSIX_FADV_RANDOM'</span>, <span class="string">'POSIX_FADV_SEQUENTIAL'</span>, <span class="string">'POSIX_FADV_WILLNEED'</span>, <span class="string">'PRIO_PGRP'</span>, <span class="string">'PRIO_PROCESS'</span>, <span class="string">'PRIO_USER'</span>, <span class="string">'P_ALL'</span>, <span class="string">'P_NOWAIT'</span>, <span class="string">'P_NOWAITO'</span>, <span class="string">'P_PGID'</span>, <span class="string">'P_PID'</span>, <span class="string">'P_WAIT'</span>, <span class="string">'PathLike'</span>, <span class="string">'RTLD_DEEPBIND'</span>, <span class="string">'RTLD_GLOBAL'</span>, <span class="string">'RTLD_LAZY'</span>, <span class="string">'RTLD_LOCAL'</span>, <span class="string">'RTLD_NODELETE'</span>, <span class="string">'RTLD_NOLOAD'</span>, <span class="string">'RTLD_NOW'</span>, <span class="string">'R_OK'</span>, <span class="string">'SCHED_BATCH'</span>, <span class="string">'SCHED_FIFO'</span>, <span class="string">'SCHED_IDLE'</span>, <span class="string">'SCHED_OTHER'</span>, <span class="string">'SCHED_RESET_ON_FORK'</span>, <span class="string">'SCHED_RR'</span>, <span class="string">'SEEK_CUR'</span>, <span class="string">'SEEK_DATA'</span>, <span class="string">'SEEK_END'</span>, <span class="string">'SEEK_HOLE'</span>, <span class="string">'SEEK_SET'</span>, <span class="string">'ST_APPEND'</span>, <span class="string">'ST_MANDLOCK'</span>, <span class="string">'ST_NOATIME'</span>, <span class="string">'ST_NODEV'</span>, <span class="string">'ST_NODIRATIME'</span>, <span class="string">'ST_NOEXEC'</span>, <span class="string">'ST_NOSUID'</span>, <span class="string">'ST_RDONLY'</span>, <span class="string">'ST_RELATIME'</span>, <span class="string">'ST_SYNCHRONOUS'</span>, <span class="string">'ST_WRITE'</span>, <span class="string">'TMP_MAX'</span>, <span class="string">'WCONTINUED'</span>, <span class="string">'WCOREDUMP'</span>, <span class="string">'WEXITED'</span>, <span class="string">'WEXITSTATUS'</span>, <span class="string">'WIFCONTINUED'</span>, <span class="string">'WIFEXITED'</span>, <span class="string">'WIFSIGNALED'</span>, <span class="string">'WIFSTOPPED'</span>, <span class="string">'WNOHANG'</span>, <span class="string">'WNOWAIT'</span>, <span class="string">'WSTOPPED'</span>, <span class="string">'WSTOPSIG'</span>, <span class="string">'WTERMSIG'</span>, <span class="string">'WUNTRACED'</span>, <span class="string">'W_OK'</span>, <span class="string">'XATTR_CREATE'</span>, <span class="string">'XATTR_REPLACE'</span>, <span class="string">'XATTR_SIZE_MAX'</span>, <span class="string">'X_OK'</span>, <span class="string">'_Environ'</span>, <span class="string">'__all__'</span>, <span class="string">'__builtins__'</span>, <span class="string">'__cached__'</span>, <span class="string">'__doc__'</span>, <span class="string">'__file__'</span>, <span class="string">'__loader__'</span>, <span class="string">'__name__'</span>, <span class="string">'__package__'</span>, <span class="string">'__spec__'</span>, <span class="string">'_execvpe'</span>, <span class="string">'_exists'</span>, <span class="string">'_exit'</span>, <span class="string">'_fspath'</span>, <span class="string">'_fwalk'</span>, <span class="string">'_get_exports_list'</span>, <span class="string">'_putenv'</span>, <span class="string">'_spawnvef'</span>, <span class="string">'_unsetenv'</span>, <span class="string">'_wrap_close'</span>, <span class="string">'abc'</span>, <span class="string">'abort'</span>, <span class="string">'access'</span>, <span class="string">'altsep'</span>, <span class="string">'chdir'</span>, <span class="string">'chmod'</span>, <span class="string">'chown'</span>, <span class="string">'chroot'</span>, <span class="string">'close'</span>, <span class="string">'closerange'</span>, <span class="string">'confstr'</span>, <span class="string">'confstr_names'</span>, <span class="string">'cpu_count'</span>, <span class="string">'ctermid'</span>, <span class="string">'curdir'</span>, <span class="string">'defpath'</span>, <span class="string">'device_encoding'</span>, <span class="string">'devnull'</span>, <span class="string">'dup'</span>, <span class="string">'dup2'</span>, <span class="string">'environ'</span>, <span class="string">'environb'</span>, <span class="string">'errno'</span>, <span class="string">'error'</span>, <span class="string">'execl'</span>, <span class="string">'execle'</span>, <span class="string">'execlp'</span>, <span class="string">'execlpe'</span>, <span class="string">'execv'</span>, <span class="string">'execve'</span>, <span class="string">'execvp'</span>, <span class="string">'execvpe'</span>, <span class="string">'extsep'</span>, <span class="string">'fchdir'</span>, <span class="string">'fchmod'</span>, <span class="string">'fchown'</span>, <span class="string">'fdatasync'</span>, <span class="string">'fdopen'</span>, <span class="string">'fork'</span>, <span class="string">'forkpty'</span>, <span class="string">'fpathconf'</span>, <span class="string">'fsdecode'</span>, <span class="string">'fsencode'</span>, <span class="string">'fspath'</span>, <span class="string">'fstat'</span>, <span class="string">'fstatvfs'</span>, <span class="string">'fsync'</span>, <span class="string">'ftruncate'</span>, <span class="string">'fwalk'</span>, <span class="string">'get_blocking'</span>, <span class="string">'get_exec_path'</span>, <span class="string">'get_inheritable'</span>, <span class="string">'get_terminal_size'</span>, <span class="string">'getcwd'</span>, <span class="string">'getcwdb'</span>, <span class="string">'getegid'</span>, <span class="string">'getenv'</span>, <span class="string">'getenvb'</span>, <span class="string">'geteuid'</span>, <span class="string">'getgid'</span>, <span class="string">'getgrouplist'</span>, <span class="string">'getgroups'</span>, <span class="string">'getloadavg'</span>, <span class="string">'getlogin'</span>, <span class="string">'getpgid'</span>, <span class="string">'getpgrp'</span>, <span class="string">'getpid'</span>, <span class="string">'getppid'</span>, <span class="string">'getpriority'</span>, <span class="string">'getrandom'</span>, <span class="string">'getresgid'</span>, <span class="string">'getresuid'</span>, <span class="string">'getsid'</span>, <span class="string">'getuid'</span>, <span class="string">'getxattr'</span>, <span class="string">'initgroups'</span>, <span class="string">'isatty'</span>, <span class="string">'kill'</span>, <span class="string">'killpg'</span>, <span class="string">'lchown'</span>, <span class="string">'linesep'</span>, <span class="string">'link'</span>, <span class="string">'listdir'</span>, <span class="string">'listxattr'</span>, <span class="string">'lockf'</span>, <span class="string">'lseek'</span>, <span class="string">'lstat'</span>, <span class="string">'major'</span>, <span class="string">'makedev'</span>, <span class="string">'makedirs'</span>, <span class="string">'minor'</span>, <span class="string">'mkdir'</span>, <span class="string">'mkfifo'</span>, <span class="string">'mknod'</span>, <span class="string">'name'</span>, <span class="string">'nice'</span>, <span class="string">'open'</span>, <span class="string">'openpty'</span>, <span class="string">'pardir'</span>, <span class="string">'path'</span>, <span class="string">'pathconf'</span>, <span class="string">'pathconf_names'</span>, <span class="string">'pathsep'</span>, <span class="string">'pipe'</span>, <span class="string">'pipe2'</span>, <span class="string">'popen'</span>, <span class="string">'posix_fadvise'</span>, <span class="string">'posix_fallocate'</span>, <span class="string">'pread'</span>, <span class="string">'putenv'</span>, <span class="string">'pwrite'</span>, <span class="string">'read'</span>, <span class="string">'readlink'</span>, <span class="string">'readv'</span>, <span class="string">'remove'</span>, <span class="string">'removedirs'</span>, <span class="string">'removexattr'</span>, <span class="string">'rename'</span>, <span class="string">'renames'</span>, <span class="string">'replace'</span>, <span class="string">'rmdir'</span>, <span class="string">'scandir'</span>, <span class="string">'sched_get_priority_max'</span>, <span class="string">'sched_get_priority_min'</span>, <span class="string">'sched_getaffinity'</span>, <span class="string">'sched_getparam'</span>, <span class="string">'sched_getscheduler'</span>, <span class="string">'sched_param'</span>, <span class="string">'sched_rr_get_interval'</span>, <span class="string">'sched_setaffinity'</span>, <span class="string">'sched_setparam'</span>, <span class="string">'sched_setscheduler'</span>, <span class="string">'sched_yield'</span>, <span class="string">'sendfile'</span>, <span class="string">'sep'</span>, <span class="string">'set_blocking'</span>, <span class="string">'set_inheritable'</span>, <span class="string">'setegid'</span>, <span class="string">'seteuid'</span>, <span class="string">'setgid'</span>, <span class="string">'setgroups'</span>, <span class="string">'setpgid'</span>, <span class="string">'setpgrp'</span>, <span class="string">'setpriority'</span>, <span class="string">'setregid'</span>, <span class="string">'setresgid'</span>, <span class="string">'setresuid'</span>, <span class="string">'setreuid'</span>, <span class="string">'setsid'</span>, <span class="string">'setuid'</span>, <span class="string">'setxattr'</span>, <span class="string">'spawnl'</span>, <span class="string">'spawnle'</span>, <span class="string">'spawnlp'</span>, <span class="string">'spawnlpe'</span>, <span class="string">'spawnv'</span>, <span class="string">'spawnve'</span>, <span class="string">'spawnvp'</span>, <span class="string">'spawnvpe'</span>, <span class="string">'st'</span>, <span class="string">'stat'</span>, <span class="string">'stat_float_times'</span>, <span class="string">'stat_result'</span>, <span class="string">'statvfs'</span>, <span class="string">'statvfs_result'</span>, <span class="string">'strerror'</span>, <span class="string">'supports_bytes_environ'</span>, <span class="string">'supports_dir_fd'</span>, <span class="string">'supports_effective_ids'</span>, <span class="string">'supports_fd'</span>, <span class="string">'supports_follow_symlinks'</span>, <span class="string">'symlink'</span>, <span class="string">'sync'</span>, <span class="string">'sys'</span>, <span class="string">'sysconf'</span>, <span class="string">'sysconf_names'</span>, <span class="string">'system'</span>, <span class="string">'tcgetpgrp'</span>, <span class="string">'tcsetpgrp'</span>, <span class="string">'terminal_size'</span>, <span class="string">'times'</span>, <span class="string">'times_result'</span>, <span class="string">'truncate'</span>, <span class="string">'ttyname'</span>, <span class="string">'umask'</span>, <span class="string">'uname'</span>, <span class="string">'uname_result'</span>, <span class="string">'unlink'</span>, <span class="string">'unsetenv'</span>, <span class="string">'urandom'</span>, <span class="string">'utime'</span>, <span class="string">'wait'</span>, <span class="string">'wait3'</span>, <span class="string">'wait4'</span>, <span class="string">'waitid'</span>, <span class="string">'waitid_result'</span>, <span class="string">'waitpid'</span>, <span class="string">'walk'</span>, <span class="string">'write'</span>, <span class="string">'writev'</span>]</span><br></pre></td></tr></table></figure>
+<p>除了以上这些，内嵌的<code>os.path</code>模块还能导出更多的工具，他们大多都涉及可移植地处理文档和目录名称：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line">dir(os.path)</span><br><span class="line">[<span class="string">'__all__'</span>, <span class="string">'__builtins__'</span>, <span class="string">'__cached__'</span>, <span class="string">'__doc__'</span>, <span class="string">'__file__'</span>, <span class="string">'__loader__'</span>, <span class="string">'__name__'</span>, <span class="string">'__package__'</span>, <span class="string">'__spec__'</span>, <span class="string">'_get_sep'</span>, <span class="string">'_joinrealpath'</span>, <span class="string">'_varprog'</span>, <span class="string">'_varprogb'</span>, <span class="string">'abspath'</span>, <span class="string">'altsep'</span>, <span class="string">'basename'</span>, <span class="string">'commonpath'</span>, <span class="string">'commonprefix'</span>, <span class="string">'curdir'</span>, <span class="string">'defpath'</span>, <span class="string">'devnull'</span>, <span class="string">'dirname'</span>, <span class="string">'exists'</span>, <span class="string">'expanduser'</span>, <span class="string">'expandvars'</span>, <span class="string">'extsep'</span>, <span class="string">'genericpath'</span>, <span class="string">'getatime'</span>, <span class="string">'getctime'</span>, <span class="string">'getmtime'</span>, <span class="string">'getsize'</span>, <span class="string">'isabs'</span>, <span class="string">'isdir'</span>, <span class="string">'isfile'</span>, <span class="string">'islink'</span>, <span class="string">'ismount'</span>, <span class="string">'join'</span>, <span class="string">'lexists'</span>, <span class="string">'normcase'</span>, <span class="string">'normpath'</span>, <span class="string">'os'</span>, <span class="string">'pardir'</span>, <span class="string">'pathsep'</span>, <span class="string">'realpath'</span>, <span class="string">'relpath'</span>, <span class="string">'samefile'</span>, <span class="string">'sameopenfile'</span>, <span class="string">'samestat'</span>, <span class="string">'sep'</span>, <span class="string">'split'</span>, <span class="string">'splitdrive'</span>, <span class="string">'splitext'</span>, <span class="string">'stat'</span>, <span class="string">'supports_unicode_filenames'</span>, <span class="string">'sys'</span>]</span><br></pre></td></tr></table></figure>
+<h2 id="管理工具"><a href="#管理工具" class="headerlink" title="管理工具"></a>管理工具</h2><p>和<code>sys</code>模块一样，os模块也代用一套提供信息、帮助管理的工具：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line">os.getpid</span><br><span class="line"><span class="number">14539</span></span><br><span class="line"></span><br><span class="line">os.chdir(<span class="string">r'C:\User'</span>)</span><br><span class="line">os.getcwd()</span><br><span class="line"><span class="string">'C:\User'</span></span><br></pre></td></tr></table></figure>
+<p><code>os.getpid()</code>给出调用函数的进程的ID（这是系统为当前运行程序定义的唯一标识符，可用于进程控制和唯一命名），<code>os.fercwd</code>则返回当前的工作目录。当前的工作目录是你的脚本所打开的文档应当放置的位置，除非文件名里显式的包含了目录路径。</p>
+<h2 id="可移植的常量"><a href="#可移植的常量" class="headerlink" title="可移植的常量"></a>可移植的常量</h2><p><code>os</code>模块同事导出了一组用于简化跨平台编程的名称，包括与具体平台相关的路径和目录分隔符、父目录和当前目录指示器，以及底层计算机所采用的换行符。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line">os.pathsep, os.sep, os,pardir, os.curdir, os.linesep</span><br><span class="line">(<span class="string">':'</span>, <span class="string">'/'</span>, <span class="string">'..'</span>, <span class="string">'.'</span>, <span class="string">'\n'</span>)				<span class="comment"># linux</span></span><br><span class="line">(<span class="string">';'</span>, <span class="string">'\\'</span>, <span class="string">'..'</span>, <span class="string">'.'</span>, <span class="string">'\r\n'</span>)				<span class="comment"># win</span></span><br></pre></td></tr></table></figure>
+<p>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD:Notes/笔记/Python编程/系统编程/系统工具/os模块.md<br><code>os.sep</code>是Python底层运行平台所采用的目录组分隔符号。他在windows下自动预设为“\” ，POSIX则是“/” ,某些Mac则是“:”。类似的，os.pathsep提供用于在目录列表中分隔目录的字符，POSIX使用“:”，DOS和Windows使用“；”。</p>
+<p><code>os.sep</code>是Python底层运行平台所采用的目录组分隔符号。他在windows下自动预设为</p>
+<p>“\“,POSIX计算机则是”/“, 某些Mac上则使用”:“。类似地，<code>os.pathsep</code>提供用于在目录列表中分隔目录的字符，POSIX使用”:”,DOS和windows使用”;“。</p>
+<p>当我们在脚本中拼装和分解这些系统相关字符串时，借助这些属性，可以充分实现脚本的可移植性。例如，虽然<code>dirpath</code>在windows中是<em>dir\dir</em>，在Linux中是<em>dir/dir</em> ,但<code>dir path.split(os.sep)</code>的调用可以准确无误地将与平台相关的目录名称分解为各个部分。在Windows中你通常可以在列出待打开的文件名时用斜杠代替反斜杠，但这些可移植的常量允许脚本在目录处理部分的代码不依赖平台。</p>
+<p>另外请注意，<code>os.linesep</code>在这里使用的是\r\n,这个符号转义码在Windows下代表回车加换行惯例，在使用Python处理文本时一般不会注意这一点。</p>
+<h2 id="常见os-path工具"><a href="#常见os-path工具" class="headerlink" title="常见os.path工具"></a>常见os.path工具</h2><p>内嵌的<code>os.path</code>模块提供了一整套目录处理相关工具。举例来说，它提供的可移植函数可以用来检查文件类型（<code>isdir</code>,<code>isfile</code>等）、测试文件是否存在（<code>exists</code>)，以及通过文件名来获取文件的大小（<code>getsize</code>）:</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line">os.path.isdir(<span class="string">r'C:\Users'</span>), os.path.isfile(<span class="string">r'C:\Users'</span>)</span><br><span class="line">(<span class="literal">True</span>, <span class="literal">False</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">os.path.isdir(<span class="string">r'C:\config.sys'</span>), os.path.isfile(<span class="string">r'C:\config.sys'</span>)</span><br><span class="line">(<span class="literal">False</span>, <span class="literal">True</span>) </span><br><span class="line"></span><br><span class="line">os.path.isdir(<span class="string">'nonesuch'</span>), os.path.isfile(<span class="string">'nonesuch'</span>)</span><br><span class="line">(<span class="literal">False</span>, <span class="literal">False</span>)</span><br><span class="line"></span><br><span class="line">os.path.exists(<span class="string">r'c\Users\Xie'</span>)</span><br><span class="line"><span class="literal">False</span></span><br><span class="line"></span><br><span class="line">os.path.exists(<span class="string">r'c:\Users\Default'</span>)</span><br><span class="line"><span class="literal">True</span></span><br><span class="line"></span><br><span class="line">os.path.getsize(<span class="string">r'C:\autoexec.bat'</span>)</span><br><span class="line"><span class="number">24</span></span><br></pre></td></tr></table></figure>
+<p><code>os.path.isdir</code>和<code>os.path.isfile</code>调用可以告诉我们文件名是目录还是一个简单的文件。如果文件不存在，二者都会返回<em>False</em>(也就是说不存在即暗示否定的意思)。我们还能得到用于分割和合并目录路径字符串的函数，它们会自动应用Python所在底层平台的目录命名惯例：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line">os.path.split(<span class="string">r'C:\temp\data.txt'</span>)</span><br><span class="line">(<span class="string">'C:\\temp'</span>, <span class="string">'data.txt'</span>)</span><br><span class="line"></span><br><span class="line">os.path.join(<span class="string">r'C:\temp'</span>,<span class="string">'output.txt'</span>)</span><br><span class="line">(<span class="string">'C:\\temp\\output.txt'</span>)</span><br><span class="line"></span><br><span class="line">name = <span class="string">r'C:\temp\data.txt'</span>		<span class="comment"># windows路径风格</span></span><br><span class="line">os.path.dirname(name), os.path.basename(name)</span><br><span class="line">(<span class="string">'C:\temp'</span>, <span class="string">'data.txt'</span>)</span><br><span class="line"></span><br><span class="line">name = <span class="string">'/home/xth/temp/data.txt'</span>	<span class="comment"># Unix风格路径</span></span><br><span class="line">os.path.dirname(name), os.path.basename(name)</span><br><span class="line">(<span class="string">'/home/xth/temp'</span>, <span class="string">'data.txt'</span>)</span><br><span class="line"></span><br><span class="line">os.path.splitext(<span class="string">r'C:\example\python\demo.py'</span>)</span><br><span class="line">(<span class="string">'C:\\example\\python\\demo'</span>, <span class="string">'.py'</span>)</span><br></pre></td></tr></table></figure>
+<p><code>os.path.split</code>将文件名从它的目录路径中剥离出来，<code>os.path.join</code>则将它们合并起来，这两个调用都是可移植的，都自动采用所在平台的路径命名惯例。为了简便起见<code>dirname</code>和<code>basename</code>则调用返回了<code>split</code>返回结果的前两项，<code>splitext</code>则剥离了文件的扩展名。微妙之处在于，使用字符串的<code>split</code>和<code>join</code>方法几乎可以起到<code>os.sep</code>相同的作用，只是有细微区别：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os </span><br><span class="line">os.sep</span><br><span class="line"><span class="string">'\\'</span></span><br><span class="line"></span><br><span class="line">pathname = <span class="string">r'C:\example\python\demo.py'</span></span><br><span class="line">os.path.split(pathname)		<span class="comment"># 分割文件和目录</span></span><br><span class="line">(<span class="string">'C:\\example\\python\\'</span>, <span class="string">'demo.py'</span>)</span><br><span class="line">pathname.split(os.sep)		<span class="comment"># 在每个斜杠处做分割</span></span><br><span class="line">(<span class="string">'C'</span>, <span class="string">'example'</span>, <span class="string">'python'</span>, <span class="string">'demo.py'</span>)</span><br><span class="line"></span><br><span class="line">os.sep.join(pathname.split(os.sep))</span><br><span class="line"><span class="string">'C:\\example\\python\\demo.py'</span></span><br><span class="line"></span><br><span class="line">os.path.join(*pathname.split(os.sep))</span><br><span class="line"><span class="string">'C:example\\python\\demo.py'</span></span><br></pre></td></tr></table></figure>
+<p>最后一个<code>join</code>调用要求传入参数（因此用了*），但因为Windows的驱动器句法的关系不插入第一个斜杠；如果这种区别影响到程序，可以转而使用前面的<code>str.join</code>方法。如果你的路径混用了<br>Unix和Windows分隔符，这时<code>normpath</code>调用显得格外好用：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line">mixed = <span class="string">'C:\\temp\\public/files/index.html'</span></span><br><span class="line">os.path.normpath(mixed)</span><br><span class="line"><span class="string">'C:\\temp\\public\\files\\index.html'</span></span><br><span class="line">print(os.path.normpath(<span class="string">r'C\trmp\\sub\.\file,ext'</span>))</span><br><span class="line">C:\temp\sub\file.ext</span><br></pre></td></tr></table></figure>
+<p>这个模块还有<code>abspath</code>调用，他能可移植地返回文件的完整目录路径名。它负责将当前目录添加为前缀以及处理..父目录句法等：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os </span><br><span class="line">os.getcwd()</span><br><span class="line"><span class="string">'C:\\Users'</span></span><br><span class="line"></span><br><span class="line">os.path.abspath(<span class="string">''</span>)			<span class="comment"># 空字符串代表当前工作目录</span></span><br><span class="line"><span class="string">'C:\\Users'</span></span><br><span class="line"></span><br><span class="line">os.path.abspath(<span class="string">'temp'</span>)		<span class="comment"># 扩展为当前工作目录下的完整路径名</span></span><br><span class="line"><span class="string">'C:\\Users\\temp'</span></span><br><span class="line"></span><br><span class="line">os.path.abspath(<span class="string">r'demo\dev'</span>)	<span class="comment">#相对于当前工作目录的不完整路径</span></span><br><span class="line"><span class="string">'C:\\Users\\demo\\dev'</span></span><br><span class="line"></span><br><span class="line">os.path.abspath(<span class="string">'.'</span>)			<span class="comment"># 扩展相对路径句法</span></span><br><span class="line"><span class="string">'C:\\Users'</span></span><br><span class="line"></span><br><span class="line">os.path.abspath(<span class="string">'..'</span>)</span><br><span class="line"><span class="string">'C:\\'</span></span><br><span class="line"></span><br><span class="line">os.path.abspath(<span class="string">r'..\examples'</span>)</span><br><span class="line"><span class="string">'C:\\examples'</span></span><br><span class="line"></span><br><span class="line">os.path.abspath(<span class="string">r'C:\Python\examples'</span>)		<span class="comment"># 绝对路径不变</span></span><br><span class="line"><span class="string">'C:\\Python\\examples'</span></span><br><span class="line"></span><br><span class="line">os.path.abspath(<span class="string">r'C:\temp\spam.txt'</span>)</span><br><span class="line"><span class="string">'C:\\temp\\spam.txt'</span></span><br></pre></td></tr></table></figure>
+<p>在给出完整路径之前，文件名采用基于当前工作目录的相对路径，因此如果你想了解用户展示文件真正存储于哪个目录下，可以使用<code>os.path.abspath</code>函数来帮忙。</p>
+<h2 id="在脚本里运行shell命令"><a href="#在脚本里运行shell命令" class="headerlink" title="　在脚本里运行shell命令"></a>　在脚本里运行shell命令</h2><p>os模块也是使得我们可以从Python脚本运行Shell命令。这个概念与流等密切相关，以下两个os函数使得脚本可以运行你在控制窗口输入的任意命令行：</p>
+<p><code>os.system</code></p>
+<p>​    在Python脚本中运行shell命令。</p>
+<p><code>os.popen</code></p>
+<p>​    运行shell命令并与其输入或输出流相连接。</p>
+<hr>
+<p><em>另外，相对较新的<code>subprocess</code></em>模块可以对生成的shell命令流进行精细控制，而且可以代替(会增加代码复杂性)。</p>
+<h3 id="运行shell命令"><a href="#运行shell命令" class="headerlink" title="运行shell命令"></a>运行shell命令</h3><p>虽然Python的命令行脚本有时被误解为“shell工具”，由于os模块的system和popen调用使得Python脚本可以运行底层系统shell可理解的任意命令，物流他们是用Python还是其他语言编写的。例如下面这段代码，他在shell提示符后运行了刚才演示的那两条DOS shell命令：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line">os.system.(<span class="string">'dir /B'</span>)</span><br><span class="line"></span><br><span class="line">os.system(<span class="string">'type helloworld.py'</span>)</span><br></pre></td></tr></table></figure>
+<h3 id="与shell命令进行通信"><a href="#与shell命令进行通信" class="headerlink" title="　与shell命令进行通信"></a>　与shell命令进行通信</h3><p><code>os.system</code>函数只是简单地执行一条shell命令，<code>os.popen</code>还会连接到这个命令的标准输入\输出流；我们将得到一个类似文件的对象，他默认与命令的输出相连（向<strong>popen</strong>传入<strong>w</strong>模式标识符则与命令的输入流相连）。借助这个对象可以读取<code>popen</code>所派生的命令的输出结果，从而在输入命令行之后拦截那些在正常情况下将出现在控制窗口中的文字：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os </span><br><span class="line">open(<span class="string">'helloshell.py'</span>).read()</span><br><span class="line"><span class="string">"# a Python program\nprint('The meaning of Life')\n"</span></span><br><span class="line"></span><br><span class="line">text = os.popen(<span class="string">'type helloshell.py'</span>).read()</span><br><span class="line">listing = os.popen(<span class="string">'dir /B'</span>).readlinesd()</span><br><span class="line">print(listing)</span><br><span class="line">[<span class="string">'helloshell.py\n'</span>, <span class="string">'more.py'</span>, <span class="string">'more.pyc'</span>, <span class="string">'spam.txt'</span>, <span class="string">'__init__.py'</span>]</span><br></pre></td></tr></table></figure>
+<p>这里，我们先用常用的方法来抓取文件内容，然后将文件内容作为shell中<code>type</code>命令的输出。通过阅读<code>dir</code>命令的输出结果，我们可以获取目录中文件的列表，进而对这个列表进行迭代处理。</p>
+<p>到目前为止，我们运行了一些基本dos命令。因为这些调用可以运行我们能够在shell提示符输入任何命令，所以它们也可以用来启动其他Python脚本：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os </span><br><span class="line">os.system(<span class="string">'python helloshell.py'</span>)			<span class="comment"># 运行一个Python程序</span></span><br><span class="line"></span><br><span class="line">output = os.popen(<span class="string">'python helloshell.py'</span>).read()</span><br></pre></td></tr></table></figure>
+<p>在这些例子里，发送到system和popen的命令行字符串都是硬编码的，然而并不是说Python程序不能在运行时用普通的字符串运算（+，%等）来构建这种字符串。因为可以以这种方式动态地来创建并运行命令，所以<code>system</code>和<code>popen</code>将Pyrhon脚本变成了用于启动和组织其他程序灵活而可移植的工具。</p>
+<h3 id="替代方法：subprocess模块"><a href="#替代方法：subprocess模块" class="headerlink" title="　替代方法：subprocess模块"></a>　替代方法：subprocess模块</h3><p>一般来说，<code>subprocess</code>模块要求更多的代码，但对流的连接和使用提供跟完善的控制。当流的链接方式更为复杂时，显得格外有用。</p>
+<p>例如，这个新模块的<code>call</code>函数在运行简单的shell命令方面和<code>os.system</code>差不多，（运行<code>type</code>这种Windows下的shell命令是需要额外的协议，不过像“Python”这种普通的可执行程序是不需要的）：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> subprocess</span><br><span class="line">subprocess.call(<span class="string">'python helloshell.py'</span>)			<span class="comment">#　类似os.system</span></span><br><span class="line"></span><br><span class="line">subprocess.call(<span class="string">'cmd /C "type helloshell.py"'</span>)	 <span class="comment">#	内建shell命令</span></span><br><span class="line"></span><br><span class="line">subprocess.call(<span class="string">'type helloshell.py'</span>, shell=<span class="literal">True</span>)	<span class="comment"># 相当于内建函数</span></span><br></pre></td></tr></table></figure>
+<hr>
+<p><em>这里请注意，最后一行代码中的<code>shell = True</code>。这个用法比较微妙，而且与平台相关。</em></p>
+<ul>
+<li>在Windows下，需要将<code>shell = True</code>的参数传给<code>call</code>等<code>subprocess</code>工具和<code>popen</code>工具，这样才能够运行shell内建命令。像<code>type</code>之类的Windows命令要求装有额外协议，但像“Python”这种普通程序不需要。</li>
+<li>在类Unix平台上，当<code>shell = False</code>（默认值）时，程序命令行直接由<code>os.execvp</code>运行，如果参数是True，那么这个程序将转由shell运行，而且你还可以借助其他参数来指定shell。</li>
+</ul>
+<p>除了模拟<code>os.system</code>,我们可以用类似方式让这个模块模拟前面用到的<code>os.popen</code>函数，在脚本中运行shell命令并获取其标准输出文本。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> subprocess</span><br><span class="line">pipe = subprocess.Popen(<span class="string">'python helloshell.py'</span>, stdout=subprocess.PIPE)</span><br><span class="line">pipe.communicate()</span><br><span class="line">(<span class="string">b'The Meaning of Life\r\n'</span>, <span class="literal">None</span>)</span><br><span class="line">pipe.returncode</span><br><span class="line"><span class="number">0</span></span><br></pre></td></tr></table></figure>
+<p>这里，我们将<code>stdout</code>流与管道连接，然后用<code>communicate</code>来运行命令，并接收它的标准输出流和错误输出流文本；运行完成后，命令的退出状态可作为属性来查看。或者，我们可以用其他接口直接读取命令的标准输出流，然后等待命令退出（并返回退出状态）：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> subprocess</span><br><span class="line">pipe = subprocess.Popen(<span class="string">'python helloshell.py'</span>, stdout=subprocess.PIPE)</span><br><span class="line">pipe.communicate()</span><br><span class="line">(<span class="string">b'The Meaning of Life\r\n'</span>, <span class="literal">None</span>)</span><br><span class="line">pipe.wait()</span><br><span class="line"><span class="number">0</span></span><br></pre></td></tr></table></figure>
+<p>实际上，<code>os.popen</code>函数和<code>subprocess.Popen</code>对象之间存在直接的映射关系：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> subprocess <span class="keyword">import</span> Popen, PIPE</span><br><span class="line">Popen(<span class="string">'python helloshell.py'</span>, stdout=PIPE).communicate()[<span class="number">0</span>]</span><br><span class="line"><span class="string">b'The Meaning of Life\r\n'</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> os </span><br><span class="line">os.popen(<span class="string">'python helloshell.py'</span>).read()</span><br><span class="line"><span class="string">'The Meaning of Life\n'</span></span><br></pre></td></tr></table></figure>
+<p><code>subprocess</code>在这些简单的示例中显得多余。但我们需要更灵活地控制其他流时，它的作用就开始显现出来了。实际上，由于它允许我们以类似的方式处理命令的错误流和输出流，在Python3.X中<code>subprocess</code>取代了原先的<code>os.popen2</code>、<code>os.popen3</code>和<code>os.popen4</code>函数，他们都曾出现在Python2.X中，现在都只是<code>subprocess</code>对象接口的应用实例。因为这个模块更高级的应用实例涉及到标准流，</p>
+<h3 id="shell的局限"><a href="#shell的局限" class="headerlink" title="　shell的局限"></a>　shell的局限</h3><p><code>system</code>和<code>popen</code>的两大局限。首先，尽管两个函数本身具有非常好的可移植性，但其真正分可移植程度决定于所运行的命令。例如前面那个DOS的<code>dir</code>和<code>type</code>shell命令的示例只在windows下有效，如果要在类Unix系统下运行，那么必须改为<code>ls</code>和<code>cat</code>命令。</p>
+<p>其次，像这样将Python文件作为程序运行与导入程序文件再调用其中的函数是截然不同的做法，而且一般来说前者要比后者慢得多。调用<code>os.system</code>和<code>os.popen</code>时，他们必须在你的操作系统中启动完全不同的独立程序，当程序文件作为模块导入时，Python解释器只是简单地在同一个进程里加载和运行文件的代码，借此生成模板对象。整个过程中不会派生出其他程序。</p>
+<p>将系统作为独立的程序来构建也有许多好处，他们允许程序间往返传递信息，但在很多情况下，导入模块构建系统更加快捷并且直接。</p>
+<p>如果打算用这些函数，还应当记住<code>os.system</code>函数通常会阻塞（其实是暂停）它的调用者，直到所启动的命令行程序退出。在Linux和类Unix平台上，所启动的命令行一般可独立于调用者，并与之并行地运行，只需要在命令行代码末尾追加上shell后台运算符<code>&amp;</code>即可：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os </span><br><span class="line">os.system(<span class="string">"python program.py arg arg &amp;"</span>)</span><br></pre></td></tr></table></figure>
+<p>在windows下，用dos的<code>start</code>命令通常也能使命令并行启动：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os </span><br><span class="line">os.system(<span class="string">"start program.py arg arg"</span>)</span><br></pre></td></tr></table></figure>
+<p>实际上，新近的Python版本中加入了<code>os.startfile</code>函数，这个函数会打开一个文件，无论文件类型是什么，就像鼠标单击一样：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os </span><br><span class="line">os.startfile(<span class="string">"webpage.html"</span>)		<span class="comment"># 在你的浏览器中打开文件</span></span><br><span class="line">os.startfile(<span class="string">"document.doc"</span>)		<span class="comment"># 在Microsoft Word 中打开文件</span></span><br><span class="line">os.startfile(<span class="string">"myscript.py"</span>)			<span class="comment"># 用python运行文件</span></span><br></pre></td></tr></table></figure>
+<p><code>os.popen</code>函数一般不会阻塞其调用者，但无论在Windows还是Linux下，如果管道对象在所启动的程序退出前关闭（如进行垃圾回收时），或是管道一次性完成读取（如<code>read()</code>方法），那么仍然有可能阻塞调用者。Unix分<code>os.fork/exec</code>调用和Windows的<code>os.spawnv</code>调用有人可用来不受阻塞困扰地调用并行运行程序。</p>
+<p>因为<code>os</code>模块的<code>system</code>和<code>popen</code>调用，以及<code>subprocess</code>模块也可归为程序启动、流量定向和进程间通信手段。</p>
+<h3 id="os模块到处的其他工具"><a href="#os模块到处的其他工具" class="headerlink" title="os模块到处的其他工具"></a>os模块到处的其他工具</h3><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>工具名</th>
+<th>功能介绍</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>os.environ</code></td>
+<td>获取和设置shell环境变量</td>
+</tr>
+<tr>
+<td><code>os.fork</code></td>
+<td>在类Unix系统下派生新的子进程</td>
+</tr>
+<tr>
+<td><code>os.pipe</code></td>
+<td>负责程序间通信</td>
+</tr>
+<tr>
+<td><code>os.execlp</code></td>
+<td>启动新程序</td>
+</tr>
+<tr>
+<td><code>os.spawnv</code></td>
+<td>启动带有底层控制的新程序</td>
+</tr>
+<tr>
+<td><code>os.open</code></td>
+<td>打开基于底层描述符的文件</td>
+</tr>
+<tr>
+<td><code>os.mkdir</code></td>
+<td>创建新目录</td>
+</tr>
+<tr>
+<td><code>os.mkfifo</code></td>
+<td>创建新的命名管道</td>
+</tr>
+<tr>
+<td><code>os.stat</code></td>
+<td>获取文件底层信息</td>
+</tr>
+<tr>
+<td><code>os.remove</code></td>
+<td>根据文件名删除文件</td>
+</tr>
+<tr>
+<td><code>os.walk</code></td>
+<td>将函数或循环应用于整个目录树的各个部分</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>诸如此类还有很多，特别需要注意的一点，<code>os</code>模块提供了一套文件处理调用，如<code>open</code>、<code>read</code>和<code>write</code>，但所有这些涉及底层的文件访问，它们与用Python内建<code>open</code>函数创建的<code>stdio</code>文件对象截然不同。通常情况下，除了非常特殊的文件处理需求（比如排他性访问文件锁打开文件），你应当使用内建的<code>open</code>函数，而不是<code>os</code>模块，来处理所有文件。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>Goooo
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.sysctl.me/2018/08/20/Program-design/Python/OS-Module/" title="介绍OS模块（Python）">https://www.sysctl.me/2018/08/20/Program-design/Python/OS-Module/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/en" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/OS/" rel="tag"># OS</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/08/20/Program-design/Python/shell-environment-variables(Python)/" rel="prev" title="shell环境变量（Python）">
+      <i class="fa fa-chevron-left"></i> shell环境变量（Python）
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/08/22/Program-design/Python/sys-Module/" rel="next" title="sys模块介绍（Python）">
+      sys模块介绍（Python） <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#介绍Python-OS模块"><span class="nav-number">1.</span> <span class="nav-text">介绍Python OS模块</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#os模块中的工具"><span class="nav-number">1.1.</span> <span class="nav-text">os模块中的工具</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#管理工具"><span class="nav-number">1.2.</span> <span class="nav-text">管理工具</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#可移植的常量"><span class="nav-number">1.3.</span> <span class="nav-text">可移植的常量</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#常见os-path工具"><span class="nav-number">1.4.</span> <span class="nav-text">常见os.path工具</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#在脚本里运行shell命令"><span class="nav-number">1.5.</span> <span class="nav-text">　在脚本里运行shell命令</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#运行shell命令"><span class="nav-number">1.5.1.</span> <span class="nav-text">运行shell命令</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#与shell命令进行通信"><span class="nav-number">1.5.2.</span> <span class="nav-text">　与shell命令进行通信</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#替代方法：subprocess模块"><span class="nav-number">1.5.3.</span> <span class="nav-text">　替代方法：subprocess模块</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#shell的局限"><span class="nav-number">1.5.4.</span> <span class="nav-text">　shell的局限</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#os模块到处的其他工具"><span class="nav-number">1.5.5.</span> <span class="nav-text">os模块到处的其他工具</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Goooo"
+      src="/images/img.png">
+  <p class="site-author-name" itemprop="name">Goooo</p>
+  <div class="site-description" itemprop="description">一条啥也不会点废鱼</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">109</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">22</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">71</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/xth0331" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;xth0331" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:xietianhao0331@gmail.com" title="E-Mail → mailto:xietianhao0331@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/en" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+        
+        <script type="text/javascript" charset="utf-8" src="/js/tagcloud.js"></script>
+        <script type="text/javascript" charset="utf-8" src="/js/tagcanvas.js"></script>
+        <div class="widget-wrap">
+            <h3 class="widget-title">标签们</h3>
+            <div id="myCanvasContainer" class="widget tagcloud">
+                <canvas width="250" height="250" id="resCanvas" style="width=100%">
+                    <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ansible/" rel="tag">Ansible</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Backup/" rel="tag">Backup</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Bond/" rel="tag">Bond</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CPU/" rel="tag">CPU</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ceph/" rel="tag">Ceph</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cobbler/" rel="tag">Cobbler</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Coffee/" rel="tag">Coffee</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Corosync/" rel="tag">Corosync</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cyclic-invariant/" rel="tag">Cyclic invariant</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Docker/" rel="tag">Docker</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Effectiveness/" rel="tag">Effectiveness</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Exhaustion/" rel="tag">Exhaustion</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Filesystem/" rel="tag">Filesystem</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HAProxy/" rel="tag">HAProxy</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hardware/" rel="tag">Hardware</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Https/" rel="tag">Https</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ICMP/" rel="tag">ICMP</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JDK/" rel="tag">JDK</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Jenkins/" rel="tag">Jenkins</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JunOS/" rel="tag">JunOS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/KEEPALIVED/" rel="tag">KEEPALIVED</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Keepalived/" rel="tag">Keepalived</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/" rel="tag">Linux</a><span class="tag-list-count">19</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Log/" rel="tag">Log</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Markdown/" rel="tag">Markdown</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Modular-Programming/" rel="tag">Modular Programming</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Monitoring/" rel="tag">Monitoring</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Netconf/" rel="tag">Netconf</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Network/" rel="tag">Network</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Networking/" rel="tag">Networking</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Nginx/" rel="tag">Nginx</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OS/" rel="tag">OS</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OpenStack/" rel="tag">OpenStack</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Package-Manager/" rel="tag">Package Manager</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Partition/" rel="tag">Partition</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Programming/" rel="tag">Programming</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Python/" rel="tag">Python</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RAM/" rel="tag">RAM</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RHCS/" rel="tag">RHCS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RPM/" rel="tag">RPM</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Recursion/" rel="tag">Recursion</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Recursive/" rel="tag">Recursive</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Redirect/" rel="tag">Redirect</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Route/" rel="tag">Route</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SSH/" rel="tag">SSH</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Storage/" rel="tag">Storage</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Storage-and-Filesystem/" rel="tag">Storage and Filesystem</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Swap/" rel="tag">Swap</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Sys/" rel="tag">Sys</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Systemd/" rel="tag">Systemd</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Terminal/" rel="tag">Terminal</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Terraform/" rel="tag">Terraform</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Tools/" rel="tag">Tools</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ubuntu/" rel="tag">Ubuntu</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Veeam/" rel="tag">Veeam</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vim/" rel="tag">Vim</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Virtualization/" rel="tag">Virtualization</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vmware/" rel="tag">Vmware</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vsphere/" rel="tag">Vsphere</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Windows/" rel="tag">Windows</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Yum/" rel="tag">Yum</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/apple/" rel="tag">apple</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/elasticsearch/" rel="tag">elasticsearch</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/iteration/" rel="tag">iteration</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/logs/" rel="tag">logs</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/oop/" rel="tag">oop</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tools/" rel="tag">tools</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%88%86%E6%B2%BB/" rel="tag">分治</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E5%8E%8B%E7%BC%A9/" rel="tag">数据压缩</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%84%99%E8%A7%86%E9%93%BE/" rel="tag">鄙视链</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%87%8D%E5%A4%8D%E6%95%B0%E6%8D%AE%E5%88%A0%E9%99%A4/" rel="tag">重复数据删除</a><span class="tag-list-count">1</span></li></ul>
+                </canvas>
+            </div>
+        </div>
+        
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Goooo</span>
+</div>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.7.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://www-sysctl-me-1.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "https://www.sysctl.me/2018/08/20/Program-design/Python/OS-Module/";
+    this.page.identifier = "2018/08/20/Program-design/Python/OS-Module/";
+    this.page.title = "介绍OS模块（Python）";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://www-sysctl-me-1.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/koharu.model.json"},"display":{"position":"left","width":300,"height":600},"mobile":{"show":false},"react":{"opacity":0.7}});</script></body>
+</html>

@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://www.sysctl.me').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","width":320,"display":"post","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="vSphere Distributed Switch 架构vSphere Distributed Switch 为与交换机相关的所有交换机的网络连接配置提供集中化管理和监控。可以在vCenterServer 系统上设置Distributed Switch，其设置将传播与该交换机关联的所有主机。 vSphere Distrubuted Switch 架构  vSphere 中的网络交换机由两个逻辑部">
+<meta property="og:type" content="article">
+<meta property="og:title" content="vSphere 网络连接（分布式交换机）">
+<meta property="og:url" content="https://www.sysctl.me/2018/06/16/vSphereNetwork2/index.html">
+<meta property="og:site_name" content="Sysctl">
+<meta property="og:description" content="vSphere Distributed Switch 架构vSphere Distributed Switch 为与交换机相关的所有交换机的网络连接配置提供集中化管理和监控。可以在vCenterServer 系统上设置Distributed Switch，其设置将传播与该交换机关联的所有主机。 vSphere Distrubuted Switch 架构  vSphere 中的网络交换机由两个逻辑部">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/eh4h6j4a7h.png?imageslim">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/JiHH88f8IJ.png?imageslim">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/7Dba7j6c95.png?imageslim">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/JcA3BhdCDk.png?imageslim">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/kJ1el7FkjF.png?imageslim">
+<meta property="article:published_time" content="2018-06-16T02:30:04.000Z">
+<meta property="article:modified_time" content="2020-01-22T14:40:13.699Z">
+<meta property="article:author" content="Goooo">
+<meta property="article:tag" content="Networking">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog-image.nos-eastchina1.126.net/eh4h6j4a7h.png?imageslim">
+
+<link rel="canonical" href="https://www.sysctl.me/2018/06/16/vSphereNetwork2/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>vSphere 网络连接（分布式交换机） | Sysctl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Sysctl" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Sysctl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">观察指南，博客</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="搜索..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/xth0331" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.sysctl.me/2018/06/16/vSphereNetwork2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/img.png">
+      <meta itemprop="name" content="Goooo">
+      <meta itemprop="description" content="一条啥也不会点废鱼">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Sysctl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          vSphere 网络连接（分布式交换机）
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-06-16 10:30:04" itemprop="dateCreated datePublished" datetime="2018-06-16T10:30:04+08:00">2018-06-16</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-01-22 22:40:13" itemprop="dateModified" datetime="2020-01-22T22:40:13+08:00">2020-01-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Vmware/" itemprop="url" rel="index">
+                    <span itemprop="name">Vmware</span>
+                  </a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2018/06/16/vSphereNetwork2/#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2018/06/16/vSphereNetwork2/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="vSphere-Distributed-Switch-架构"><a href="#vSphere-Distributed-Switch-架构" class="headerlink" title="vSphere Distributed Switch 架构"></a>vSphere Distributed Switch 架构</h1><p>vSphere Distributed Switch 为与交换机相关的所有交换机的网络连接配置提供集中化管理和监控。可以在vCenterServer 系统上设置Distributed Switch，其设置将传播与该交换机关联的所有主机。</p>
+<p><strong>vSphere Distrubuted Switch 架构</strong></p>
+<p><img src="https://blog-image.nos-eastchina1.126.net/eh4h6j4a7h.png?imageslim" alt="mark"></p>
+<p>vSphere 中的网络交换机由两个逻辑部分组成：数据面板和管理面板。数据面板可实现软件包交换、筛选和标记等。</p>
+<p>管理面板是用于配置数据面板功能和控制结构。vSphere 标准交换机包含数据面板和管理面板，可以单独配置和维护每个标准交换机。</p>
+<p>vSphere Distributed Switch 的数据面板和管理面板相互分离，Distributed Switch 的管理功能主流在vCenter Server系统上， 可以在数据中心级别管理环境的网络配置， 数据面板则保留在与Distributed Switch关联的每台主机本地，Distributed Switch的数据面板部分称为主机代理交换机，在vCenter Server（管理面板）上创建的网络配置将被自动乡下推送至所有主机代理交换机（数据面板）。</p>
+<p>vSphere Distributed Switch 引入了连个抽象概念可用于为物理网卡、虚拟机和VMkernel 服务创建一致的网络配置。</p>
+<a id="more"></a>
+<p><strong>上行链路端口组</strong></p>
+<p>上行链路端口组或dvuplink端口组在创建Distributed Switch期间进行定义，可以具有一个或多个上行链路。上行链路是可用于配置主机物理连接以及故障切换的负载平衡策略的模板。您可以将主机的物理网卡映射到Distributed Switch 上的上行链路。在主机级别，每个物理网卡将连接到特定ID的上行链路端口。您可以对上行链路设置故障切换和负载平衡策略，这些策略将自动传播到主机代理交换机或数据面板。因此，您可以为与Distributed Switch 关联的所有主机的物理网卡应用一直的故障切换和负载平衡配置。</p>
+<p><strong>分布式端口组</strong></p>
+<p>分布式端口组可向虚拟机提供网络连接并供VMkernel流量使用。 使用对当前数据中心唯一的网络标签来标识每个分布式端口组。可以在分布式端口组上配置网卡成组、故障切换、负载平衡、VLAN、安全、流量调整和其他策略。连接到分布式端口组的虚拟端口为该分布式端口组配置的相同属性。与上行链路端口组一样，在vCenter Server（管理面板） 上为分布式端口组设置和配置将通过主机代理交换机（数据面板）自动传播到Distributed Switch 上的所有主机。因此，可以配置一组虚拟机以共享相同的网络配置，方法就是讲虚拟机与同一分布式端口组相关联。</p>
+<p>例如，假设在数据中心创建一个vSphere Distributed Switch ， 然后将两个主机与其相关联。为上行链路端口组配置了三个上行链路，然后将每个主机的一个物理网卡连接到一个上行链路，通过此方法，每个上行链路可将每个主机的两个物理网卡映射到其中，例如上行链路1使用主机1和主机2 的vmnic0进行配置。接下来，可以为虚拟机网络和VMkernel服务创建生产和VMkernel网络分布式端口组，此外还会分别在主机1和主机2上创建生产和VMkernel网络段端口组的标识， 为生产和VMkernel网络端口组设置的所有策略传播到主机1 和主机2上的表示。</p>
+<p><strong>vSphere Distributed Switch数据流</strong></p>
+<p>从虚拟机和VMkernel适配器向下传递到物理网络的数据流取决于为分布式端口组设置的网卡成组和负载平衡策略。</p>
+<p>数据流还取决于Distributed Switch上的端口分配。</p>
+<p><strong>vSphere DIstributed Switch 上的网卡组成和端口分配</strong></p>
+<p><img src="https://blog-image.nos-eastchina1.126.net/JiHH88f8IJ.png?imageslim" alt="mark"></p>
+<p>例如，假设创建分别包含3个和2个分布式端口的虚拟机网络和VMkernel网络分布式端口组。Distributed Switch 会按ID从0到4的顺序分配端口，按顺序与创建分布式端口组的顺序相同，然后将主机1和主机2 与Distributed Switch关联。Distrubuted Swicth 会以为主机上的每个物理网卡分配端口，端口将按添加主机的顺序从5继续编号。要在每个主机上提供网络连接，请将vmnic0映射到上行链路1、将vmnic1映射到上行链路2、将vmnic2映射到上行链路3。</p>
+<p>要向虚拟机提供连接并供VMkernel流量使用， 可以为虚拟机网络端口组和VMkernel网络端口组配置成组和故障切换。上行链路1和上行链路2处理虚拟机网络端口组的流量，而上行链路3处理VMkernel网络端口组流量。</p>
+<p><strong>主机代理交换机上的数据包流量</strong>  </p>
+<p><img src="https://blog-image.nos-eastchina1.126.net/7Dba7j6c95.png?imageslim" alt="mark"></p>
+<p>在主机端，虚拟机和VMkernel服务的数据包流量将通过特定端口传递到物理网络。例如，从主机1上的VM1发送的数据包将先到达虚拟机网络分布式端口组上的端口0。由于上行链路1和上行链路2处理虚拟机网络端口组的流量，数据包可以通过上行链路端口5或上行链路端口6继续传递，如果数据包通过上行链路端口5，则将传递vmnic0；如果数据包通过上行链路端口0，则将继续传递到vmnic1。</p>
+<h2 id="创建vSphere-Distributed-Switch"><a href="#创建vSphere-Distributed-Switch" class="headerlink" title="创建vSphere Distributed Switch"></a>创建vSphere Distributed Switch</h2><p>在数据中心创建 vSphere Distributed Switch，以便在一个中央位置同时处理多个主机的网络配置。  </p>
+<p><strong>过程</strong></p>
+<ol>
+<li><p>在vSphere Web Client中导航到数据中心。</p>
+</li>
+<li><p>在导航器中， 右键单击<strong>数据中心</strong>， 选择<strong>Distributed Switch</strong>  &gt; <strong>新建Distributed Switch</strong>。</p>
+</li>
+<li><p>在名称和位置页面上， 键入新的名称， 或接收生成的名称， 然后单击<strong>下一步</strong>。</p>
+</li>
+<li><p>在版本选择页面上， 祖安泽Distributed Switch 版本， 然后单击<strong>下一步</strong>。</p>
+</li>
+<li><p>在编辑设置页面上， 配置Distributed Switch 设置。</p>
+<ol>
+<li><p>使用箭头按钮选择<strong>上行链路数</strong>。</p>
+<p>上行链路端口将Distributed Switch 连接到关联主机上的物理网卡。上行链路端口数是允许每台主机与Distributed Switch 建立最大物理连接数。</p>
+</li>
+<li><p>使用下拉菜单启用或禁用<strong>Network I/O Control</strong>。</p>
+<p>利用Network I/O Control 可以根据部署要求设定特定类型基础架构网络资源以及工作负载的访问优先级。Network I/O Control 会持续监控整个网络的I/O负载，并动态地分配可用资源。</p>
+</li>
+<li><p>选中<strong>创建默认端口组</strong>复选框使用默认设置为该交换机创建新的分布式端口组。</p>
+</li>
+<li><p>（可选）要创建默认的分布式端口组，可以在端口组名称键入端口组名称，或接收生成的名称。</p>
+</li>
+<li><p><strong>下一步</strong>。</p>
+</li>
+</ol>
+</li>
+<li><p>在即将完成页面查看选择的设置， 单击<strong>完成</strong>。</p>
+<p>使用<strong>上一步</strong>可编辑之前的配置。</p>
+</li>
+</ol>
+<h3 id="将vSphere-Distributed-Switch升级到更高版本"><a href="#将vSphere-Distributed-Switch升级到更高版本" class="headerlink" title="将vSphere Distributed Switch升级到更高版本"></a>将vSphere Distributed Switch升级到更高版本</h3><p>可以将vSphere Distributed Switch5.x以上版本升级到可用的更高版本。</p>
+<p>升级的过程是一个非破坏性的操作，不会造成停机。</p>
+<p>要能够在升级失败时还原虚拟机和VMkernel适配器的连接，请备份Distributed Switch。</p>
+<p>过程</p>
+<ol>
+<li><p>在vSphere Web Client 中导航到Distributed Switch。</p>
+</li>
+<li><p>邮件单击Distributed Switch， 然后选择<strong>升级</strong>&gt; <strong>升级Distributed Switch</strong>。</p>
+</li>
+<li><p>选择要将交换机升级到的版本， 然后<strong>下一步</strong>。</p>
+</li>
+<li><p>检查主机兼容性， 然后单击<strong>下一步</strong>。</p>
+<p>连接到该Distributed Switch 的一些ESXI 实例可能与选定的目标版本不兼容，进行升级或移除不兼容的主机，或者选择其他版本。</p>
+</li>
+<li><p>完成升级配置然后单击<strong>完成</strong>。</p>
+<ol>
+<li>查看升级设置。</li>
+<li>如果从vSphere Distributed Switch5.1进行升级， 请计划转换为增强型LACP支持。</li>
+<li>如果从vSphere Distributed Switch 5.1及更高版本进行升级，请计划转换为Network I/O Control 版本3。</li>
+</ol>
+</li>
+</ol>
+<h3 id="编辑-vSphere-Distributed-Switch-常规和高级设置"><a href="#编辑-vSphere-Distributed-Switch-常规和高级设置" class="headerlink" title="编辑 vSphere Distributed Switch 常规和高级设置"></a>编辑 vSphere Distributed Switch 常规和高级设置</h3><p>vSphere Distributed Switch 的常规设置包括交换机名称和上行链路数量。Distributed Switch 的高级设置包括 Cisco 发现协议和交换机的最大 MTU。 </p>
+<p><strong>过程</strong></p>
+<ol>
+<li>在 vSphere Web Client 中，导航到 Distributed Switch。</li>
+<li>在<strong>配置</strong>选项卡上，展开<strong>设置</strong>并选择<strong>属性</strong>。</li>
+<li>单击<strong>编辑</strong>。</li>
+<li>单击<strong>常规</strong>以编辑 vSphere Distributed Switch 设置。</li>
+<li>单击高级编辑 vSphere Distributed Switch 设置。 </li>
+<li>单击<strong>确定</strong>。</li>
+</ol>
+<h2 id="在-vSphere-Distributed-Switch-上管理多个主机上的网络连接"><a href="#在-vSphere-Distributed-Switch-上管理多个主机上的网络连接" class="headerlink" title="在 vSphere Distributed Switch 上管理多个主机上的网络连接"></a>在 vSphere Distributed Switch 上管理多个主机上的网络连接</h2><p>可以通过将主机添加到交换机并将其网络适配器连接到交换机，在vSphere Distributed Switch 上创建和管理虚拟网络，要在Distributed Switch 的多个主机上创建统一的网络连接配置，可以选择一个主机作为模板，并将其配置应用到其他主机。</p>
+<h3 id="在-vSphere-Distributed-Switch-上管理主机网络的任务"><a href="#在-vSphere-Distributed-Switch-上管理主机网络的任务" class="headerlink" title="在 vSphere Distributed Switch 上管理主机网络的任务"></a>在 vSphere Distributed Switch 上管理主机网络的任务</h3><p>可以为vSphere Distributed Switch 添加新主机、将网络适配器连接到交换机及其从交换机移除主机。在生产环境中， 当您管理Distributed Switch 上的主机时，可能需要保持虚拟机和VMkernel 服务的网络连接有效。</p>
+<p><strong>为vSphere Distributed Switch 添加主机</strong></p>
+<p>在为Distributed Switch 添加到主机之前，应该考虑做好环境准备。</p>
+<ul>
+<li>为虚拟机网络创建分布式端口组</li>
+<li>为VMkernel 服务创建分布式端口组。例如为管理网络、vMotion和Fault Tolerance 创建分布式端口组。</li>
+<li>在Distributed Switch 上为要连接交换机的所有物理网卡配置足够的上行链路。例如如果要连接Distributed Switch 的每个主机都有八个物理网卡，则在Distributed Switch上配置八个上行链路。</li>
+<li>确保为具有特殊要求的服务准备Distributed Switch的配置。 例如，iSCSI 对于连接iSCSI VMkernel适配器的分布式端口组的绑定和故障切换配置具有特使要求。</li>
+</ul>
+<p>可以在vSphere Web Client 中使用<strong>添加和管理主机</strong>向导一次添加多个主机。</p>
+<p><strong>在vSphere Distributed Switch 上管理网络适配器</strong></p>
+<p>为Distributed Switch 添加主机后， 可以将物理网卡连接到交换机上的上行链路、配置虚拟机网络适配器以及管理VMkernel网络。</p>
+<p>如果Distributed Switch 上的部分主机与数据中心的其他主机关联，可以将网络适配器迁移到Distributed Switch ，或者从Distributed Switch中迁移出网络适配器。</p>
+<p>如果迁移虚拟机网络适配器或者VMkernel适配器，应确保目标分布式端口组至少有一个活动的上行链路，并且该链路与主机上的物理网卡连接。另一个方法是同事迁移物理网卡、虚拟机网络适配器和VMkernel 适配器。</p>
+<p>如果迁移物理网卡，至少应使一个网卡处于活动状态，以处理端口组流量， 例如如果vmnic0和vmnic1处理VMNetwork端口组的流量， 则迁移vmnic0，并使vmnic1与该组保持连接。</p>
+<p><strong>从vSphere Distributed Switch 移除主机</strong></p>
+<p>从Distributed Switch 移除主机之前， 必须将使用中的网络适配器迁移到不同的交换机。</p>
+<ul>
+<li>要在不同的Distributed Switch 中添加主机， 可以使用<strong>添加和管理主机</strong>向导将主机上的所有物理适配器一起迁移到新的交换机，然后便可以从当前的Distributed Switch中安全的移除主机。</li>
+<li>要将主机网络迁移到标准交换机，必须分阶段迁移网络适配器。例如，使每个主机上的一个物理网卡与交换机保持连接以保证网络连接有效，即可从 Distributed Switch 移除主机上的物理网卡。接着，将物理网卡连接到标准交换机，并将 VMkernel 适配器和虚拟机网络适配器迁移到交换机。最后，将与 Distributed Switch 保持连接的物理网卡迁移到标准交换机。 </li>
+</ul>
+<h3 id="将主机添加到-vSphere-Distributed-Switch"><a href="#将主机添加到-vSphere-Distributed-Switch" class="headerlink" title="将主机添加到 vSphere Distributed Switch"></a>将主机添加到 vSphere Distributed Switch</h3><p>要使用 vSphere Distributed Switch 管理 vSphere 环境的网络，必须将主机与交换机关联。可以将主机的物理网卡、VMkernel 适配器和虚拟机网络适配器连接到 Distributed Switch。</p>
+<ul>
+<li>验证 Distributed Switch 上有足够的可用上行链路，可以分配给要连接交换机的物理网卡。</li>
+<li>确认在 Distributed Switch 上至少有一个分布式端口组。</li>
+<li>确认分布式端口组的绑定和故障切换策略中已配置了活动上行链路。</li>
+</ul>
+<p>如果为 iSCSI 迁移或创建 VMkernel 适配器，请确认目标分布式端口组的绑定和故障切换策略满足 iSCSI 的要求：</p>
+<ul>
+<li>确认只有一个上行链路处于活动状态，待机列表为空，其余上行链路未被使用。</li>
+<li>确认每个主机只有一个物理网卡分配给活动上行链路。</li>
+</ul>
+<ol>
+<li><p>在 vSphere Web Client 中，导航到 Distributed Switch。</p>
+</li>
+<li><p>从<strong>操作</strong>菜单中，选择<strong>添加和管理主机</strong>。</p>
+</li>
+<li><p>在“选择任务”页面上，选择添加主机，然后单击<strong>下一步</strong>。</p>
+</li>
+<li><p>在“选择主机”页面上，单击新主机，选择数据中心内的主机，单击确定，然后单击<strong>下一步</strong>。</p>
+</li>
+<li><p>在“选择网络适配器任务”页面上，选择配置 Distributed Switch 的网络适配器的任务，然后单击<strong>下一步</strong>。</p>
+</li>
+<li><p>在“管理物理网络适配器”页面上，配置 Distributed Switch 上的物理网卡。</p>
+<ol>
+<li><p>从“其他交换机上/空闲”列表中选择一个物理网卡。</p>
+<p>如果选择已经连接其他交换机的物理网卡，这些物理网卡即迁移到当前的 Distributed Switch 上。</p>
+</li>
+<li><p>单击<strong>分配上行链路</strong>。</p>
+</li>
+<li><p>选择一个上行链路，然后单击<strong>确定</strong>。</p>
+</li>
+</ol>
+<p>为实现网络配置的一致性，可以将每个主机上的一个相同的物理网卡与 Distributed Switch 上的相同的上行链路连接。</p>
+<p>例如，如果要添加两个主机，则将每个主机上的 vmnic1 与 Distributed Switch 上的 Uplink1 连接。</p>
+</li>
+<li><p>单击下一步。</p>
+</li>
+<li><p>在“管理 VMkernel 网络适配器”页面上，配置 VMkernel 适配器。</p>
+<ol>
+<li>选择 VMkernel 适配器并单击分配端口组。</li>
+<li>选择分布式端口组，然后单击确定。</li>
+</ol>
+</li>
+<li><p>查看受影响的服务以及影响的程度。</p>
+<ol>
+<li>如果 iSCSI 受到的影响非常重要或严重，请单击 iSCSI 条目，然后查看“分析详细信息”窗格中所显示的原因。</li>
+<li>排除对 iSCSI 造成的影响之后，请继续进行网络连接配置。</li>
+</ol>
+</li>
+<li><p>单击<strong>下一步</strong>。</p>
+</li>
+<li><p>在“迁移虚拟机网络”页面上，配置虚拟机网络连接。</p>
+<ol>
+<li>要将某个虚拟机的所有网络适配器连接到分布式端口组，请选择该虚拟机，或者选择单个网络适配器以仅连接该适配器。</li>
+<li>单击<strong>分配端口组</strong>。</li>
+<li>从列表中选择一个分布式端口组，然后单击<strong>确定</strong>。</li>
+</ol>
+</li>
+<li><p>单击<strong>下一步</strong>，然后单击<strong>完成</strong>。</p>
+</li>
+</ol>
+<h3 id="在-vSphere-Distributed-Switch-上配置物理网络适配器"><a href="#在-vSphere-Distributed-Switch-上配置物理网络适配器" class="headerlink" title="在 vSphere Distributed Switch 上配置物理网络适配器"></a>在 vSphere Distributed Switch 上配置物理网络适配器</h3><p>对于与 Distributed Switch 关联的主机，可以将物理网卡分配给交换机上的上行链路。可以在 Distributed Switch 上一次为多个主机配置物理网卡。</p>
+<p>要确保所有主机的网络连接配置保持一致，可以将每个主机上的相同物理网卡分配到 Distributed Switch 上的相同上行链路。例如，可以将主机 ESXi A 和 ESXi B 中的 vmnic1 分配到 Uplink 1。</p>
+<ol>
+<li><p>在 vSphere Web Client 中，导航到 Distributed Switch。</p>
+</li>
+<li><p>从操作菜单中，选择添加和管理主机。</p>
+</li>
+<li><p>在选择任务中，选择管理主机网络，然后单击下一步。</p>
+</li>
+<li><p>在选择主机中，单击连接的主机，然后从与 Distributed Switch 关联的主机中进行选择。</p>
+</li>
+<li><p>单击下一步。</p>
+</li>
+<li><p>在选择网络适配器任务中，选择管理物理适配器，然后单击下一步。</p>
+</li>
+<li><p>在管理物理网络适配器中，从“其他交换机上/空闲”列表中选择一个物理网卡。</p>
+<p>如果选择已分配到其他交换机的物理网卡，请将其迁移至当前的 Distributed Switch。</p>
+</li>
+<li><p>单击分配上行链路。</p>
+</li>
+<li><p>选择一个上行链路或选择自动分配。</p>
+</li>
+<li><p>单击下一步。</p>
+</li>
+<li><p>查看受影响的服务以及影响的程度。</p>
+<ol>
+<li>如果 iSCSI 受到的影响非常重要或严重，请单击 iSCSI 条目，然后查看“分析详细信息”窗格中所显示的原因。</li>
+<li>排除对 iSCSI 造成的影响之后，请继续进行网络连接配置。</li>
+</ol>
+</li>
+<li><p>单击下一步，然后单击完成。</p>
+</li>
+</ol>
+<h3 id="将-VMkernel-适配器迁移到-vSphere-Distributed-Switch"><a href="#将-VMkernel-适配器迁移到-vSphere-Distributed-Switch" class="headerlink" title="将 VMkernel 适配器迁移到 vSphere Distributed Switch"></a>将 VMkernel 适配器迁移到 vSphere Distributed Switch</h3><p>如果想要仅使用 vSphere Distributed Switch 来处理 VMkernel 服务的流量，并且不再需要其他标准交换机或 Distributed Switch 上的适配器，请将 VMkernel 适配器迁移到 vSphere Distributed Switch。</p>
+<p><strong>过程</strong></p>
+<ol>
+<li>在 vSphere Web Client 中，导航到 Distributed Switch。</li>
+<li>从<strong>操作</strong>菜单中，选择<strong>添加和管理主机</strong>。</li>
+<li>在<strong>选择任务</strong>中，选择<strong>管理主机网络</strong>，然后单击下一步。</li>
+<li>在<strong>选择主机</strong>中，单击<strong>连接的主机</strong>，然后从与 Distributed Switch 关联的主机中进行选择。</li>
+<li>单击<strong>下一步</strong>。</li>
+<li>在<strong>选择网络适配器</strong>任务中，选择<strong>管理 VMkernel 适配器</strong>，然后单击<strong>下一步</strong>。</li>
+<li>在<strong>管理 VMkernel 网络适配器</strong>中，选择适配器并单击分配端口组。</li>
+<li>选择分布式端口组，然后单击<strong>确定</strong>。</li>
+<li>单击<strong>下一步</strong>。</li>
+<li>查看受影响的服务以及影响的程度。<ol>
+<li>如果 iSCSI 受到的影响非常重要或严重，请单击 iSCSI 条目，然后查看“分析详细信息”窗格中所显示的原因。</li>
+<li>排除对 iSCSI 造成的影响之后，请继续进行网络连接配置。</li>
+</ol>
+</li>
+<li>单击<strong>下一步</strong>，然后单击<strong>完成</strong>。</li>
+</ol>
+<h3 id="在-vSphere-Distributed-Switch-上创建-VMkernel-适配器"><a href="#在-vSphere-Distributed-Switch-上创建-VMkernel-适配器" class="headerlink" title="在 vSphere Distributed Switch 上创建 VMkernel 适配器"></a>在 vSphere Distributed Switch 上创建 VMkernel 适配器</h3><p>在与 Distributed Switch 关联的主机上创建 VMkernel 适配器，以便向主机提供网络连接并处理 vSphere vMotion、IP 存储、Fault Tolerance 日志记录和 vSAN 的流量。可以通过使用添加和管理主机向导同时在多个主机上创建 VMkernel 适配器。 </p>
+<p>应专门针对每个 VMkernel 适配器使用一个分布式端口组。一个 VMkernel 适配器应仅处理一种流量类型。 </p>
+<p><strong>过程</strong></p>
+<ol>
+<li><p>在 vSphere Web Client 中，导航到 Distributed Switch。</p>
+</li>
+<li><p>从<strong>操作</strong>菜单中，选择<strong>添加和管理主机</strong>。</p>
+</li>
+<li><p>在<strong>选择任务</strong>中，选择<strong>管理主机网络</strong>，然后单击<strong>下一步</strong>。</p>
+</li>
+<li><p>在<strong>选择主机</strong>中，单击<strong>连接的主机</strong>，然后从与 Distributed Switch 关联的主机中进行选择。</p>
+</li>
+<li><p>单击<strong>下一步</strong>。</p>
+</li>
+<li><p>在<strong>选择网络适配器任务</strong>中，选择<strong>管理 VMkernel 适配器</strong>，然后单击<strong>下一步</strong>。</p>
+</li>
+<li><p>单击<strong>新建适配器</strong>。</p>
+<p>此时会打开<strong>添加网络</strong>向导。</p>
+</li>
+<li><p>在<strong>选择目标设备</strong>中，选择一个分布式端口组，然后单击<strong>下一步</strong>。</p>
+</li>
+<li><p>在“端口属性”页面上，配置 VMkernel 适配器的设置。</p>
+</li>
+<li><p>如果选择了 vMotion TCP/IP 或置备堆栈，在显示的警告对话框中单击<strong>确定</strong>。</p>
+<p>如果实时迁移已启动，即使已在默认 TCP/IP 堆栈上禁止将涉及的 VMkernel 适配器用于 vMotion，该迁移也会成功完成。同样，在默认 TCP/IP 堆栈上包括为置备流量设置的 VMkernel 适配器也是一样。</p>
+</li>
+<li><p>（可选） 在“IPv4 设置”页面上，选择用于获取 IP 地址的选项。</p>
+</li>
+<li><p>（可选） 在“IPv6 设置”页面上，选择用于获取 IPv6 地址的选项。</p>
+</li>
+<li><p>检查“即将完成”页面上的设置选项，然后单击完成。</p>
+</li>
+<li><p>按照提示完成向导。</p>
+</li>
+</ol>
+<h3 id="将虚拟机网络迁移到-vSphere-Distributed-Switch"><a href="#将虚拟机网络迁移到-vSphere-Distributed-Switch" class="headerlink" title="将虚拟机网络迁移到 vSphere Distributed Switch"></a>将虚拟机网络迁移到 vSphere Distributed Switch</h3><p>要使用 Distributed Switch 管理虚拟机网络连接，请将虚拟机网络适配器迁移到交换机上有标记的网络。 </p>
+<p><strong>过程</strong></p>
+<ol>
+<li>在 vSphere Web Client 中，导航到 Distributed Switch。</li>
+<li>从<strong>操作</strong>菜单中，选择<strong>添加和管理主机</strong>。</li>
+<li>在<strong>选择任务</strong>中，选择<strong>管理主机网络</strong>，然后单击下一步。</li>
+<li>在<strong>选择主机</strong>中，单击<strong>连接的主机</strong>，然后从与 Distributed Switch 关联的主机中进行选择。</li>
+<li>单击<strong>下一步</strong>。</li>
+<li>在<strong>选择网络适配器</strong>任务中，选择<strong>迁移虚拟机网络</strong>，然后单击<strong>下一步</strong>。</li>
+<li>为 Distributed Switch 配置虚拟机网络适配器。<ol>
+<li>要将某个虚拟机的所有网络适配器连接到分布式端口组，请选择该虚拟机，或者选择单个网络适配器以仅连接该适配器。</li>
+<li>单击<strong>分配端口组</strong>。</li>
+<li>从列表中选择一个分布式端口组，然后单击<strong>确定</strong>。</li>
+</ol>
+</li>
+<li>单击下一步，然后单击<strong>完成</strong>。</li>
+</ol>
+<h3 id="使用主机作为模板为-vSphere-Distributed-Switch-创建统一的网络配置"><a href="#使用主机作为模板为-vSphere-Distributed-Switch-创建统一的网络配置" class="headerlink" title="使用主机作为模板为 vSphere Distributed Switch 创建统一的网络配置"></a>使用主机作为模板为 vSphere Distributed Switch 创建统一的网络配置</h3><p>使多台主机拥有统一的网络配置，则可选择其中一台主机作为模板，并将其物理网卡和 VMkernel 适配器的配置应用到 Distributed Switch 上的其他主机。 </p>
+<p><strong>过程</strong></p>
+<ol>
+<li>在 vSphere Web Client 中，导航到 Distributed Switch。</li>
+<li>从操作菜单中，选择添加和管理主机。</li>
+<li>选择管理主机网络的任务，然后单击下一步。</li>
+<li>选择要在 Distributed Switch 上添加或进行管理的主机。</li>
+<li>在对话框的底部，选择在多个主机上配置相同的网络设置，然后单击下一步。</li>
+<li>选择要用作模板的主机，然后单击下一步。</li>
+<li>选择网络适配器任务，然后单击下一步。</li>
+<li>在“管理物理网络适配器”和“管理 VMkernel 网络适配器”页面上，对模板主机进行所需的配置更改，然后针对所有其他主机单击应用于全部。</li>
+<li>在“即将完成”页面上，单击完成。</li>
+</ol>
+<p><strong>使用模板主机配置物理适配器和 VMkernel 适配器</strong></p>
+<p>使用添加和管理主机向导中的模板主机模式在 Distributed Switch 上的所有主机之间创建统一的网络配置。</p>
+<p>在向导的“管理物理网络适配器”页面上，将一个物理网卡分配给模板主机上的上行链路，然后单击应用于全部以便在其他主机上创建相同的配置。</p>
+<p>使用模板主机在 vSphere Distributed Switch 上应用物理网卡配置</p>
+<p><img src="https://blog-image.nos-eastchina1.126.net/JcA3BhdCDk.png?imageslim" alt="mark"></p>
+<p>在“管理 VMkernel 网络适配器”页面，向端口组分配一个 VMkernel 适配器，并单击应用于全部以向其他主机应用相同的配置。</p>
+<p>单击应用于全部按钮后，目标 VMkernel 适配器同时具有“已修改”和“已重新分配”限定符。之所以显示“已修改”限定符是因为，单击应用于全部按钮后，vCenter Server 会将模板 VMKernel 适配器的配置规范复制到目标 VMkernel 适配器，即使模板适配器和目标适配器的配置完全相同也是如此。因此，目标适配器总是会被修改。</p>
+<p>使用模板主机在 vSphere Distributed Switch 上应用 VMkernel 适配器配置</p>
+<p> <img src="https://blog-image.nos-eastchina1.126.net/kJ1el7FkjF.png?imageslim" alt="mark"></p>
+<h3 id="从-vSphere-Distributed-Switch-中移除主机"><a href="#从-vSphere-Distributed-Switch-中移除主机" class="headerlink" title="从 vSphere Distributed Switch 中移除主机"></a>从 vSphere Distributed Switch 中移除主机</h3><p>如果为主机配置了其他交换机，则可以从 vSphere Distributed Switch 中移除主机。</p>
+<p><strong>先决条件</strong></p>
+<ul>
+<li>确认将目标主机上的物理网卡迁移到其他交换机。</li>
+<li>确认将主机上的 VMkernel 适配器迁移到其他交换机。</li>
+<li>确认将虚拟机网络适配器迁移到其他交换机。</li>
+</ul>
+<p><strong>过程</strong></p>
+<ol>
+<li>在 vSphere Web Client 中，导航到 Distributed Switch。</li>
+<li>从操作菜单中，选择添加和管理主机。</li>
+<li>选择移除主机，然后单击下一步。</li>
+<li>选择要移除的主机，然后单击下一步。</li>
+<li>单击完成。</li>
+</ol>
+<h2 id="在主机代理交换机上管理网络连接"><a href="#在主机代理交换机上管理网络连接" class="headerlink" title="在主机代理交换机上管理网络连接"></a>在主机代理交换机上管理网络连接</h2><h3 id="将主机上的网络适配器迁移到-vSphere-Distributed-Switch"><a href="#将主机上的网络适配器迁移到-vSphere-Distributed-Switch" class="headerlink" title="将主机上的网络适配器迁移到 vSphere Distributed Switch"></a>将主机上的网络适配器迁移到 vSphere Distributed Switch</h3><p>对于与 Distributed Switch 关联的主机，可以将网络适配器从标准交换机迁移至 Distributed Switch。可以同时迁移物理网卡、VMkernel 适配器和虚拟机网络适配器。</p>
+<p>如果迁移虚拟机网络适配器或 VMkernel 适配器，应确保目标分布式端口组至少有一个活动的上行链路，并且该链路与此主机上的物理网卡连接。或者，也可以同时迁移物理网卡、虚拟网络适配器和 VMkernel 适配器。</p>
+<p>要迁移物理网卡，请确保标准交换机上的源端口组至少具有一个物理网卡以处理其流量。例如，如果要迁移分配给虚拟机网络的端口组的物理网卡，请确保该端口组至少连接到一个物理网卡。否则，标准交换机上同一 VLAN 中的虚拟机将相互连接，但与外部网络之间无连接。</p>
+<p><strong>过程</strong></p>
+<ol>
+<li><p>在 vSphere Web Client 中，导航到主机。</p>
+</li>
+<li><p>在配置选项卡上，展开网络，然后选择虚拟交换机。</p>
+</li>
+<li><p>选择目标 Distributed Switch，然后单击将物理网络适配器或虚拟网络适配器迁移到此 Distributed Switch。</p>
+</li>
+<li><p>选择迁移网络适配器的任务，然后单击下一步。</p>
+</li>
+<li><p>配置物理网卡。</p>
+<ol>
+<li>从其他交换机上/空闲列表中，选择一个物理网卡，然后单击分配上行链路。</li>
+<li>选择一个上行链路，然后单击确定。</li>
+<li>单击下一步。</li>
+</ol>
+</li>
+<li><p>配置 VMkernel 适配器。</p>
+<ol>
+<li><p>选择一个适配器，然后单击分配端口组。</p>
+</li>
+<li><p>选择分布式端口组，然后单击确定。</p>
+<p>一次应将一个 VMkernel 适配器连接到一个分布式端口组。</p>
+</li>
+<li><p>单击下一步。</p>
+</li>
+</ol>
+</li>
+<li><p>检查受新网络配置影响的服务。</p>
+<ol>
+<li><p>如果某个服务中报告了重要的或严重的影响，请单击该服务并检查分析详细信息。</p>
+<p>例如，可能会报告 iSCSI 上由迁移 iSCSI VMkernel 适配器的分布式端口组上不正确的绑定和故障切换配置导致的重要影响。必须在分布式端口组的绑定和故障切换顺序中保留一个活动的上行链路，将备用列表保留为空，并将其余的上行链路移至未使用。</p>
+</li>
+<li><p>对受影响的服务造成的任何影响进行故障排除后，单击下一步。</p>
+</li>
+</ol>
+</li>
+<li><p>配置虚拟机网络适配器。</p>
+<ol>
+<li><p>选择一个虚拟机或虚拟机网络适配器，然后单击分配端口组。</p>
+<p>如果选择虚拟机，则应迁移虚拟机上的所有网络适配器。如果选择网络适配器，则只需迁移此网络适配器。</p>
+</li>
+<li><p>从列表中选择一个分布式端口组，然后单击确定。</p>
+</li>
+<li><p>单击下一步。</p>
+</li>
+</ol>
+</li>
+<li><p>在“即将完成”页上，检查新网络配置并单击完成。</p>
+</li>
+</ol>
+<h3 id="将主机上的-VMkernel-适配器迁移到-vSphere-标准交换机"><a href="#将主机上的-VMkernel-适配器迁移到-vSphere-标准交换机" class="headerlink" title="将主机上的 VMkernel 适配器迁移到 vSphere 标准交换机"></a>将主机上的 VMkernel 适配器迁移到 vSphere 标准交换机</h3><p>果主机与 Distributed Switch 关联，则可以将 VMkernel 适配器从 Distributed Switch 迁移到标准交换机。</p>
+<p>确认目标标准交换机至少有一个物理网卡。</p>
+<p><strong>过程</strong></p>
+<ol>
+<li><p>在 vSphere Web Client 中，导航到主机。</p>
+</li>
+<li><p>在配置选项卡上，展开网络，然后选择虚拟交换机。</p>
+</li>
+<li><p>在列表中选择目标标准交换机。</p>
+</li>
+<li><p>单击将 VMkernel 网络适配器迁移到选定交换机。</p>
+</li>
+<li><p>在“选择 VMkernel 网络适配器”页面上，在列表中选择要迁移到标准交换机的虚拟网络适配器。</p>
+</li>
+<li><p>在“配置设置”页面上，编辑网络适配器的网络标签和 VLAN ID。</p>
+</li>
+<li><p>在“即将完成”页面上，检查迁移详细信息，然后单击完成。</p>
+<p>单击上一步以编辑设置。</p>
+</li>
+</ol>
+<h3 id="将主机上的-VMkernel-适配器迁移到-vSphere-标准交换机-1"><a href="#将主机上的-VMkernel-适配器迁移到-vSphere-标准交换机-1" class="headerlink" title="将主机上的 VMkernel 适配器迁移到 vSphere 标准交换机"></a>将主机上的 VMkernel 适配器迁移到 vSphere 标准交换机</h3><p>如果主机与 Distributed Switch 关联，则可以将 VMkernel 适配器从 Distributed Switch 迁移到标准交换机。  </p>
+<p>确认目标标准交换机至少有一个物理网卡。</p>
+<p><strong>过程</strong></p>
+<ol>
+<li><p>在 vSphere Web Client 中，导航到主机。</p>
+</li>
+<li><p>在配置选项卡上，展开网络，然后选择虚拟交换机。</p>
+</li>
+<li><p>在列表中选择目标标准交换机。</p>
+</li>
+<li><p>单击将 VMkernel 网络适配器迁移到选定交换机。</p>
+</li>
+<li><p>在“选择 VMkernel 网络适配器”页面上，在列表中选择要迁移到标准交换机的虚拟网络适配器。</p>
+</li>
+<li><p>在“配置设置”页面上，编辑网络适配器的网络标签和 VLAN ID。</p>
+</li>
+<li><p>在“即将完成”页面上，检查迁移详细信息，然后单击完成。</p>
+<p>单击上一步以编辑设置。</p>
+</li>
+</ol>
+<h3 id="将主机的物理网卡分配给-vSphere-Distributed-Switch"><a href="#将主机的物理网卡分配给-vSphere-Distributed-Switch" class="headerlink" title="将主机的物理网卡分配给 vSphere Distributed Switch"></a>将主机的物理网卡分配给 vSphere Distributed Switch</h3><p>可以将与 Distributed Switch 关联的主机的物理网卡分配给主机代理交换机上的上行链路端口。</p>
+<p><strong>过程</strong></p>
+<ol>
+<li>在 vSphere Web Client 中，导航到主机。</li>
+<li>在配置选项卡上，展开网络，然后选择虚拟交换机。</li>
+<li>从列表中选择 Distributed Switch。</li>
+<li>单击管理已连接到选定交换机的物理网络适配器图标。</li>
+<li>从列表中选择一个空闲的上行链路，然后单击添加适配器。</li>
+<li>选择物理网卡，然后单击确定。</li>
+</ol>
+<h3 id="从-vSphere-Distributed-Switch-移除物理网卡"><a href="#从-vSphere-Distributed-Switch-移除物理网卡" class="headerlink" title="从 vSphere Distributed Switch 移除物理网卡"></a>从 vSphere Distributed Switch 移除物理网卡</h3><p>可以从 vSphere Distributed Switch 的上行链路中移除主机的物理网卡。</p>
+<p><strong>过程</strong></p>
+<ol>
+<li>在 vSphere Web Client 中，导航到主机。</li>
+<li>在配置选项卡上，展开网络，然后选择虚拟交换机。</li>
+<li>选择 Distributed Switch。</li>
+<li>单击管理已连接到选定交换机的物理网络适配器图标。</li>
+<li>选择上行链路，然后单击移除选定适配器。</li>
+<li>单击确定。</li>
+</ol>
+<h3 id="从活动虚拟机中移除网卡"><a href="#从活动虚拟机中移除网卡" class="headerlink" title="从活动虚拟机中移除网卡"></a>从活动虚拟机中移除网卡</h3><p><strong>从未安装客户机操作系统的活动虚拟机中移除网卡</strong></p>
+<p>不能从未安装任何操作系统的活动虚拟机中移除网卡。</p>
+<p>vSphere Web Client 可能会报告网卡已被移除，但是您看到它仍然附加在虚拟机上。</p>
+<p><strong>从已安装客户机操作系统的活动虚拟机中移除网卡</strong></p>
+<p>可以从活动虚拟机中移除网卡，但有时这可能不会报告给 vSphere Web Client。如果您单击虚拟机的编辑设置，可能会看到被移除的网卡仍被列出，即便移除任务已完成。虚拟机的“编辑设置”对话框不会立即显示移除的网卡。</p>
+<p>如果虚拟机的客户机操作系统不支持热移除网卡，则您可能仍会看到网卡附加在虚拟机上。</p>
+<h2 id="分布式端口组"><a href="#分布式端口组" class="headerlink" title="分布式端口组"></a>分布式端口组</h2><p>分布式端口组为 vSphere Distributed Switch 上的每个成员端口指定端口配置选项。分布式端口组可定义连接到网络的方式。  </p>
+<h3 id="添加分布式端口组"><a href="#添加分布式端口组" class="headerlink" title="添加分布式端口组"></a>添加分布式端口组</h3><p>将分布式端口组添加到 vSphere Distributed Switch 以为虚拟机创建 Distributed Switch 网络并关联 VMkernel 适配器。</p>
+<p><strong>过程</strong></p>
+<ol>
+<li><p>在 vSphere Web Client 中，导航到 Distributed Switch。</p>
+</li>
+<li><p>右键单击 Distributed Switch，然后选择分布式端口组 &gt; 新建分布式端口组。</p>
+</li>
+<li><p>在“选择名称和位置”页面上，输入新分布式端口组的名称，或接受生成的名称，然后单击下一步。</p>
+</li>
+<li><p>在“配置设置”页面上，设置新分布式端口组的常规属性，然后单击下一步。</p>
+</li>
+<li><p>（可选） 在“安全”页面上，编辑安全异常，然后单击下一步。</p>
+</li>
+<li><p>（可选） 在“流量调整”页面上，启用或禁用“输入流量调整”或“输出流量调整”，然后单击下一步。</p>
+</li>
+<li><p>（可选） 在“绑定和故障切换”页面上，编辑设置，然后单击下一步。</p>
+</li>
+<li><p>（可选） 在“监控”页面上，启用或禁用 NetFlow，然后单击下一步。</p>
+</li>
+<li><p>（可选） 在“其他”页面上，选择是或否，然后单击下一步。选择是可关闭端口组中的所有端口。该操作可能中断在使用这些端口的主机或虚拟机的正常网络操作。</p>
+</li>
+<li><p><strong>（可选）</strong> 在“编辑其他设置”页面上，添加对端口组的描述并设置每个端口的任何策略替代项，然后单击下一步。</p>
+</li>
+<li><p>在“即将完成”页面上，检查设置，然后单击完成。</p>
+<p>要更改任何设置，请单击返回按钮。</p>
+</li>
+</ol>
+<h3 id="编辑常规分布式端口组设置"><a href="#编辑常规分布式端口组设置" class="headerlink" title="编辑常规分布式端口组设置"></a>编辑常规分布式端口组设置</h3><p>可以编辑常规分布式端口组设置，例如分布式端口组名称、端口设置和网络资源池。</p>
+<p><strong>过程</strong></p>
+<ol>
+<li>在 vSphere Web Client 中找到分布式端口组。<ol>
+<li>选择 Distributed Switch，然后单击网络选项卡。</li>
+<li>单击分布式端口组。</li>
+</ol>
+</li>
+<li>右键单击分布式端口组，然后选择编辑设置。</li>
+<li>选择常规以编辑下面的分布式端口组设置。</li>
+<li>单击确定。</li>
+</ol>
+<h3 id="在端口级别配置替代网络策略"><a href="#在端口级别配置替代网络策略" class="headerlink" title="在端口级别配置替代网络策略"></a>在端口级别配置替代网络策略</h3><p>要对分布式端口应用不同的策略，您可以配置在端口组级别设置的每个端口替代策略。当分布式端口与虚拟机断开连接时，您也可以启用重置在每个端口级别设置的任何配置。</p>
+<p><strong>过程</strong></p>
+<ol>
+<li>在 vSphere Web Client 中找到分布式端口组。<ol>
+<li>选择 Distributed Switch，然后单击网络选项卡。</li>
+<li>单击分布式端口组。</li>
+</ol>
+</li>
+<li>右键单击分布式端口组，然后选择编辑设置。</li>
+<li>选择高级页面。</li>
+<li><strong>（可选）</strong> 使用策略页面设置每个端口策略的替代。</li>
+<li>单击确定。</li>
+</ol>
+<h3 id="移除分布式端口组"><a href="#移除分布式端口组" class="headerlink" title="移除分布式端口组"></a>移除分布式端口组</h3><p>当您不再需要相应的有标记网络时，请移除分布式端口组，以便为虚拟机或 VMkernel 网络提供连接及配置连接设置。</p>
+<ul>
+<li>验证已将连接到相应有标记网络的所有虚拟机迁移到其他有标记网络。</li>
+<li>验证已将连接到分布式端口组的所有 VMkernel 适配器迁移到其他端口组，或已将其删除。</li>
+</ul>
+<p><strong>过程</strong></p>
+<ol>
+<li>在 vSphere Web Client 中找到分布式端口组。<ol>
+<li>选择 Distributed Switch，然后单击网络选项卡。</li>
+<li>单击分布式端口组。</li>
+</ol>
+</li>
+<li>选择分布式端口组。</li>
+<li>在操作菜单中，选择删除。</li>
+</ol>
+<h2 id="使用分布式端口"><a href="#使用分布式端口" class="headerlink" title="使用分布式端口"></a>使用分布式端口</h2><p>分布式端口是连接到 VMkernel 或虚拟机的网络适配器的 vSphere Distributed Switch 上的一个端口。</p>
+<p>默认分布式端口配置是由分布式端口组设置确定的，但可以替代各个分布式端口的某些设置。</p>
+<h3 id="监控分布式端口的状况"><a href="#监控分布式端口的状况" class="headerlink" title="监控分布式端口的状况"></a>监控分布式端口的状况</h3><p>vSphere 可以监控分布式端口并提供关于每个端口的当前状况和运行时统计信息。</p>
+<p><strong>过程</strong></p>
+<ol>
+<li><p>在 vSphere Web Client 中找到分布式端口组。</p>
+<ol>
+<li>选择 Distributed Switch，然后单击网络选项卡。</li>
+<li>单击分布式端口组。</li>
+</ol>
+</li>
+<li><p>双击分布式端口组。</p>
+</li>
+<li><p>单击端口选项卡，然后从列表中选择端口。</p>
+</li>
+<li><p>单击开始监控端口状况图标。</p>
+<p>分布式端口组的端口表将显示每个分布式端口的运行时统计信息。</p>
+<p>状况列会显示每个分布式端口的当前状况。</p>
+</li>
+</ol>
+<h3 id="配置分布式端口设置"><a href="#配置分布式端口设置" class="headerlink" title="配置分布式端口设置"></a>配置分布式端口设置</h3><p>可以更改分布式端口的常规设置，如端口名称和描述。</p>
+<p><strong>过程</strong></p>
+<ol>
+<li><p>在 vSphere Web Client 中找到分布式端口组。</p>
+<ol>
+<li>选择 Distributed Switch，然后单击网络选项卡。</li>
+<li>单击分布式端口组。</li>
+</ol>
+</li>
+<li><p>在列表中双击一个分布式端口组。</p>
+</li>
+<li><p>单击端口选项卡，然后从表中选择分布式端口。</p>
+<p>有关分布式端口的信息会显示在屏幕底部。</p>
+</li>
+<li><p>单击编辑分布式端口设置图标。</p>
+</li>
+<li><p>在“属性”页面和策略页面上，编辑有关分布式端口的信息，然后单击确定。</p>
+<p>如果不允许替代项，则策略选项将处于禁用状态。</p>
+</li>
+</ol>
+<h2 id="在-vSphere-Distributed-Switch-上配置虚拟机网络连接"><a href="#在-vSphere-Distributed-Switch-上配置虚拟机网络连接" class="headerlink" title="在 vSphere Distributed Switch 上配置虚拟机网络连接"></a>在 vSphere Distributed Switch 上配置虚拟机网络连接</h2><p>可以通过配置单个虚拟机网卡，或通过从 vSphere Distributed Switch 自身迁移多组虚拟机，将虚拟机连接到 vSphere Distributed Switch。</p>
+<p>通过将虚拟机关联的虚拟网络适配器连接到分布式端口组，可以将虚拟机连接到 vSphere Distributed Switch。对于单个虚拟机，可以通过修改虚拟机的网络适配器配置来完成；对于虚拟机组，可以通过将虚拟机从现有虚拟网络迁移到 vSphere Distributed Switch 来完成。</p>
+<h3 id="将虚拟机迁入或迁出-vSphere-Distributed-Switch"><a href="#将虚拟机迁入或迁出-vSphere-Distributed-Switch" class="headerlink" title="将虚拟机迁入或迁出 vSphere Distributed Switch"></a>将虚拟机迁入或迁出 vSphere Distributed Switch</h3><p>除了在单个虚拟机级别将虚拟机连接到 Distributed Switch 以外，还可以在 vSphere Distributed Switch 网络和 vSphere 标准交换机网络之间迁移一组虚拟机。</p>
+<p><strong>过程</strong></p>
+<ol>
+<li><p>在 vSphere Web Client 中，导航到数据中心。</p>
+</li>
+<li><p>在导航器中右键单击数据中心，然后选择将虚拟机迁移到其他网络。</p>
+</li>
+<li><p>选择源网络。</p>
+<ul>
+<li>选择特定网络并使用浏览按钮选择一个特定源网络。</li>
+<li>选择无网络可迁移未连接到任何其他网络的所有虚拟机网络适配器。</li>
+</ul>
+</li>
+<li><p>使用浏览选择一个目标网络，然后单击下一步。</p>
+</li>
+<li><p>从列表中选择要从源网络迁移到目标网络的虚拟机，然后单击下一步。</p>
+</li>
+<li><p>检查选择内容，然后单击完成。</p>
+<p>单击上一步以编辑任何选择。</p>
+</li>
+</ol>
+<h3 id="将单个虚拟机连接到分布式端口组"><a href="#将单个虚拟机连接到分布式端口组" class="headerlink" title="将单个虚拟机连接到分布式端口组"></a>将单个虚拟机连接到分布式端口组</h3><p>通过修改虚拟机的网卡配置，可将单个虚拟机连接到 vSphere Distributed Switch。</p>
+<p><strong>过程</strong></p>
+<ol>
+<li>在 vSphere Web Client 中找到虚拟机。<ol>
+<li>选择数据中心、文件夹、群集、资源池或主机，然后单击虚拟机选项卡。</li>
+<li>单击虚拟机，然后从列表中双击虚拟机。</li>
+</ol>
+</li>
+<li>在虚拟机的配置选项卡上，展开设置，然后选择虚拟机硬件。</li>
+<li>单击编辑。</li>
+<li>展开网络适配器部分，并从网络适配器下拉菜单选择显示更多网络。</li>
+<li>在“选择网络”对话框中，选择一个分布式端口组，然后单击确定。</li>
+<li>单击确定。</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>Goooo
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.sysctl.me/2018/06/16/vSphereNetwork2/" title="vSphere 网络连接（分布式交换机）">https://www.sysctl.me/2018/06/16/vSphereNetwork2/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/en" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Networking/" rel="tag"># Networking</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/06/15/vSphereNetwork/" rel="prev" title="vSphere 网络连接（标准交换机）">
+      <i class="fa fa-chevron-left"></i> vSphere 网络连接（标准交换机）
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/08/01/Program-design/Python/Python-variables/" rel="next" title="变量（Python）">
+      变量（Python） <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#vSphere-Distributed-Switch-架构"><span class="nav-number">1.</span> <span class="nav-text">vSphere Distributed Switch 架构</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#创建vSphere-Distributed-Switch"><span class="nav-number">1.1.</span> <span class="nav-text">创建vSphere Distributed Switch</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#将vSphere-Distributed-Switch升级到更高版本"><span class="nav-number">1.1.1.</span> <span class="nav-text">将vSphere Distributed Switch升级到更高版本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#编辑-vSphere-Distributed-Switch-常规和高级设置"><span class="nav-number">1.1.2.</span> <span class="nav-text">编辑 vSphere Distributed Switch 常规和高级设置</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#在-vSphere-Distributed-Switch-上管理多个主机上的网络连接"><span class="nav-number">1.2.</span> <span class="nav-text">在 vSphere Distributed Switch 上管理多个主机上的网络连接</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#在-vSphere-Distributed-Switch-上管理主机网络的任务"><span class="nav-number">1.2.1.</span> <span class="nav-text">在 vSphere Distributed Switch 上管理主机网络的任务</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#将主机添加到-vSphere-Distributed-Switch"><span class="nav-number">1.2.2.</span> <span class="nav-text">将主机添加到 vSphere Distributed Switch</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#在-vSphere-Distributed-Switch-上配置物理网络适配器"><span class="nav-number">1.2.3.</span> <span class="nav-text">在 vSphere Distributed Switch 上配置物理网络适配器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#将-VMkernel-适配器迁移到-vSphere-Distributed-Switch"><span class="nav-number">1.2.4.</span> <span class="nav-text">将 VMkernel 适配器迁移到 vSphere Distributed Switch</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#在-vSphere-Distributed-Switch-上创建-VMkernel-适配器"><span class="nav-number">1.2.5.</span> <span class="nav-text">在 vSphere Distributed Switch 上创建 VMkernel 适配器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#将虚拟机网络迁移到-vSphere-Distributed-Switch"><span class="nav-number">1.2.6.</span> <span class="nav-text">将虚拟机网络迁移到 vSphere Distributed Switch</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#使用主机作为模板为-vSphere-Distributed-Switch-创建统一的网络配置"><span class="nav-number">1.2.7.</span> <span class="nav-text">使用主机作为模板为 vSphere Distributed Switch 创建统一的网络配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#从-vSphere-Distributed-Switch-中移除主机"><span class="nav-number">1.2.8.</span> <span class="nav-text">从 vSphere Distributed Switch 中移除主机</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#在主机代理交换机上管理网络连接"><span class="nav-number">1.3.</span> <span class="nav-text">在主机代理交换机上管理网络连接</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#将主机上的网络适配器迁移到-vSphere-Distributed-Switch"><span class="nav-number">1.3.1.</span> <span class="nav-text">将主机上的网络适配器迁移到 vSphere Distributed Switch</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#将主机上的-VMkernel-适配器迁移到-vSphere-标准交换机"><span class="nav-number">1.3.2.</span> <span class="nav-text">将主机上的 VMkernel 适配器迁移到 vSphere 标准交换机</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#将主机上的-VMkernel-适配器迁移到-vSphere-标准交换机-1"><span class="nav-number">1.3.3.</span> <span class="nav-text">将主机上的 VMkernel 适配器迁移到 vSphere 标准交换机</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#将主机的物理网卡分配给-vSphere-Distributed-Switch"><span class="nav-number">1.3.4.</span> <span class="nav-text">将主机的物理网卡分配给 vSphere Distributed Switch</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#从-vSphere-Distributed-Switch-移除物理网卡"><span class="nav-number">1.3.5.</span> <span class="nav-text">从 vSphere Distributed Switch 移除物理网卡</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#从活动虚拟机中移除网卡"><span class="nav-number">1.3.6.</span> <span class="nav-text">从活动虚拟机中移除网卡</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#分布式端口组"><span class="nav-number">1.4.</span> <span class="nav-text">分布式端口组</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#添加分布式端口组"><span class="nav-number">1.4.1.</span> <span class="nav-text">添加分布式端口组</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#编辑常规分布式端口组设置"><span class="nav-number">1.4.2.</span> <span class="nav-text">编辑常规分布式端口组设置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#在端口级别配置替代网络策略"><span class="nav-number">1.4.3.</span> <span class="nav-text">在端口级别配置替代网络策略</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#移除分布式端口组"><span class="nav-number">1.4.4.</span> <span class="nav-text">移除分布式端口组</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#使用分布式端口"><span class="nav-number">1.5.</span> <span class="nav-text">使用分布式端口</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#监控分布式端口的状况"><span class="nav-number">1.5.1.</span> <span class="nav-text">监控分布式端口的状况</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#配置分布式端口设置"><span class="nav-number">1.5.2.</span> <span class="nav-text">配置分布式端口设置</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#在-vSphere-Distributed-Switch-上配置虚拟机网络连接"><span class="nav-number">1.6.</span> <span class="nav-text">在 vSphere Distributed Switch 上配置虚拟机网络连接</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#将虚拟机迁入或迁出-vSphere-Distributed-Switch"><span class="nav-number">1.6.1.</span> <span class="nav-text">将虚拟机迁入或迁出 vSphere Distributed Switch</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#将单个虚拟机连接到分布式端口组"><span class="nav-number">1.6.2.</span> <span class="nav-text">将单个虚拟机连接到分布式端口组</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Goooo"
+      src="/images/img.png">
+  <p class="site-author-name" itemprop="name">Goooo</p>
+  <div class="site-description" itemprop="description">一条啥也不会点废鱼</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">109</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">22</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">71</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/xth0331" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;xth0331" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:xietianhao0331@gmail.com" title="E-Mail → mailto:xietianhao0331@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/en" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+        
+        <script type="text/javascript" charset="utf-8" src="/js/tagcloud.js"></script>
+        <script type="text/javascript" charset="utf-8" src="/js/tagcanvas.js"></script>
+        <div class="widget-wrap">
+            <h3 class="widget-title">标签们</h3>
+            <div id="myCanvasContainer" class="widget tagcloud">
+                <canvas width="250" height="250" id="resCanvas" style="width=100%">
+                    <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ansible/" rel="tag">Ansible</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Backup/" rel="tag">Backup</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Bond/" rel="tag">Bond</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CPU/" rel="tag">CPU</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ceph/" rel="tag">Ceph</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cobbler/" rel="tag">Cobbler</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Coffee/" rel="tag">Coffee</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Corosync/" rel="tag">Corosync</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cyclic-invariant/" rel="tag">Cyclic invariant</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Docker/" rel="tag">Docker</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Effectiveness/" rel="tag">Effectiveness</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Exhaustion/" rel="tag">Exhaustion</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Filesystem/" rel="tag">Filesystem</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HAProxy/" rel="tag">HAProxy</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hardware/" rel="tag">Hardware</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Https/" rel="tag">Https</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ICMP/" rel="tag">ICMP</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JDK/" rel="tag">JDK</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Jenkins/" rel="tag">Jenkins</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JunOS/" rel="tag">JunOS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/KEEPALIVED/" rel="tag">KEEPALIVED</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Keepalived/" rel="tag">Keepalived</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/" rel="tag">Linux</a><span class="tag-list-count">19</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Log/" rel="tag">Log</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Markdown/" rel="tag">Markdown</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Modular-Programming/" rel="tag">Modular Programming</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Monitoring/" rel="tag">Monitoring</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Netconf/" rel="tag">Netconf</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Network/" rel="tag">Network</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Networking/" rel="tag">Networking</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Nginx/" rel="tag">Nginx</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OS/" rel="tag">OS</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OpenStack/" rel="tag">OpenStack</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Package-Manager/" rel="tag">Package Manager</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Partition/" rel="tag">Partition</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Programming/" rel="tag">Programming</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Python/" rel="tag">Python</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RAM/" rel="tag">RAM</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RHCS/" rel="tag">RHCS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RPM/" rel="tag">RPM</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Recursion/" rel="tag">Recursion</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Recursive/" rel="tag">Recursive</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Redirect/" rel="tag">Redirect</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Route/" rel="tag">Route</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SSH/" rel="tag">SSH</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Storage/" rel="tag">Storage</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Storage-and-Filesystem/" rel="tag">Storage and Filesystem</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Swap/" rel="tag">Swap</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Sys/" rel="tag">Sys</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Systemd/" rel="tag">Systemd</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Terminal/" rel="tag">Terminal</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Terraform/" rel="tag">Terraform</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Tools/" rel="tag">Tools</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ubuntu/" rel="tag">Ubuntu</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Veeam/" rel="tag">Veeam</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vim/" rel="tag">Vim</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Virtualization/" rel="tag">Virtualization</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vmware/" rel="tag">Vmware</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vsphere/" rel="tag">Vsphere</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Windows/" rel="tag">Windows</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Yum/" rel="tag">Yum</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/apple/" rel="tag">apple</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/elasticsearch/" rel="tag">elasticsearch</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/iteration/" rel="tag">iteration</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/logs/" rel="tag">logs</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/oop/" rel="tag">oop</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tools/" rel="tag">tools</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%88%86%E6%B2%BB/" rel="tag">分治</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E5%8E%8B%E7%BC%A9/" rel="tag">数据压缩</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%84%99%E8%A7%86%E9%93%BE/" rel="tag">鄙视链</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%87%8D%E5%A4%8D%E6%95%B0%E6%8D%AE%E5%88%A0%E9%99%A4/" rel="tag">重复数据删除</a><span class="tag-list-count">1</span></li></ul>
+                </canvas>
+            </div>
+        </div>
+        
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Goooo</span>
+</div>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.7.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://www-sysctl-me-1.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "https://www.sysctl.me/2018/06/16/vSphereNetwork2/";
+    this.page.identifier = "2018/06/16/vSphereNetwork2/";
+    this.page.title = "vSphere 网络连接（分布式交换机）";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://www-sysctl-me-1.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/koharu.model.json"},"display":{"position":"left","width":300,"height":600},"mobile":{"show":false},"react":{"opacity":0.7}});</script></body>
+</html>

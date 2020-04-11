@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://www.sysctl.me').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","width":320,"display":"post","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="基础架构即代码意味着编写代码来配置，管理和部署IT基础架构，这种概念以下几项关键原则：  可再生性：基础环境中的任意元素可以再现，复制。 一致性：无论何时，创建在环境各个元素的配置是完全相同的。 快速反馈：能够频繁、简单地进行变更。 可见性：所有对环境的变更都更易读、可接受版本控制的管理。  通过IaC，可以将基础设施中的元素和配置标准化、自动化，将基础设施作为软件开发流程中的一个功能，一段代码，">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用IaC实现简单的网络自动化">
+<meta property="og:url" content="https://www.sysctl.me/2019/12/28/Networking/NetOps/Network-automation-using-IaC/index.html">
+<meta property="og:site_name" content="Sysctl">
+<meta property="og:description" content="基础架构即代码意味着编写代码来配置，管理和部署IT基础架构，这种概念以下几项关键原则：  可再生性：基础环境中的任意元素可以再现，复制。 一致性：无论何时，创建在环境各个元素的配置是完全相同的。 快速反馈：能够频繁、简单地进行变更。 可见性：所有对环境的变更都更易读、可接受版本控制的管理。  通过IaC，可以将基础设施中的元素和配置标准化、自动化，将基础设施作为软件开发流程中的一个功能，一段代码，">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/g200220.png">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/8-ci-cd-using-hashicorp-terraform-and-jenkins.png">
+<meta property="article:published_time" content="2019-12-28T15:20:00.000Z">
+<meta property="article:modified_time" content="2020-01-22T14:30:20.980Z">
+<meta property="article:author" content="Goooo">
+<meta property="article:tag" content="Ansible">
+<meta property="article:tag" content="JunOS">
+<meta property="article:tag" content="Terraform">
+<meta property="article:tag" content="Netconf">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog-image.nos-eastchina1.126.net/g200220.png">
+
+<link rel="canonical" href="https://www.sysctl.me/2019/12/28/Networking/NetOps/Network-automation-using-IaC/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>使用IaC实现简单的网络自动化 | Sysctl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Sysctl" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Sysctl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">观察指南，博客</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="搜索..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/xth0331" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.sysctl.me/2019/12/28/Networking/NetOps/Network-automation-using-IaC/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/img.png">
+      <meta itemprop="name" content="Goooo">
+      <meta itemprop="description" content="一条啥也不会点废鱼">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Sysctl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          使用IaC实现简单的网络自动化
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-12-28 23:20:00" itemprop="dateCreated datePublished" datetime="2019-12-28T23:20:00+08:00">2019-12-28</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-01-22 22:30:20" itemprop="dateModified" datetime="2020-01-22T22:30:20+08:00">2020-01-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/IaC/" itemprop="url" rel="index">
+                    <span itemprop="name">IaC</span>
+                  </a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2019/12/28/Networking/NetOps/Network-automation-using-IaC/#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/12/28/Networking/NetOps/Network-automation-using-IaC/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>基础架构即代码意味着编写代码来配置，管理和部署IT基础架构，这种概念以下几项关键原则：</p>
+<ul>
+<li>可再生性：基础环境中的任意元素可以再现，复制。</li>
+<li>一致性：无论何时，创建在环境各个元素的配置是完全相同的。</li>
+<li>快速反馈：能够频繁、简单地进行变更。</li>
+<li>可见性：所有对环境的变更都更易读、可接受版本控制的管理。</li>
+</ul>
+<p>通过IaC，可以将基础设施中的元素和配置标准化、自动化，将基础设施作为软件开发流程中的一个功能，一段代码，实现基础设施的pipeline，从而最终实现CI/CD，NetOps以及DevOps。</p>
+<p>本文主要描述配置的声明以及下发示例，通过<code>Ansible</code>和<code>Terraform</code>两种IaC工具，通过<code>Netconf over SSH</code>协议对正在运行<code>JunOS</code>的网络设备进行配置的下发，后期会慢慢记录Pipeline的实现（还没弄）。<br><a id="more"></a></p>
+<h1 id="用到的协议和工具"><a href="#用到的协议和工具" class="headerlink" title="用到的协议和工具"></a>用到的协议和工具</h1><ul>
+<li><p>Netconf</p>
+<p>NETCONF是IETF定义的“安装，操作和删除网络设备的配置”的协议。NETCONF操作是使用XML编码在远程过程调用（RPC）层之上实现的，并且提供了一组基本操作来编辑和查询网络设备上的配置。</p>
+<p>在NETCONF之前，CLI脚本是对网络进行自动配置更改的主要方法。CLI脚本具有一些局限性，包括缺乏事务管理，没有结构化的错误管理以及不断变化的命令结构和语法，这使得脚本脆弱且维护成本很高。这些都是因为CLI旨在供人类使用而不是用于程序访问的API的基本事实的所有副作用。</p>
+<p>NETCONF协议旨在解决配置管理的现有实践和协议的缺点。在2002 IAB网络管理研讨会的<a href="http://tools.ietf.org/html/rfc3535" target="_blank" rel="noopener">RFC 3535</a>概述中记录了设计阶段之前的背景工作。该工作的设计目标包括：</p>
+<ul>
+<li>配置和状态数据之间的区别</li>
+<li>多个配置数据存储（候选，运行，启动）</li>
+<li>配置变更交易</li>
+<li>配置测试和验证支持</li>
+<li>通过过滤进行选择性数据检索</li>
+<li>流和事件通知的播放</li>
+<li>可扩展过程调用机制</li>
+</ul>
+</li>
+<li><p>Ansible</p>
+<p>Ansible是一个简单的开源软件自动化平台，负责应用程序部署，配置管理，临时任务执行和多节点编排。Ansible本身是用Python编写的，学习曲线相当小。Ansible遵循简单的设置过程，并且不依赖于任何其他软件，服务器或客户端守护程序。它通过SSH管理节点，并且默认情况下是并行的。</p>
+</li>
+<li><p>Terraform</p>
+<p>是一个IT基础架构自动化编排工具，可以用代码来管理维护IT资源（暂时没有支持JunOS的provider，希望官方或大佬完善，目前只在Github找到一个简单的实现，这里用作示范）。</p>
+</li>
+<li><p>PyEZ</p>
+<p>Junos PyEZ是Python的微框架，使您可以管理和自动化运行Junos操作系统（Junos OS）的设备。 Junos PyEZ旨在在为自动化任务构建的环境中提供用户在Junos OS命令行界面（CLI）上所具有的功能。 </p>
+</li>
+</ul>
+<h1 id="环境准备"><a href="#环境准备" class="headerlink" title="环境准备"></a>环境准备</h1><p><img src="https://blog-image.nos-eastchina1.126.net/g200220.png" alt=""></p>
+<p><em>图片摘自Juniper.net</em></p>
+<h2 id="资源"><a href="#资源" class="headerlink" title="资源"></a>资源</h2><p>虽然<code>Terraform</code>可以跨平台，但是<code>Ansible</code>并不支持<code>Windows</code>，所以我们要准备一台Linux（有Macbook就不用啦，逃。</p>
+<p>所以我们需要准备以下资源：</p>
+<ol>
+<li>一台非Windows系统的Controller</li>
+<li>一个运行着JunOS的机器（我这边下载一个vSRX）</li>
+<li>一个可以互相通信的网络</li>
+</ol>
+<p>对应的IP地址：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>组件</th>
+<th>OS</th>
+<th>IP</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ansible&amp;&amp;Terraform控制节点</td>
+<td>CentOS7</td>
+<td>192.168.1.139</td>
+</tr>
+<tr>
+<td>Juniper vSRX</td>
+<td>FreeBSD</td>
+<td>192.168.1.105</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="前期配置"><a href="#前期配置" class="headerlink" title="前期配置"></a>前期配置</h2><h3 id="对于控制节点"><a href="#对于控制节点" class="headerlink" title="对于控制节点"></a>对于控制节点</h3><p>所有的请求需要基于SSH协议，虽然Ansible支持在配置文件中声明主机密码变量以及交互式输入密码，但由于JunOS运行在BSD系统上，为了减少奇怪的问题，所以配置SSH免密登陆（生产环境也建议这样）</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 生成SSH认证密钥对</span></span><br><span class="line">ssh-keygen </span><br><span class="line"><span class="comment"># 安装软件Ansible所需的软件,pip版本取决于Ansible使用哪个版本的Python解释器，CentOS7默认是python2</span></span><br><span class="line">yum -y install python ansible python2-pip python3-pip </span><br><span class="line"><span class="comment"># 安装 pip模块</span></span><br><span class="line">pip install ncclient netconf junos-eznc jxmlease</span><br><span class="line"><span class="comment"># 安装 Juniper.junos 的ansible-galaxy Role</span></span><br><span class="line">ansible-galaxy install git+https://github.com/Juniper/ansible-junos-stdlib.git,,Juniper.junos</span><br><span class="line"><span class="comment"># terraform 安装略，二进制文件，直接放在$PATH里面就可以。</span></span><br></pre></td></tr></table></figure>
+<h3 id="对于vSRX"><a href="#对于vSRX" class="headerlink" title="对于vSRX"></a>对于vSRX</h3><blockquote>
+<p>控制节点已事先SSH密钥对。</p>
+</blockquote>
+<p>所有的请求需要基于SSH协议，所以需要先开启SSH，以及Netconf，以及一个专用于Netconf的用户，这里临时使用root用作演示，生产环境请不要使用root，应单独声明用户Netconf的用户，且不支持密码登陆，仅允许SSH密钥登陆。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 开启SSH</span></span><br><span class="line"><span class="comment"># cli模式下执行</span></span><br><span class="line">configure <span class="comment"># 软件配置模式</span></span><br><span class="line"><span class="built_in">set</span> system services ssh</span><br><span class="line"><span class="built_in">set</span> system services netconf ssh </span><br><span class="line"><span class="built_in">set</span> system services ssh root-login allow <span class="comment"># 生产请勿使用root</span></span><br><span class="line">commit <span class="comment"># 提交</span></span><br><span class="line">start shell <span class="comment"># 进入shell模式</span></span><br><span class="line"><span class="comment"># shell模式下执行</span></span><br><span class="line">scp 192.168.1.139:/root/.ssh/id_rsa.pub /tmp/ <span class="comment"># copy公钥到本地</span></span><br><span class="line">cli <span class="comment"># 进入cli模式</span></span><br><span class="line"><span class="comment"># cli模式下执行</span></span><br><span class="line">configure <span class="comment"># 软件配置模式</span></span><br><span class="line"><span class="built_in">set</span> system root-authentication load-key-file /tmp/id_rsa.pub <span class="comment"># 免密登陆</span></span><br><span class="line"><span class="comment"># 非root用户请执行：set system login user ...</span></span><br><span class="line">commit <span class="comment"># 提交</span></span><br></pre></td></tr></table></figure>
+<p><em>现在使用控制节点测试root登陆是否已经不需要输入密码</em></p>
+<h1 id="Ansible配置"><a href="#Ansible配置" class="headerlink" title="Ansible配置"></a>Ansible配置</h1><p>ansible主要有两个配置文件：</p>
+<ol>
+<li><code>ansible.cfg</code> ,Ansible的配置文件，定义Ansible的行为。未指定的情况下，默认使用<code>/etc/ansible/ansible.cfg</code></li>
+<li>hosts，Ansible的清单文件，用来描述受管节点信息。未指定的情况下，默认使用<code>/etc/ansible/hosts</code></li>
+</ol>
+<p>首先我们先修改<code>/etc/ansible/ansible.cfg</code> 指定刚才生成的SSH密钥：</p>
+<figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># if set, always use this private key file for authentication, same as</span></span><br><span class="line"><span class="comment"># if passing --private-key to ansible or ansible-playbook</span></span><br><span class="line"><span class="attr">private_key_file</span> = /root/.ssh/id_rsa</span><br></pre></td></tr></table></figure>
+<p>然后将vSRX声明到<code>/etc/ansible/hosts</code>这个默认的清单文件中：</p>
+<figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">[junos]</span></span><br><span class="line">192.168.1.105</span><br><span class="line"><span class="section">[junos:vars]</span></span><br><span class="line"><span class="attr">ansible_connection</span>=netconf</span><br><span class="line"><span class="attr">ansible_network_os</span>=junos</span><br><span class="line"><span class="attr">ansible_user</span>=root</span><br><span class="line"><span class="attr">ansible_ssh_common_args</span>=<span class="string">'-o ProxyCommand="ssh -W %h:%p -q bastion01"'</span></span><br></pre></td></tr></table></figure>
+<p>这里我定义了一个名为junos的<code>group</code>，包含一台主机，主机的IP地址是<code>192.168.1.105</code>，同时定义了仅对junos这个<code>group</code>生效的变量。</p>
+<h2 id="Playbook"><a href="#Playbook" class="headerlink" title="Playbook"></a>Playbook</h2><p>Ansible的Playbook是<code>yaml</code>格式的声明式文本文件，可以定义多项操作，下面几个示例可以体验一下。</p>
+<h3 id="banner"><a href="#banner" class="headerlink" title="banner"></a>banner</h3><p>首先玩个玩具，也是最简单的，登陆设备的横幅：</p>
+<p>写一个，<code>Welcome To HIT-IDC</code>，这时候需要一个神器，<a href="http://www.network-science.de/ascii" target="_blank" rel="noopener">ascii Generator</a>。输入想要变成ASCII的文字，然后粘贴到文本中，命名为<code>/opt/junos-ansible/banner.cfg</code>。</p>
+<p>然后写一个简单<code>playbook</code>，命名为<code>banner.yaml</code></p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Gather</span> <span class="string">facts</span> <span class="string">from</span> <span class="string">Junos</span> <span class="string">devices</span></span><br><span class="line">  <span class="attr">hosts:</span> <span class="string">junos</span></span><br><span class="line">  <span class="attr">connection:</span> <span class="string">netconf</span></span><br><span class="line">  <span class="attr">gather_facts:</span> <span class="literal">no</span></span><br><span class="line">  <span class="attr">tasks:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Configure</span> <span class="string">banner</span> <span class="string">from</span> <span class="string">file</span></span><br><span class="line">    <span class="attr">junos_banner:</span></span><br><span class="line">      <span class="attr">banner:</span>  <span class="string">motd</span></span><br><span class="line">      <span class="attr">text:</span> <span class="string">"<span class="template-variable">&#123;&#123; lookup('file', '/opt/junos-ansible/banner.cfg') &#125;&#125;</span>"</span></span><br><span class="line">      <span class="attr">state:</span> <span class="string">present</span></span><br></pre></td></tr></table></figure>
+<p>我们执行这个剧本。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ansible-playbook banner.yaml</span><br></pre></td></tr></table></figure>
+<p>现在登陆设备，</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">Last login: Fri Dec 13 17:30:53 2019 from 192.168.1.171</span><br><span class="line">--- JUNOS 19.3R2.9 Kernel 64-bit  JNPR-11.0-20191120.0ebd4bf_buil</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">||   / |  / /</span><br><span class="line">||  /  | / /  ___     //  ___      ___      _   __      ___</span><br><span class="line">|| / /||/ / //___) ) // //   ) ) //   ) ) // ) )  ) ) //___) )</span><br><span class="line">||/ / |  / //       // //       //   / / // / /  / / //</span><br><span class="line">|  /  | / ((____   // ((____   ((___/ / // / /  / / ((____</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"> /__  ___/</span><br><span class="line">   / /   ___</span><br><span class="line">  / /  //   ) )</span><br><span class="line"> / /  //   / /</span><br><span class="line">/ /  ((___/ /</span><br><span class="line"></span><br><span class="line">             ___   ___               ___   ___</span><br><span class="line">    //    / /   / / /__  ___/           / /    //    ) ) //   ) )</span><br><span class="line">   //___ / /   / /    / /              / /    //    / / //</span><br><span class="line">  / ___   /   / /    / /      ____    / /    //    / / //</span><br><span class="line"> //    / /   / /    / /              / /    //    / / //</span><br><span class="line">//    / / __/ /___ / /            __/ /___ //____/ / ((____/ /test_user1@juniper-vsrx-01&gt;</span><br><span class="line"></span><br><span class="line">test_user1@juniper-vsrx-01&gt;</span><br></pre></td></tr></table></figure>
+<h4 id="升级JunOS"><a href="#升级JunOS" class="headerlink" title="升级JunOS"></a>升级JunOS</h4><p>首先下载对应的包放在本地，当然也可以放在设备的文件系统上，这个看需求，示例中放在本地：</p>
+<p>将文件放在<code>/opt/junos-ansible/junos-vsrx-x86-64-19.3R2.9.tgz</code>。</p>
+<p>然后再次编写一个playbook，名为<code>install-os.yaml</code></p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">---</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Install</span> <span class="string">Junos</span> <span class="string">OS</span> <span class="comment"># 剧本名称</span></span><br><span class="line">  <span class="attr">hosts:</span> <span class="string">junos</span>  <span class="comment"># 配置的组</span></span><br><span class="line">  <span class="attr">roles:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">Juniper.junos</span>  <span class="comment"># 调用的roles</span></span><br><span class="line">  <span class="attr">connection:</span> <span class="string">netconf</span> <span class="comment"># 连接方式</span></span><br><span class="line">  <span class="attr">gather_facts:</span> <span class="literal">no</span></span><br><span class="line"></span><br><span class="line">  <span class="attr">vars:</span>     <span class="comment"># 变量，不解释了</span></span><br><span class="line">    <span class="attr">OS_version:</span> <span class="string">"19.3R2.9"</span></span><br><span class="line">    <span class="attr">OS_package:</span> <span class="string">"junos-vsrx-x86-64-19.3R2.9.tgz"</span></span><br><span class="line">    <span class="attr">pkg_dir:</span> <span class="string">"/opt/junos-ansible"</span></span><br><span class="line">    <span class="attr">log_dir:</span> <span class="string">"/var/log/ansible"</span></span><br><span class="line">    <span class="attr">netconf_port:</span> <span class="number">830</span></span><br><span class="line">    <span class="attr">wait_time:</span> <span class="number">3600</span></span><br><span class="line"></span><br><span class="line">  <span class="attr">tasks:</span>  <span class="comment"># 定义多个任务</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Checking</span> <span class="string">NETCONF</span> <span class="string">connectivity</span> <span class="comment"># 任务名称</span></span><br><span class="line">      <span class="attr">wait_for:</span></span><br><span class="line">        <span class="attr">host:</span> <span class="string">"<span class="template-variable">&#123;&#123; inventory_hostname &#125;&#125;</span>"</span></span><br><span class="line">        <span class="attr">port:</span> <span class="string">"<span class="template-variable">&#123;&#123; netconf_port &#125;&#125;</span>"</span></span><br><span class="line">        <span class="attr">timeout:</span> <span class="number">5</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Install</span> <span class="string">Junos</span> <span class="string">OS</span> <span class="string">package</span>  <span class="comment"># 任务名称</span></span><br><span class="line">      <span class="attr">juniper_junos_software:</span> <span class="comment"># 调用的modules</span></span><br><span class="line">        <span class="attr">version:</span> <span class="string">"<span class="template-variable">&#123;&#123; OS_version &#125;&#125;</span>"</span> <span class="comment"># 传入vars中定义的变量值</span></span><br><span class="line">        <span class="attr">local_package:</span> <span class="string">"<span class="template-variable">&#123;&#123; pkg_dir &#125;&#125;</span>/<span class="template-variable">&#123;&#123; OS_package &#125;&#125;</span>"</span> <span class="comment"># 包的路径</span></span><br><span class="line">        <span class="attr">reboot:</span> <span class="literal">true</span> <span class="comment"># 是否重启</span></span><br><span class="line">        <span class="attr">validate:</span> <span class="literal">true</span> <span class="comment"># 是否验证</span></span><br><span class="line">        <span class="attr">cleanfs:</span> <span class="literal">true</span> <span class="comment"># 是否清理文件系统</span></span><br><span class="line">        <span class="attr">logfile:</span> <span class="string">"<span class="template-variable">&#123;&#123; log_dir &#125;&#125;</span>/software.log"</span> <span class="comment"># 日志位置</span></span><br><span class="line">      <span class="attr">register:</span> <span class="string">sw</span></span><br><span class="line">      <span class="attr">notify:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">wait_reboot</span></span><br><span class="line"></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Print</span> <span class="string">response</span></span><br><span class="line">      <span class="attr">debug:</span></span><br><span class="line">        <span class="attr">var:</span> <span class="string">response</span></span><br><span class="line"></span><br><span class="line">  <span class="attr">handlers:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">wait_reboot</span></span><br><span class="line">      <span class="attr">wait_for:</span></span><br><span class="line">        <span class="attr">host:</span> <span class="string">"<span class="template-variable">&#123;&#123; inventory_hostname &#125;&#125;</span>"</span></span><br><span class="line">        <span class="attr">port:</span> <span class="string">"<span class="template-variable">&#123;&#123; netconf_port &#125;&#125;</span>"</span></span><br><span class="line">        <span class="attr">timeout:</span> <span class="string">"<span class="template-variable">&#123;&#123; wait_time &#125;&#125;</span>"</span></span><br><span class="line">      <span class="attr">when:</span> <span class="string">not</span> <span class="string">sw.check_mode</span></span><br></pre></td></tr></table></figure>
+<p> 我在playbook中描述了大概的注释，运行的时候，请先把注释删除。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ansible-playbook install-os.yaml</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>不知道vSRX什么情况，不能升级，但是我在硬件设备都成功了。</p>
+</blockquote>
+<p>现在可以看到，JunOS已经倒计时重启，开机后可以执行<code>show version</code></p>
+<h3 id="创建用户"><a href="#创建用户" class="headerlink" title="创建用户"></a>创建用户</h3><p>这里我们将演示如何创建用户：</p>
+<p>编写名为<code>user.yaml</code>的<code>playbook</code>：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">---</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Create</span> <span class="string">User</span> <span class="string">On</span> <span class="string">Junos</span> <span class="string">OS</span></span><br><span class="line">  <span class="attr">hosts:</span> <span class="string">junos</span></span><br><span class="line">  <span class="attr">roles:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">Juniper.junos</span></span><br><span class="line">  <span class="attr">connection:</span> <span class="string">netconf</span></span><br><span class="line">  <span class="attr">gather_facts:</span> <span class="literal">no</span></span><br><span class="line"></span><br><span class="line">  <span class="attr">tasks:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Create</span> <span class="string">list</span> <span class="string">of</span> <span class="string">users</span></span><br><span class="line">      <span class="attr">junos_user:</span></span><br><span class="line">        <span class="attr">aggregate:</span></span><br><span class="line">          <span class="bullet">-</span> <span class="string">&#123;name:</span> <span class="string">test_user1,</span> <span class="attr">full_name:</span> <span class="string">test_user2,</span> <span class="attr">role:</span> <span class="string">operator,</span> <span class="attr">state:</span> <span class="string">present&#125;</span></span><br><span class="line">          <span class="bullet">-</span> <span class="string">&#123;name:</span> <span class="string">test_user2,</span> <span class="attr">full_name:</span> <span class="string">test_user2,</span> <span class="attr">role:</span> <span class="string">read-only,</span> <span class="attr">state:</span> <span class="string">present&#125;</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">set</span> <span class="string">user1</span> <span class="string">password</span></span><br><span class="line">      <span class="attr">junos_user:</span></span><br><span class="line">        <span class="attr">name:</span> <span class="string">test_user1</span></span><br><span class="line">        <span class="attr">role:</span> <span class="string">super-user</span></span><br><span class="line">        <span class="attr">encrypted_password:</span> <span class="string">"<span class="template-variable">&#123;&#123; 'my-passwordsdf' | password_hash('sha512') &#125;&#125;</span>"</span></span><br><span class="line">        <span class="attr">state:</span> <span class="string">present</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">set</span> <span class="string">user2</span> <span class="string">password</span></span><br><span class="line">      <span class="attr">junos_user:</span></span><br><span class="line">        <span class="attr">name:</span> <span class="string">test_user2</span></span><br><span class="line">        <span class="attr">role:</span> <span class="string">super-user</span></span><br><span class="line">        <span class="attr">encrypted_password:</span> <span class="string">"<span class="template-variable">&#123;&#123; 'my-password43' | password_hash('sha512') &#125;&#125;</span>"</span></span><br><span class="line">        <span class="attr">state:</span> <span class="string">present</span></span><br></pre></td></tr></table></figure>
+<p>然后执行这个<code>playbook</code></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ansible-playbook user.yaml</span><br></pre></td></tr></table></figure>
+<p>这将在名为<code>junos</code>的<code>group</code>中创建这些用户，并设置角色和密码。</p>
+<p><code>playbook</code>运行完成后，可以登陆设备测试。</p>
+<h3 id="配置变更"><a href="#配置变更" class="headerlink" title="配置变更"></a>配置变更</h3><p>这里再次编写<code>playbook</code>，命名为<code>get-config.yaml</code>：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">---</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">name:</span> <span class="string">"Get Junos OS configuration."</span></span><br><span class="line">  <span class="attr">hosts:</span> <span class="string">junos</span></span><br><span class="line">  <span class="attr">roles:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">Juniper.junos</span></span><br><span class="line">  <span class="attr">connection:</span> <span class="string">netconf</span></span><br><span class="line">  <span class="attr">gather_facts:</span> <span class="literal">no</span></span><br><span class="line"></span><br><span class="line">  <span class="attr">tasks:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">"Get committed configuration"</span></span><br><span class="line">      <span class="attr">juniper_junos_config:</span></span><br><span class="line">        <span class="attr">retrieve:</span> <span class="string">"committed"</span></span><br><span class="line">      <span class="attr">register:</span> <span class="string">response</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">"Print result"</span></span><br><span class="line">      <span class="attr">debug:</span></span><br><span class="line">        <span class="attr">var:</span> <span class="string">response</span></span><br></pre></td></tr></table></figure>
+<p>这将获取设备的配置的信息，也可以将其保存为其他格式：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">---</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">name:</span> <span class="string">"Get Junos OS configuration."</span></span><br><span class="line">  <span class="attr">hosts:</span> <span class="string">junos</span> </span><br><span class="line">  <span class="attr">roles:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">Juniper.junos</span></span><br><span class="line">  <span class="attr">connection:</span> <span class="string">netconf</span></span><br><span class="line">  <span class="attr">gather_facts:</span> <span class="literal">no</span></span><br><span class="line"></span><br><span class="line">  <span class="attr">tasks:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">"Get configuration in XML format"</span></span><br><span class="line">      <span class="attr">juniper_junos_config:</span></span><br><span class="line">        <span class="attr">retrieve:</span> <span class="string">"committed"</span></span><br><span class="line">        <span class="attr">format:</span> <span class="string">"xml"</span></span><br><span class="line">      <span class="attr">register:</span> <span class="string">response</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">"Print result"</span></span><br><span class="line">      <span class="attr">debug:</span></span><br><span class="line">        <span class="attr">var:</span> <span class="string">response</span></span><br></pre></td></tr></table></figure>
+<p>也可以保存到文件:</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">---</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">name:</span> <span class="string">"Get Junos OS configuration."</span></span><br><span class="line">  <span class="attr">hosts:</span> <span class="string">junos</span> </span><br><span class="line">  <span class="attr">roles:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">Juniper.junos</span></span><br><span class="line">  <span class="attr">connection:</span> <span class="string">netconf</span></span><br><span class="line">  <span class="attr">gather_facts:</span> <span class="literal">no</span></span><br><span class="line"></span><br><span class="line">  <span class="attr">tasks:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">"Get selected configuration hierarchies and save to file"</span></span><br><span class="line">      <span class="attr">juniper_junos_config:</span></span><br><span class="line">        <span class="attr">retrieve:</span> <span class="string">"committed"</span></span><br><span class="line">        <span class="attr">filter:</span> <span class="string">"system/services"</span></span><br><span class="line">        <span class="attr">dest_dir:</span> <span class="string">"<span class="template-variable">&#123;&#123; playbook_dir &#125;&#125;</span>"</span></span><br></pre></td></tr></table></figure>
+<p>这将保存过滤后的配置信息到本地，内容如下：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">system &#123;</span><br><span class="line">    services &#123;</span><br><span class="line">        ssh &#123;</span><br><span class="line">            root-login allow;</span><br><span class="line">            sftp-server;</span><br><span class="line">            hostkey-algorithm &#123;</span><br><span class="line">                ssh-rsa;</span><br><span class="line">                no-ssh-ecdsa;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        netconf &#123;</span><br><span class="line">            ssh;</span><br><span class="line">        &#125;</span><br><span class="line">        web-management &#123;</span><br><span class="line">            http;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>也可以对交换机执行<code>set</code>以及<code>delete</code>类的配置</p>
+<p>编写示例文件<code>config-irb.10.yaml</code>:</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">---</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">name:</span> <span class="string">"Get Junos OS configuration."</span></span><br><span class="line">  <span class="attr">hosts:</span> <span class="string">junos</span></span><br><span class="line">  <span class="attr">roles:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">Juniper.junos</span></span><br><span class="line">  <span class="attr">connection:</span> <span class="string">netconf</span></span><br><span class="line">  <span class="attr">gather_facts:</span> <span class="literal">no</span></span><br><span class="line"></span><br><span class="line">  <span class="attr">tasks:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">load</span> <span class="string">configure</span> <span class="string">lines</span> <span class="string">into</span> <span class="string">device</span></span><br><span class="line">    <span class="attr">junos_config:</span></span><br><span class="line">      <span class="attr">lines:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="string">set</span> <span class="string">interfaces</span> <span class="string">ge-0/0/1</span> <span class="string">unit</span> <span class="number">0</span> <span class="string">description</span> <span class="string">"Test interface"</span></span><br><span class="line">        <span class="bullet">-</span> <span class="string">set</span> <span class="string">vlans</span> <span class="string">vlan01</span> <span class="string">description</span> <span class="string">"Test vlan"</span></span><br><span class="line">      <span class="attr">comment:</span> <span class="string">update</span> <span class="string">config</span></span><br><span class="line"></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Set</span> <span class="string">routed</span> <span class="string">VLAN</span> <span class="string">interface</span> <span class="string">(RVI)</span> <span class="string">IPv4</span> <span class="string">address</span></span><br><span class="line">    <span class="attr">junos_config:</span></span><br><span class="line">      <span class="attr">lines:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="string">set</span> <span class="string">vlans</span> <span class="string">vlan01</span> <span class="string">vlan-id</span> <span class="number">1</span></span><br><span class="line">        <span class="bullet">-</span> <span class="string">set</span> <span class="string">interfaces</span> <span class="string">irb</span> <span class="string">unit</span> <span class="number">10</span> <span class="string">family</span> <span class="string">inet</span> <span class="string">address</span> <span class="number">10.0</span><span class="number">.0</span><span class="number">.1</span><span class="string">/24</span></span><br><span class="line">        <span class="bullet">-</span> <span class="string">set</span> <span class="string">vlans</span> <span class="string">vlan01</span> <span class="string">l3-interface</span> <span class="string">irb.10</span></span><br><span class="line"></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Check</span> <span class="string">correctness</span> <span class="string">of</span> <span class="string">commit</span> <span class="string">configuration</span></span><br><span class="line">    <span class="attr">junos_config:</span></span><br><span class="line">      <span class="attr">check_commit:</span> <span class="literal">yes</span></span><br></pre></td></tr></table></figure>
+<p>然后让我们登陆到JunOS上查看配置是否已经生效：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">show |compare rollback 1</span><br></pre></td></tr></table></figure>
+<p>回显如下：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">[edit interfaces]</span><br><span class="line">+   irb &#123;</span><br><span class="line">+       unit 10 &#123;</span><br><span class="line">+           family inet &#123;</span><br><span class="line">+               address 10.0.0.1/24;</span><br><span class="line">+           &#125;</span><br><span class="line">+       &#125;</span><br><span class="line">+   &#125;</span><br><span class="line">[edit vlans vlan01]</span><br><span class="line">+   vlan-id 1;</span><br><span class="line">+   l3-interface irb.10;</span><br></pre></td></tr></table></figure>
+<p>不多介绍功能了，这些功能主要是名为<code>Juniper.junos</code>的Ansible-Galaxy Role，以及Ansible的<code>junos</code>模块，这些依赖于<code>netconf</code>以及<code>JunOS PyEz</code>，以下是对应的文档地址：</p>
+<p><a href="https://docs.ansible.com/ansible/latest/modules/list_of_network_modules.html#junos" target="_blank" rel="noopener">Ansible Junos</a></p>
+<p><a href="https://github.com/Juniper/ansible-junos-stdlib" target="_blank" rel="noopener">Ansible-Galaxy Juniper.junos</a></p>
+<p><a href="https://junos-ansible-modules.readthedocs.io/en/2.3.0/index.html" target="_blank" rel="noopener">Docs for Juniper.junos</a></p>
+<p>具体参数可以查看这几份文档。</p>
+<h2 id="Terraform-丝滑体验"><a href="#Terraform-丝滑体验" class="headerlink" title="Terraform 丝滑体验"></a>Terraform 丝滑体验</h2><p><code>Ansible</code>虽然算是比较简单的了，但是对于<code>Jinja2</code>模板变量的编写还是相对难上手的，但<code>Terraform</code>的变量声明可以算是一股清流。</p>
+<p>逛论坛和Google半个月也没找到有关Juniper的<code>Terraform Provider</code>，社区插件都没有，Github上倒是找到了一个，不过不太完美，不敢用在生产，这里只做演示，希望以后官方或社区可以贡献一份生产可用的<code>Terraform Provider</code>。</p>
+<h2 id="安装Terraform"><a href="#安装Terraform" class="headerlink" title="安装Terraform"></a>安装Terraform</h2><ul>
+<li><p>下载<a href="https://releases.hashicorp.com/terraform/0.12.18/terraform_0.12.18_linux_amd64.zip" target="_blank" rel="noopener">二进制文件</a></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -O https://releases.hashicorp.com/terraform/0.12.18/terraform_0.12.18_linux_amd64.zip</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>解压到<code>/usr/sbin/</code></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">unzip terraform_0.12.18_linux_amd64.zip -d /usr/sbin/</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>测试执行<code>terraform --version</code></p>
+</li>
+</ul>
+<h2 id="安装Junos-Priovider（不建议生产，非官方，非社区插件）"><a href="#安装Junos-Priovider（不建议生产，非官方，非社区插件）" class="headerlink" title="安装Junos Priovider（不建议生产，非官方，非社区插件）"></a>安装Junos Priovider（不建议生产，非官方，非社区插件）</h2><ul>
+<li><p>下载<a href="https://github.com/jeremmfr/terraform-provider-junos/releases" target="_blank" rel="noopener">二进制文件</a></p>
+</li>
+<li><p>解压到<code>/usr/sbin/</code></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">tfPath=$(<span class="built_in">which</span> terraform | rev | cut -d<span class="string">'/'</span> -f2- | rev)</span><br><span class="line">tar -zxvf terraform-provider-junos*.tar.gz -C <span class="variable">$&#123;tfPath&#125;</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h2 id="配置-Terraform的JunOS-Provider"><a href="#配置-Terraform的JunOS-Provider" class="headerlink" title="配置 Terraform的JunOS Provider"></a>配置 Terraform的JunOS Provider</h2><p>与<code>Ansible</code>相同，需要在运行<code>JunOS</code>的设备上开启<code>ssh</code>以及<code>netconf</code>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">set</span> system services netconf</span><br><span class="line"><span class="built_in">set</span> system login user netconf uid 200?</span><br><span class="line"><span class="built_in">set</span> system login user netconf class xxx</span><br><span class="line"><span class="built_in">set</span> system login user netconf authentication load-key-file /tmp/id_rsa.pub</span><br></pre></td></tr></table></figure>
+<p>Terraform会读取当前目录下的所有以<code>.tf</code>结尾的文件。</p>
+<p>首先先创建一个目录：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mkdir -pv /opt/terraform-junos-example</span><br><span class="line"><span class="built_in">cd</span> /opt/terraform-junos-example</span><br><span class="line">touch junos-example.tf</span><br></pre></td></tr></table></figure>
+<p>现在开始声明 junos-example.tf文件：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Configure the Junos Provider</span></span><br><span class="line"><span class="string">provider</span> <span class="string">"junos"</span> <span class="string">&#123;</span></span><br><span class="line">  <span class="string">ip</span>         <span class="string">=</span> <span class="string">"192.168.1.105"</span></span><br><span class="line">  <span class="string">username</span> <span class="string">=</span> <span class="string">"root"</span></span><br><span class="line">  <span class="string">sshkeyfile</span> <span class="string">=</span> <span class="string">"/root/.ssh/id_rsa"</span></span><br><span class="line"><span class="string">&#125;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Add a application</span></span><br><span class="line"><span class="string">resource</span> <span class="string">junos_application</span> <span class="string">"mysql"</span> <span class="string">&#123;</span></span><br><span class="line">  <span class="string">name</span>             <span class="string">=</span> <span class="string">"mysql"</span></span><br><span class="line">  <span class="string">protocol</span>         <span class="string">=</span> <span class="string">"tcp"</span></span><br><span class="line">  <span class="string">destination_port</span> <span class="string">=</span> <span class="string">"3306"</span></span><br><span class="line"><span class="string">&#125;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Add a set of applications</span></span><br><span class="line"><span class="string">resource</span> <span class="string">junos_application_set</span> <span class="string">"ssh_telnet"</span> <span class="string">&#123;</span></span><br><span class="line">  <span class="string">name</span>         <span class="string">=</span> <span class="string">"ssh_telnet"</span></span><br><span class="line">  <span class="string">applications</span> <span class="string">=</span> <span class="string">["junos-ssh",</span> <span class="string">"junos-telnet"</span><span class="string">]</span></span><br><span class="line"><span class="string">&#125;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Configure interface of switch</span></span><br><span class="line"><span class="string">resource</span> <span class="string">junos_interface</span> <span class="string">"interface_switch_demo"</span> <span class="string">&#123;</span></span><br><span class="line">  <span class="string">name</span>         <span class="string">=</span> <span class="string">"ge-0/0/0"</span></span><br><span class="line">  <span class="string">description</span>  <span class="string">=</span> <span class="string">"interfaceSwitchDemo"</span></span><br><span class="line">  <span class="string">trunk</span>        <span class="string">=</span> <span class="literal">true</span></span><br><span class="line">  <span class="string">vlan_members</span> <span class="string">=</span> <span class="string">["100",</span> <span class="string">"101"</span><span class="string">]</span></span><br><span class="line"><span class="string">&#125;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Add a vlan</span></span><br><span class="line"><span class="string">resource</span> <span class="string">junos_vlan</span> <span class="string">"blue"</span> <span class="string">&#123;</span></span><br><span class="line">  <span class="string">name</span>        <span class="string">=</span> <span class="string">"blue"</span></span><br><span class="line">  <span class="string">description</span> <span class="string">=</span> <span class="string">"blue-10"</span></span><br><span class="line">  <span class="string">vlan_id</span>     <span class="string">=</span> <span class="number">10</span></span><br><span class="line"><span class="string">&#125;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Configure a L3 interface on Junos Router or firewall</span></span><br><span class="line"><span class="string">resource</span> <span class="string">junos_interface</span> <span class="string">"interface_fw_demo"</span> <span class="string">&#123;</span></span><br><span class="line">  <span class="string">name</span>         <span class="string">=</span> <span class="string">"ge-0/0/0"</span></span><br><span class="line">  <span class="string">description</span>  <span class="string">=</span> <span class="string">"interfaceFwDemo"</span></span><br><span class="line">  <span class="string">vlan_tagging</span> <span class="string">=</span> <span class="literal">true</span></span><br><span class="line"><span class="string">&#125;</span></span><br><span class="line"><span class="string">resource</span> <span class="string">junos_interface</span> <span class="string">"interface_fw_demo_100"</span> <span class="string">&#123;</span></span><br><span class="line">  <span class="string">name</span>        <span class="string">=</span> <span class="string">"$&#123;junos_interface.interface_fw_demo.name&#125;.100"</span></span><br><span class="line">  <span class="string">description</span> <span class="string">=</span> <span class="string">"interfaceFwDemo100"</span></span><br><span class="line">  <span class="string">inet_address</span> <span class="string">&#123;</span></span><br><span class="line">    <span class="string">address</span> <span class="string">=</span> <span class="string">"192.0.2.1/25"</span></span><br><span class="line">  <span class="string">&#125;</span></span><br><span class="line"><span class="string">&#125;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Add a destination nat pool</span></span><br><span class="line"><span class="string">resource</span> <span class="string">junos_security_nat_destination_pool</span> <span class="string">"demo_dnat_pool"</span> <span class="string">&#123;</span></span><br><span class="line">  <span class="string">name</span>    <span class="string">=</span> <span class="string">"ip_internal"</span></span><br><span class="line">  <span class="string">address</span> <span class="string">=</span> <span class="string">"192.0.2.2/32"</span></span><br><span class="line"><span class="string">&#125;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Add a destination nat</span></span><br><span class="line"><span class="string">resource</span> <span class="string">junos_security_nat_destination</span> <span class="string">"demo_dnat"</span> <span class="string">&#123;</span></span><br><span class="line">  <span class="string">name</span> <span class="string">=</span> <span class="string">"dnat_from_untrust"</span></span><br><span class="line">  <span class="string">from</span> <span class="string">&#123;</span></span><br><span class="line">    <span class="string">type</span>  <span class="string">=</span> <span class="string">"zone"</span></span><br><span class="line">    <span class="string">value</span> <span class="string">=</span> <span class="string">["untrust"]</span></span><br><span class="line">  <span class="string">&#125;</span></span><br><span class="line">  <span class="string">rule</span> <span class="string">&#123;</span></span><br><span class="line">    <span class="string">name</span>                <span class="string">=</span> <span class="string">"nat_192_0_2_129"</span></span><br><span class="line">    <span class="string">destination_address</span> <span class="string">=</span> <span class="string">"192.0.2.129/32"</span></span><br><span class="line">    <span class="string">then</span> <span class="string">&#123;</span></span><br><span class="line">      <span class="string">type</span> <span class="string">=</span> <span class="string">"pool"</span></span><br><span class="line">      <span class="string">pool</span> <span class="string">=</span> <span class="string">"pool_trust"</span></span><br><span class="line">    <span class="string">&#125;</span></span><br><span class="line">  <span class="string">&#125;</span></span><br><span class="line"><span class="string">&#125;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># Add a source nat pool</span></span><br><span class="line"><span class="string">resource</span> <span class="string">junos_security_nat_source_pool</span> <span class="string">"demo_snat_pool"</span> <span class="string">&#123;</span></span><br><span class="line">  <span class="string">name</span>    <span class="string">=</span> <span class="string">"ip_external"</span></span><br><span class="line">  <span class="string">address</span> <span class="string">=</span> <span class="string">["192.0.2.129/32"]</span></span><br><span class="line"><span class="string">&#125;</span></span><br><span class="line"><span class="comment"># Add a source nat</span></span><br><span class="line"><span class="string">resource</span> <span class="string">junos_security_nat_source</span> <span class="string">"demo_snat"</span> <span class="string">&#123;</span></span><br><span class="line">  <span class="string">name</span> <span class="string">=</span> <span class="string">"nat_from_trust_to_untrust"</span></span><br><span class="line">  <span class="string">from</span> <span class="string">&#123;</span></span><br><span class="line">    <span class="string">type</span>  <span class="string">=</span> <span class="string">"zone"</span></span><br><span class="line">    <span class="string">value</span> <span class="string">=</span> <span class="string">["trust"]</span></span><br><span class="line">  <span class="string">&#125;</span></span><br><span class="line">  <span class="string">to</span> <span class="string">&#123;</span></span><br><span class="line">    <span class="string">type</span>  <span class="string">=</span> <span class="string">"zone"</span></span><br><span class="line">    <span class="string">value</span> <span class="string">=</span> <span class="string">["untrust"]</span></span><br><span class="line">  <span class="string">&#125;</span></span><br><span class="line">  <span class="string">rule</span> <span class="string">&#123;</span></span><br><span class="line">    <span class="string">name</span> <span class="string">=</span> <span class="string">"nat_192_0_2_0_25"</span></span><br><span class="line">    <span class="string">match</span> <span class="string">&#123;</span></span><br><span class="line">      <span class="string">source_address</span> <span class="string">=</span> <span class="string">["192.0.2.0/25"]</span></span><br><span class="line">    <span class="string">&#125;</span></span><br><span class="line">    <span class="string">then</span> <span class="string">&#123;</span></span><br><span class="line">      <span class="string">type</span> <span class="string">=</span> <span class="string">"pool"</span></span><br><span class="line">      <span class="string">pool</span> <span class="string">=</span> <span class="string">"pool_untrust"</span></span><br><span class="line">    <span class="string">&#125;</span></span><br><span class="line">  <span class="string">&#125;</span></span><br><span class="line"><span class="string">&#125;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Add a static nat</span></span><br><span class="line"><span class="string">resource</span> <span class="string">junos_security_nat_static</span> <span class="string">"demo_nat"</span> <span class="string">&#123;</span></span><br><span class="line">  <span class="string">name</span> <span class="string">=</span> <span class="string">"nat_from_trust"</span></span><br><span class="line">  <span class="string">from</span> <span class="string">&#123;</span></span><br><span class="line">    <span class="string">type</span>  <span class="string">=</span> <span class="string">"zone"</span></span><br><span class="line">    <span class="string">value</span> <span class="string">=</span> <span class="string">["trust"]</span></span><br><span class="line">  <span class="string">&#125;</span></span><br><span class="line">  <span class="string">rule</span> <span class="string">&#123;</span></span><br><span class="line">    <span class="string">name</span>                <span class="string">=</span> <span class="string">"nat_192_0_2_0_25"</span></span><br><span class="line">    <span class="string">destination_address</span> <span class="string">=</span> <span class="string">"192.0.2.0/25"</span></span><br><span class="line">    <span class="string">then</span> <span class="string">&#123;</span></span><br><span class="line">      <span class="string">type</span>   <span class="string">=</span> <span class="string">"prefix"</span></span><br><span class="line">      <span class="string">prefix</span> <span class="string">=</span> <span class="string">"192.0.2.128/25"</span></span><br><span class="line">    <span class="string">&#125;</span></span><br><span class="line">  <span class="string">&#125;</span></span><br><span class="line"><span class="string">&#125;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Add a security policy</span></span><br><span class="line"><span class="string">resource</span> <span class="string">junos_security_policy</span> <span class="string">"demo_policy"</span> <span class="string">&#123;</span></span><br><span class="line">  <span class="string">from_zone</span> <span class="string">=</span> <span class="string">"trust"</span></span><br><span class="line">  <span class="string">to_zone</span>   <span class="string">=</span> <span class="string">"untrust"</span></span><br><span class="line">  <span class="string">policy</span> <span class="string">&#123;</span></span><br><span class="line">    <span class="string">name</span>                      <span class="string">=</span> <span class="string">"allow_trust"</span></span><br><span class="line">    <span class="string">match_source_address</span>      <span class="string">=</span> <span class="string">["any"]</span></span><br><span class="line">    <span class="string">match_destination_address</span> <span class="string">=</span> <span class="string">["any"]</span></span><br><span class="line">    <span class="string">match_application</span>         <span class="string">=</span> <span class="string">["any"]</span></span><br><span class="line">    <span class="string">then</span>                      <span class="string">=</span> <span class="string">"permit"</span></span><br><span class="line">  <span class="string">&#125;</span></span><br><span class="line"><span class="string">&#125;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Add a security zone</span></span><br><span class="line"><span class="string">resource</span> <span class="string">junos_security_zone</span> <span class="string">"demo_zone"</span> <span class="string">&#123;</span></span><br><span class="line">  <span class="string">name</span>              <span class="string">=</span> <span class="string">"DemoZone"</span></span><br><span class="line">  <span class="string">inbound_protocols</span> <span class="string">=</span> <span class="string">["bgp"]</span></span><br><span class="line">  <span class="string">address_book</span> <span class="string">&#123;</span></span><br><span class="line">    <span class="string">name</span>    <span class="string">=</span> <span class="string">"DemoAddress"</span></span><br><span class="line">    <span class="string">network</span> <span class="string">=</span> <span class="string">"192.0.2.0/25"</span></span><br><span class="line">  <span class="string">&#125;</span></span><br><span class="line"><span class="string">&#125;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Add a static route</span></span><br><span class="line"><span class="string">resource</span> <span class="string">junos_static_route</span> <span class="string">"demo_static_route"</span> <span class="string">&#123;</span></span><br><span class="line">  <span class="string">destination</span>      <span class="string">=</span> <span class="string">"192.0.2.0/25"</span></span><br><span class="line">  <span class="string">routing_instance</span> <span class="string">=</span> <span class="string">"prod-vr"</span></span><br><span class="line">  <span class="string">next_hop</span>         <span class="string">=</span> <span class="string">["st0.0"]</span></span><br><span class="line"><span class="string">&#125;</span></span><br></pre></td></tr></table></figure>
+<p>首先初始化</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">terraform init</span><br></pre></td></tr></table></figure>
+<p>然后构建</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">terraform apply</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>这个插件逻辑不太通，所以使用的时候需要浪费很多时间调试。</p>
+</blockquote>
+<h1 id="如何实现CI-CD"><a href="#如何实现CI-CD" class="headerlink" title="如何实现CI/CD"></a>如何实现CI/CD</h1><p>首先得现有一个CI工具，主流的就是<code>Jenkins</code>，这个还在犹豫，想尝试一下<code>Drone</code>或者<code>Tekton</code>，在Pipeline上调用插件，<code>Ansible</code>或是<code>Terraform</code>，使用git进行版本控制，最后实现业务从申请到上线，不需要人肉传递信息，只需要审批流程+n个动作，不需要或很少需要人工干预实现业务上线，就类似这样：</p>
+<p><img src="https://blog-image.nos-eastchina1.126.net/8-ci-cd-using-hashicorp-terraform-and-jenkins.png" alt=""></p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>Goooo
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.sysctl.me/2019/12/28/Networking/NetOps/Network-automation-using-IaC/" title="使用IaC实现简单的网络自动化">https://www.sysctl.me/2019/12/28/Networking/NetOps/Network-automation-using-IaC/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/en" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Ansible/" rel="tag"># Ansible</a>
+              <a href="/tags/JunOS/" rel="tag"># JunOS</a>
+              <a href="/tags/Terraform/" rel="tag"># Terraform</a>
+              <a href="/tags/Netconf/" rel="tag"># Netconf</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/07/22/Linux/HA/RHCS/" rel="prev" title="部署RHCS">
+      <i class="fa fa-chevron-left"></i> 部署RHCS
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/01/23/macbook-pro-16-out-of-the-box/" rel="next" title="非果粉的MacBook Pro 16开箱">
+      非果粉的MacBook Pro 16开箱 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#用到的协议和工具"><span class="nav-number">1.</span> <span class="nav-text">用到的协议和工具</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#环境准备"><span class="nav-number">2.</span> <span class="nav-text">环境准备</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#资源"><span class="nav-number">2.1.</span> <span class="nav-text">资源</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#前期配置"><span class="nav-number">2.2.</span> <span class="nav-text">前期配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#对于控制节点"><span class="nav-number">2.2.1.</span> <span class="nav-text">对于控制节点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#对于vSRX"><span class="nav-number">2.2.2.</span> <span class="nav-text">对于vSRX</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Ansible配置"><span class="nav-number">3.</span> <span class="nav-text">Ansible配置</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Playbook"><span class="nav-number">3.1.</span> <span class="nav-text">Playbook</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#banner"><span class="nav-number">3.1.1.</span> <span class="nav-text">banner</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#升级JunOS"><span class="nav-number">3.1.1.1.</span> <span class="nav-text">升级JunOS</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#创建用户"><span class="nav-number">3.1.2.</span> <span class="nav-text">创建用户</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#配置变更"><span class="nav-number">3.1.3.</span> <span class="nav-text">配置变更</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Terraform-丝滑体验"><span class="nav-number">3.2.</span> <span class="nav-text">Terraform 丝滑体验</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#安装Terraform"><span class="nav-number">3.3.</span> <span class="nav-text">安装Terraform</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#安装Junos-Priovider（不建议生产，非官方，非社区插件）"><span class="nav-number">3.4.</span> <span class="nav-text">安装Junos Priovider（不建议生产，非官方，非社区插件）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#配置-Terraform的JunOS-Provider"><span class="nav-number">3.5.</span> <span class="nav-text">配置 Terraform的JunOS Provider</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#如何实现CI-CD"><span class="nav-number">4.</span> <span class="nav-text">如何实现CI&#x2F;CD</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Goooo"
+      src="/images/img.png">
+  <p class="site-author-name" itemprop="name">Goooo</p>
+  <div class="site-description" itemprop="description">一条啥也不会点废鱼</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">109</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">22</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">71</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/xth0331" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;xth0331" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:xietianhao0331@gmail.com" title="E-Mail → mailto:xietianhao0331@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/en" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+        
+        <script type="text/javascript" charset="utf-8" src="/js/tagcloud.js"></script>
+        <script type="text/javascript" charset="utf-8" src="/js/tagcanvas.js"></script>
+        <div class="widget-wrap">
+            <h3 class="widget-title">标签们</h3>
+            <div id="myCanvasContainer" class="widget tagcloud">
+                <canvas width="250" height="250" id="resCanvas" style="width=100%">
+                    <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ansible/" rel="tag">Ansible</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Backup/" rel="tag">Backup</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Bond/" rel="tag">Bond</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CPU/" rel="tag">CPU</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ceph/" rel="tag">Ceph</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cobbler/" rel="tag">Cobbler</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Coffee/" rel="tag">Coffee</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Corosync/" rel="tag">Corosync</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cyclic-invariant/" rel="tag">Cyclic invariant</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Docker/" rel="tag">Docker</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Effectiveness/" rel="tag">Effectiveness</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Exhaustion/" rel="tag">Exhaustion</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Filesystem/" rel="tag">Filesystem</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HAProxy/" rel="tag">HAProxy</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hardware/" rel="tag">Hardware</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Https/" rel="tag">Https</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ICMP/" rel="tag">ICMP</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JDK/" rel="tag">JDK</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Jenkins/" rel="tag">Jenkins</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JunOS/" rel="tag">JunOS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/KEEPALIVED/" rel="tag">KEEPALIVED</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Keepalived/" rel="tag">Keepalived</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/" rel="tag">Linux</a><span class="tag-list-count">19</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Log/" rel="tag">Log</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Markdown/" rel="tag">Markdown</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Modular-Programming/" rel="tag">Modular Programming</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Monitoring/" rel="tag">Monitoring</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Netconf/" rel="tag">Netconf</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Network/" rel="tag">Network</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Networking/" rel="tag">Networking</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Nginx/" rel="tag">Nginx</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OS/" rel="tag">OS</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OpenStack/" rel="tag">OpenStack</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Package-Manager/" rel="tag">Package Manager</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Partition/" rel="tag">Partition</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Programming/" rel="tag">Programming</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Python/" rel="tag">Python</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RAM/" rel="tag">RAM</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RHCS/" rel="tag">RHCS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RPM/" rel="tag">RPM</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Recursion/" rel="tag">Recursion</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Recursive/" rel="tag">Recursive</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Redirect/" rel="tag">Redirect</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Route/" rel="tag">Route</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SSH/" rel="tag">SSH</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Storage/" rel="tag">Storage</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Storage-and-Filesystem/" rel="tag">Storage and Filesystem</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Swap/" rel="tag">Swap</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Sys/" rel="tag">Sys</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Systemd/" rel="tag">Systemd</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Terminal/" rel="tag">Terminal</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Terraform/" rel="tag">Terraform</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Tools/" rel="tag">Tools</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ubuntu/" rel="tag">Ubuntu</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Veeam/" rel="tag">Veeam</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vim/" rel="tag">Vim</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Virtualization/" rel="tag">Virtualization</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vmware/" rel="tag">Vmware</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vsphere/" rel="tag">Vsphere</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Windows/" rel="tag">Windows</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Yum/" rel="tag">Yum</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/apple/" rel="tag">apple</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/elasticsearch/" rel="tag">elasticsearch</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/iteration/" rel="tag">iteration</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/logs/" rel="tag">logs</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/oop/" rel="tag">oop</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tools/" rel="tag">tools</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%88%86%E6%B2%BB/" rel="tag">分治</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E5%8E%8B%E7%BC%A9/" rel="tag">数据压缩</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%84%99%E8%A7%86%E9%93%BE/" rel="tag">鄙视链</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%87%8D%E5%A4%8D%E6%95%B0%E6%8D%AE%E5%88%A0%E9%99%A4/" rel="tag">重复数据删除</a><span class="tag-list-count">1</span></li></ul>
+                </canvas>
+            </div>
+        </div>
+        
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Goooo</span>
+</div>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.7.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://www-sysctl-me-1.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "https://www.sysctl.me/2019/12/28/Networking/NetOps/Network-automation-using-IaC/";
+    this.page.identifier = "2019/12/28/Networking/NetOps/Network-automation-using-IaC/";
+    this.page.title = "使用IaC实现简单的网络自动化";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://www-sysctl-me-1.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/koharu.model.json"},"display":{"position":"left","width":300,"height":600},"mobile":{"show":false},"react":{"opacity":0.7}});</script></body>
+</html>

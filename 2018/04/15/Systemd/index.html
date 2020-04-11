@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://www.sysctl.me').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","width":320,"display":"post","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="很久没更新博客了，原因有一下几个， 一是写这个东西真得很耗时（就算是借鉴博客文档），二是报了个自考（3月份报的4科，4月份考试），结果今天连考试都没去，因为书都没看完。 Systemd 并不是简单的把service、chkconfig等变成systemctl，而是管天管地管空气；为什么要强迫自己使用systemd？作为菜鸡的我，始终坚信，不管装什么软件都是用最新的，一方面能使自己体验到最新的技术（">
+<meta property="og:type" content="article">
+<meta property="og:title" content="强迫将自己的操作迁移到Systemd（一）">
+<meta property="og:url" content="https://www.sysctl.me/2018/04/15/Systemd/index.html">
+<meta property="og:site_name" content="Sysctl">
+<meta property="og:description" content="很久没更新博客了，原因有一下几个， 一是写这个东西真得很耗时（就算是借鉴博客文档），二是报了个自考（3月份报的4科，4月份考试），结果今天连考试都没去，因为书都没看完。 Systemd 并不是简单的把service、chkconfig等变成systemctl，而是管天管地管空气；为什么要强迫自己使用systemd？作为菜鸡的我，始终坚信，不管装什么软件都是用最新的，一方面能使自己体验到最新的技术（">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2018-04-14T18:11:19.000Z">
+<meta property="article:modified_time" content="2020-01-22T14:39:41.835Z">
+<meta property="article:author" content="Goooo">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="Systemd">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://www.sysctl.me/2018/04/15/Systemd/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>强迫将自己的操作迁移到Systemd（一） | Sysctl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Sysctl" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Sysctl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">观察指南，博客</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="搜索..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/xth0331" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.sysctl.me/2018/04/15/Systemd/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/img.png">
+      <meta itemprop="name" content="Goooo">
+      <meta itemprop="description" content="一条啥也不会点废鱼">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Sysctl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          强迫将自己的操作迁移到Systemd（一）
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-04-15 02:11:19" itemprop="dateCreated datePublished" datetime="2018-04-15T02:11:19+08:00">2018-04-15</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-01-22 22:39:41" itemprop="dateModified" datetime="2020-01-22T22:39:41+08:00">2020-01-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2018/04/15/Systemd/#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2018/04/15/Systemd/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>很久没更新博客了，原因有一下几个， 一是写这个东西真得很耗时（就算是借鉴博客文档），二是报了个自考（3月份报的4科，4月份考试），结果今天连考试都没去，因为书都没看完。</p>
+<p>Systemd 并不是简单的把service、chkconfig等变成systemctl，而是管天管地管空气；为什么要强迫自己使用systemd？作为菜鸡的我，始终坚信，不管装什么软件都是用最新的，一方面能使自己体验到最新的技术（当然也会掉进深渊大坑），一方面强迫自己不去搜现成的博客，防止自己跟着大佬的脚步，一路复制粘贴就成功。</p>
+<p>最近发现自己真得是什么都不会，你看别人工程师介绍自己的时候， 都可以说自己是xx工程师， 比如网络，安全存储系统  ，别人一问我 “你是做什么的阿？”，我只能说：“emmmm，就打打杂。”其实内心想说自己会linux， 然而 根本就不会阿， 任何一个模块 追踪到细节都不怎么了解，（当然了，有些模块压根就不知道）算下来，我也就是会 apt yum ， 会 servce systemctl 会 ls  rm ，还会终极神器（reboot） ，我要开始下一阶段的学习了，开始学习一些细节，以后好吹逼，今天，我们从systemd开始。</p>
+<h1 id="systemd是什么？"><a href="#systemd是什么？" class="headerlink" title="systemd是什么？"></a>systemd是什么？</h1><p><code>systemd</code>是一套Linux系统的基本构建模块。它提供了一个作为PID 1运行的系统和服务管理器，并启动系统的其余部分。<code>systemd</code>提供了积极的并行化功能，使用套接字和D-Bus激活来启动服务，提供按需启动守护进程，使用Linux控制组跟踪进程，维护挂载和自动挂载点，并实现精心设计的基于事务的基于依赖关系的服务控制逻辑。<code>systemd</code>支持SysV和LSB初始化脚本，并作为sysvinit的替代品。其他部分包括日志守护程序，用于控制基本系统配置的实用程序，如主机名，日期，区域设置，维护登录用户列表以及运行容器和虚拟机，系统帐户，运行时目录和设置以及守护进程以管理简单网络配置，网络时间同步，日志转发和名称解析。</p>
+<h1 id="比较Linux的三个最相关的init系统：sysvinit，Upstart和systemd"><a href="#比较Linux的三个最相关的init系统：sysvinit，Upstart和systemd" class="headerlink" title="比较Linux的三个最相关的init系统：sysvinit，Upstart和systemd"></a>比较Linux的三个最相关的init系统：sysvinit，Upstart和systemd</h1><h2 id="常规特性"><a href="#常规特性" class="headerlink" title="常规特性"></a>常规特性</h2><a id="more"></a>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th></th>
+<th>sysvinit</th>
+<th>Upstart</th>
+<th>systemd</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>通过D-Bus连接</td>
+<td>no</td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>无壳启动</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>包括模块化C编码的早期启动服务</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>预读</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>基于Socket的激活</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>基于Socket的激活：inetd兼容性</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>基于总线的激活</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>基于设备的激活</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>使用udev规则配置设备依赖关系</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>基于路径的激活(inotify)</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>基于计时器的激活</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>装载处理</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>fsck处理</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>配额处理</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>自动处理</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>交换处理</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>系统状态的快照</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>XDG_RUNTIME_DIR支持</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>可选地杀死剩余的用户注销进程</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Linux控制组集成</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>为启动的服务生成审计记录</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>SELinux集成</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>PAM整合</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>加密的硬盘处理（LUKS）</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>SSL证书/ LUKS密码处理，包括 Plymouth，console，wall，TTY和GNOME代理</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>网络环回设备处理</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>binfmt_misc处理</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>系统范围的区域设置处理</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>控制台和键盘设置</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>用于创建，删除，清理临时和不稳定文件的基础架构</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>处理<code>/proc/sys/sysctl</code></td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>普利茅斯整合</td>
+<td>no</td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>保存/恢复随机种子</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>内核模块的静态加载</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>自动串行控制台处理</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>独特的机器ID处理</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>动态主机名称和机器元数据处理</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>可靠的终止服务</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>早期启动<code>/dev/log</code>日志记录</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>最小的基于kmsg的syslog守护进程用于嵌入式使用</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>重新生成服务崩溃而不会丢失连接</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>无缝升级服务</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>图形用户界面</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>内置的分析和工具</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>实例化服务</td>
+<td>no</td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>PolicyKit集成</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>客户端工具内置的远程访问/群集支持</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>可以列出服务的所有进程</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>可以识别进程的服务</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>自动每个服务CPU cgroups可以平衡它们之间的CPU使用率</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>自动每个用户的cgroups</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>SysV兼容性</td>
+<td>yes</td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>SysV服务可以像本地服务一样进行控制</td>
+<td>yes</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>SysV兼容<code>/dev/initctl</code></td>
+<td>yes</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>完全序列化状态重新执行</td>
+<td>yes</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>交互式启动</td>
+<td>no</td>
+<td>no0</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>容器支持(作为高级chroot()替换)</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>基于依赖关系的启动</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>无需编辑文件即可禁用服务</td>
+<td>yes</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>无需编辑文件即可屏蔽服务</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>强大的系统在PID 1内关闭</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>内置kexec支持</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>动态服务生成</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>上游支持各种其他操作系统组件</td>
+<td>yes</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>服务文件在发行版之间兼容</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>信号传递到服务</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>在关机前可靠地终止用户会话</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>utmp/wtmp支持</td>
+<td>yes</td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>轻松可写，可扩展和可解析的服务文件，适用于使用企业管理工具进行操作</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="可用的本地服务设置"><a href="#可用的本地服务设置" class="headerlink" title="可用的本地服务设置"></a>可用的本地服务设置</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th></th>
+<th>sysvinit</th>
+<th>Upstart</th>
+<th>systemd</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>OOM  调整</td>
+<td>no</td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>工作目录</td>
+<td>no</td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>根目录 (chroot())</td>
+<td>no</td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>环境变量</td>
+<td>no</td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>环境变量(来自外部的文件)</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>资源限制</td>
+<td>no</td>
+<td>some</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>umask</td>
+<td>no</td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>User/Group/Supplementary Groups</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>IO调度类/优先级</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>CPU Scheduling Nice Value</td>
+<td>no</td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>CPU Scheduling Policy/Priority</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>CPU Scheduling Reset on fork() control</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>CPU affinity</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Timer Slack</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>功能Control</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>安全位 Control</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Control Group Control</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>High-level file system namespace control: making directories inacessible</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>High-level file system namespace control: making directories read-only</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>High-level file system namespace control: private /tmp</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>High-level file system namespace control: mount inheritance</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Input on Console</td>
+<td>yes</td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Output on Syslog</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Output on kmsg/dmesg</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Output on arbitrary TTY</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Kill signal control</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Conditional execution: by identified CPU virtualization/container</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Conditional execution: by file existance</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Conditional execution: by security framework</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Conditional execution: by kernel command line</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h1 id="关于Systemd的管理"><a href="#关于Systemd的管理" class="headerlink" title="关于Systemd的管理"></a>关于Systemd的管理</h1><h2 id="启动"><a href="#启动" class="headerlink" title="启动"></a>启动</h2><p>传统上，启动Linux系统时，屏幕上会显示很多小消息。当我们致力于加速和平行启动过程时，这些消息只能在更短和更短的时间内看到，并且可读性越来越差 - 如果完全显示它们，我们现在使用像普利茅斯这样的图形启动闪屏技术。尽管如此，启动屏幕的信息仍然非常相关，因为它显示了每个启动过程中正在启动的服务，它是否启动成功或失败（使用绿色或红色 <code>[OK]</code>或<code>[失败]</code>指标）。为了改善启动快速和并行化的机器的情况，并使这些信息在运行时更好地提供，我们向systemd添加了一项功能，该功能跟踪并记住每个服务是否启动成功，是否以非零退出代码，是否超时，是否在启动和运行时都异常终止（通过段错误或类似方式）。只需在shell中输入<code>systemctl</code>，就可以查询所有服务的状态，包括systemd native和SysV/LSB服务：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br></pre></td><td class="code"><pre><span class="line">[root@kubernetes-node1 ~]<span class="comment"># systemctl</span></span><br><span class="line">UNIT                                                              LOAD   ACTIVE SUB       DESCRIPTION</span><br><span class="line">proc-sys-fs-binfmt_misc.automount                                 loaded active waiting   Arbitrary Executable File Formats File System Automount Point</span><br><span class="line">sys-devices-pci0000:00-0000:00:11.0-0000:02:01.0-ata1-host1-target1:0:0-1:0:0:0-block-sr0.device loaded active plugged   VMware_Virtual_SATA_CDRW_Drive</span><br><span class="line">sys-devices-pci0000:00-0000:00:15.0-0000:03:00.0-host0-target0:0:0-0:0:0:0-block-sda-sda1.device loaded active plugged   Virtual_disk 1</span><br><span class="line">sys-devices-pci0000:00-0000:00:15.0-0000:03:00.0-host0-target0:0:0-0:0:0:0-block-sda-sda2.device loaded active plugged   LVM PV KJs0yz-aG67-nkFK-eELZ-LiLs-K</span><br><span class="line">sys-devices-pci0000:00-0000:00:15.0-0000:03:00.0-host0-target0:0:0-0:0:0:0-block-sda.device loaded active plugged   Virtual_disk</span><br><span class="line">sys-devices-pci0000:00-0000:00:16.0-0000:0b:00.0-net-ens192.device loaded active plugged   VMXNET3 Ethernet Controller</span><br><span class="line">sys-devices-platform-floppy.0-block-fd0.device                    loaded active plugged   /sys/devices/platform/floppy.0/block/fd0</span><br><span class="line">sys-devices-platform-serial8250-tty-ttyS0.device                  loaded active plugged   /sys/devices/platform/serial8250/tty/ttyS0</span><br><span class="line">sys-devices-platform-serial8250-tty-ttyS1.device                  loaded active plugged   /sys/devices/platform/serial8250/tty/ttyS1</span><br><span class="line">sys-devices-platform-serial8250-tty-ttyS2.device                  loaded active plugged   /sys/devices/platform/serial8250/tty/ttyS2</span><br><span class="line">sys-devices-platform-serial8250-tty-ttyS3.device                  loaded active plugged   /sys/devices/platform/serial8250/tty/ttyS3</span><br><span class="line">sys-devices-virtual-block-dm\x2d0.device                          loaded active plugged   /sys/devices/virtual/block/dm-0</span><br><span class="line">sys-devices-virtual-block-dm\x2d1.device                          loaded active plugged   /sys/devices/virtual/block/dm-1</span><br><span class="line">sys-devices-virtual-net-cni0.device                               loaded active plugged   /sys/devices/virtual/net/cni0</span><br><span class="line">sys-devices-virtual-net-docker0.device                            loaded active plugged   /sys/devices/virtual/net/docker0</span><br><span class="line">sys-devices-virtual-net-flannel.1.device                          loaded active plugged   /sys/devices/virtual/net/flannel.1</span><br><span class="line">sys-devices-virtual-net-veth551eaded.device                       loaded active plugged   /sys/devices/virtual/net/veth551eaded</span><br><span class="line">sys-module-configfs.device                                        loaded active plugged   /sys/module/configfs</span><br><span class="line">sys-subsystem-net-devices-cni0.device                             loaded active plugged   /sys/subsystem/net/devices/cni0</span><br><span class="line">sys-subsystem-net-devices-docker0.device                          loaded active plugged   /sys/subsystem/net/devices/docker0</span><br><span class="line">sys-subsystem-net-devices-ens192.device                           loaded active plugged   VMXNET3 Ethernet Controller</span><br><span class="line">sys-subsystem-net-devices-flannel.1.device                        loaded active plugged   /sys/subsystem/net/devices/flannel.1</span><br><span class="line">sys-subsystem-net-devices-veth551eaded.device                     loaded active plugged   /sys/subsystem/net/devices/veth551eaded</span><br><span class="line">-.mount                                                           loaded active mounted   /</span><br><span class="line">boot.mount                                                        loaded active mounted   /boot</span><br><span class="line">dev-hugepages.mount                                               loaded active mounted   Huge Pages File System</span><br><span class="line">dev-mqueue.mount                                                  loaded active mounted   POSIX Message Queue File System</span><br><span class="line">run-user-0.mount                                                  loaded active mounted   /run/user/0</span><br><span class="line">sys-kernel-config.mount                                           loaded active mounted   Configuration File System</span><br><span class="line">sys-kernel-debug.mount                                            loaded active mounted   Debug File System</span><br><span class="line">var-lib-kubelet-pods-aea86e6c\x2d3cb7\x2d11e8\x2dbb32\x2d00505696e13c-volumes-kubernetes.io\x7esecret-kube\x2dproxy\x2dtoken\x2d6tgqt.mount loaded active mo</span><br><span class="line">var-lib-kubelet-pods-aebaceba\x2d3cb7\x2d11e8\x2dbb32\x2d00505696e13c-volumes-kubernetes.io\x7esecret-kube\x2ddns\x2dtoken\x2dhzzmv.mount loaded active moun</span><br><span class="line">var-lib-kubelet-pods-f461fa39\x2d3cb7\x2d11e8\x2dbb32\x2d00505696e13c-volumes-kubernetes.io\x7esecret-flannel\x2dtoken\x2drf77r.mount loaded active mounted</span><br><span class="line">brandbot.path                                                     loaded active waiting   Flexible branding</span><br><span class="line">systemd-ask-password-plymouth.path                                loaded active waiting   Forward Password Requests to Plymouth Directory Watch</span><br><span class="line">systemd-ask-password-wall.path                                    loaded active waiting   Forward Password Requests to Wall Directory Watch</span><br><span class="line">docker-121185d5f53ead31d941319e3042395f45b6cb8c1d7dd93fa89b773434b79b27.scope loaded active running   libcontainer container 121185d5f53ead31d941319e3042395</span><br><span class="line">docker-121a05887cfe505afc373824dbeb5265752b13f1e604312b5942fec6b2972978.scope loaded active running   libcontainer container 121a05887cfe505afc373824dbeb526</span><br><span class="line">docker-15ff649777e6904c365d82f043d1d961f2418c81da6f87758736ee44418ade08.scope loaded active running   libcontainer container 15ff649777e6904c365d82f043d1d96</span><br><span class="line">docker-17344939037d910e213e62acbe564f6c8b104d4fb000bc393ca360ff01972c5c.scope loaded active running   libcontainer container 17344939037d910e213e62acbe564f6</span><br><span class="line">docker-2995b17f7b1cf824c99ac68bd414f3784dc82942c427f26f7a08a3a384c20612.scope loaded active running   libcontainer container 2995b17f7b1cf824c99ac68bd414f37</span><br><span class="line">docker-656d2e92ba35f027e0e92fffac799555bd6ccff39524851ffe2d8808fdb6c907.scope loaded active running   libcontainer container 656d2e92ba35f027e0e92fffac79955</span><br><span class="line">docker-8b8770f404adda78586dc7235f6d0e056b821c83d06e3d662c34ae4474f85259.scope loaded active running   libcontainer container 8b8770f404adda78586dc7235f6d0e0</span><br><span class="line">docker-8e47ef924ee32f6d6107f7fb20632743824e9d8dfdce456c3692b13fbf6f9e52.scope loaded active running   libcontainer container 8e47ef924ee32f6d6107f7fb2063274</span><br><span class="line">docker-8f92f56afabea9689b1d9fb996318d5e2aad26c2c369fd246c15b86ba064b15f.scope loaded active running   libcontainer container 8f92f56afabea9689b1d9fb996318d5</span><br><span class="line">docker-a0e3d010c40a7732eff4c36160792a681f4e437c1cf34a71e9af990b7ecf0343.scope loaded active running   libcontainer container a0e3d010c40a7732eff4c36160792a6</span><br><span class="line">docker-a1f2c42182828f2f82ac581878034b185572eaa823ad807eaf503df39f820031.scope loaded active running   libcontainer container a1f2c42182828f2f82ac581878034b1</span><br><span class="line">docker-a87c101f9b6ea444a750c0f0b84cd71aada64fd6d707ea5aa48722603b2aba21.scope loaded active running   libcontainer container a87c101f9b6ea444a750c0f0b84cd71</span><br><span class="line">docker-bea14b22d6090441b8f4bc9f89fe416d06875b272816f2a0ffb30cb7f77509d5.scope loaded active running   libcontainer container bea14b22d6090441b8f4bc9f89fe416</span><br><span class="line">docker-cdc819cd61bc462cf5e86d0177899c228337c3894032964b3bc5a9fde7178f3c.scope loaded active running   libcontainer container cdc819cd61bc462cf5e86d0177899c2</span><br><span class="line">docker-cfdcde0fa4265b33d40c2059c070af0ae1ef7649d7933168bfa4cc12a5da5c59.scope loaded active running   libcontainer container cfdcde0fa4265b33d40c2059c070af0</span><br><span class="line">docker-eae566bf29ac4a378a7a9f651907830779fee7b213e15b090c5471d725a50601.scope loaded active running   libcontainer container eae566bf29ac4a378a7a9f651907830</span><br><span class="line">session-129.scope                                                 loaded active abandoned Session 129 of user root</span><br><span class="line">session-130.scope                                                 loaded active running   Session 130 of user root</span><br><span class="line">session-131.scope                                                 loaded active running   Session 131 of user root</span><br><span class="line">auditd.service                                                    loaded active running   Security Auditing Service</span><br><span class="line">crond.service                                                     loaded active running   Command Scheduler</span><br><span class="line">dbus.service                                                      loaded active running   D-Bus System Message Bus</span><br><span class="line">docker.service                                                    loaded active running   Docker Application Container Engine</span><br><span class="line">getty@tty1.service                                                loaded active running   Getty on tty1</span><br><span class="line">irqbalance.service                                                loaded active running   irqbalance daemon</span><br><span class="line">kdump.service                                                     loaded active exited    Crash recovery kernel arming</span><br><span class="line">kmod-static-nodes.service                                         loaded active exited    Create list of required static device nodes <span class="keyword">for</span> the current kernel</span><br><span class="line">kubelet.service                                                   loaded active running   kubelet: The Kubernetes Node Agent</span><br><span class="line">lvm2-lvmetad.service                                              loaded active running   LVM2 metadata daemon</span><br><span class="line">lvm2-monitor.service                                              loaded active exited    Monitoring of LVM2 mirrors, snapshots etc. using dmeventd or progr</span><br><span class="line">lvm2-pvscan@8:2.service                                           loaded active exited    LVM2 PV scan on device 8:2</span><br><span class="line">network.service                                                   loaded active exited    LSB: Bring up/down networking</span><br><span class="line">NetworkManager-wait-online.service                                loaded active exited    Network Manager Wait Online</span><br><span class="line">NetworkManager.service                                            loaded active running   Network Manager</span><br><span class="line">polkit.service                                                    loaded active running   Authorization Manager</span><br><span class="line">postfix.service                                                   loaded active running   Postfix Mail Transport Agent</span><br><span class="line">rhel-dmesg.service                                                loaded active exited    Dump dmesg to /var/<span class="built_in">log</span>/dmesg</span><br><span class="line">rhel-import-state.service                                         loaded active exited    Import network configuration from initramfs</span><br><span class="line">rhel-readonly.service                                             loaded active exited    Configure <span class="built_in">read</span>-only root support</span><br><span class="line">rsyslog.service                                                   loaded active running   System Logging Service</span><br><span class="line">sshd.service                                                      loaded active running   OpenSSH server daemon</span><br><span class="line">systemd-journal-flush.service                                     loaded active exited    Flush Journal to Persistent Storage</span><br><span class="line">systemd-journald.service                                          loaded active running   Journal Service</span><br><span class="line">systemd-logind.service                                            loaded active running   Login Service</span><br><span class="line">systemd-random-seed.service                                       loaded active exited    Load/Save Random Seed</span><br><span class="line">systemd-remount-fs.service                                        loaded active exited    Remount Root and Kernel File Systems</span><br><span class="line">systemd-sysctl.service                                            loaded active exited    Apply Kernel Variables</span><br><span class="line">systemd-tmpfiles-setup-dev.service                                loaded active exited    Create Static Device Nodes <span class="keyword">in</span> /dev</span><br><span class="line">systemd-tmpfiles-setup.service                                    loaded active exited    Create Volatile Files and Directories</span><br><span class="line">systemd-udev-trigger.service                                      loaded active exited    udev Coldplug all Devices</span><br><span class="line">systemd-udevd.service                                             loaded active running   udev Kernel Device Manager</span><br><span class="line">systemd-update-utmp.service                                       loaded active exited    Update UTMP about System Boot/Shutdown</span><br><span class="line">systemd-user-sessions.service                                     loaded active exited    Permit User Sessions</span><br><span class="line">systemd-vconsole-setup.service                                    loaded active exited    Setup Virtual Console</span><br><span class="line">tuned.service                                                     loaded active running   Dynamic System Tuning Daemon</span><br><span class="line">-.slice                                                           loaded active active    Root Slice</span><br><span class="line">kubepods-besteffort-podaea86e6c_3cb7_11e8_bb32_00505696e13c.slice loaded active active    libcontainer container kubepods-besteffort-podaea86e6c_3cb7_11e8_b</span><br><span class="line">kubepods-besteffort-podd0f5be64eb96701ecb2dfd99040bdae9.slice     loaded active active    libcontainer container kubepods-besteffort-podd0f5be64eb96701ecb2d</span><br><span class="line">kubepods-besteffort-podf461fa39_3cb7_11e8_bb32_00505696e13c.slice loaded active active    libcontainer container kubepods-besteffort-podf461fa39_3cb7_11e8_b</span><br><span class="line">kubepods-besteffort.slice                                         loaded active active    libcontainer container kubepods-besteffort.slice</span><br><span class="line">kubepods-burstable-pod099f1c2b79126109140a1f77e211df00.slice      loaded active active    libcontainer container kubepods-burstable-pod099f1c2b79126109140a1</span><br><span class="line">kubepods-burstable-pod498af058d9a8b33f17a3c7deeec06574.slice      loaded active active    libcontainer container kubepods-burstable-pod498af058d9a8b33f17a3c</span><br><span class="line">kubepods-burstable-podaebaceba_3cb7_11e8_bb32_00505696e13c.slice  loaded active active    libcontainer container kubepods-burstable-podaebaceba_3cb7_11e8_bb</span><br><span class="line">kubepods-burstable-podda46e5eb58febd64dd66deab8e98a51b.slice      loaded active active    libcontainer container kubepods-burstable-podda46e5eb58febd64dd66d</span><br><span class="line">kubepods-burstable.slice                                          loaded active active    libcontainer container kubepods-burstable.slice</span><br><span class="line">kubepods.slice                                                    loaded active active    libcontainer container kubepods.slice</span><br><span class="line">system-getty.slice                                                loaded active active    system-getty.slice</span><br><span class="line">system-lvm2\x2dpvscan.slice                                       loaded active active    system-lvm2\x2dpvscan.slice</span><br><span class="line">system-selinux\x2dpolicy\x2dmigrate\x2dlocal\x2dchanges.slice     loaded active active    system-selinux\x2dpolicy\x2dmigrate\x2dlocal\x2dchanges.slice</span><br><span class="line">system.slice                                                      loaded active active    System Slice</span><br><span class="line">user-0.slice                                                      loaded active active    User Slice of root</span><br><span class="line">user.slice                                                        loaded active active    User and Session Slice</span><br><span class="line">dbus.socket                                                       loaded active running   D-Bus System Message Bus Socket</span><br><span class="line">dm-event.socket                                                   loaded active listening Device-mapper event daemon FIFOs</span><br><span class="line">lvm2-lvmetad.socket                                               loaded active running   LVM2 metadata daemon socket</span><br><span class="line">lvm2-lvmpolld.socket                                              loaded active listening LVM2 poll daemon socket</span><br><span class="line">systemd-initctl.socket                                            loaded active listening /dev/initctl Compatibility Named Pipe</span><br><span class="line">systemd-journald.socket                                           loaded active running   Journal Socket</span><br><span class="line">systemd-shutdownd.socket                                          loaded active listening Delayed Shutdown Socket</span><br><span class="line">systemd-udevd-control.socket                                      loaded active running   udev Control Socket</span><br><span class="line">systemd-udevd-kernel.socket                                       loaded active running   udev Kernel Socket</span><br><span class="line">basic.target                                                      loaded active active    Basic System</span><br><span class="line">cryptsetup.target                                                 loaded active active    Encrypted Volumes</span><br><span class="line">getty.target                                                      loaded active active    Login Prompts</span><br><span class="line"><span class="built_in">local</span>-fs-pre.target                                               loaded active active    Local File Systems (Pre)</span><br><span class="line"><span class="built_in">local</span>-fs.target                                                   loaded active active    Local File Systems</span><br><span class="line">multi-user.target                                                 loaded active active    Multi-User System</span><br><span class="line">network-online.target                                             loaded active active    Network is Online</span><br><span class="line">network.target                                                    loaded active active    Network</span><br><span class="line">paths.target                                                      loaded active active    Paths</span><br><span class="line">remote-fs.target                                                  loaded active active    Remote File Systems</span><br><span class="line">slices.target                                                     loaded active active    Slices</span><br><span class="line">sockets.target                                                    loaded active active    Sockets</span><br><span class="line">swap.target                                                       loaded active active    Swap</span><br><span class="line">sysinit.target                                                    loaded active active    System Initialization</span><br><span class="line">timers.target                                                     loaded active active    Timers</span><br><span class="line">docker-cleanup.timer                                              loaded active waiting   Run docker-cleanup every hour</span><br><span class="line">systemd-tmpfiles-clean.timer                                      loaded active waiting   Daily Cleanup of Temporary Directories</span><br><span class="line"></span><br><span class="line">LOAD   = Reflects whether the unit definition was properly loaded.</span><br><span class="line">ACTIVE = The high-level unit activation state, i.e. generalization of SUB.</span><br><span class="line">SUB    = The low-level unit activation state, values depend on unit <span class="built_in">type</span>.</span><br><span class="line"></span><br><span class="line">134 loaded units listed. Pass --all to see loaded but inactive units, too.</span><br><span class="line">To show all installed unit files use <span class="string">'systemctl list-unit-files'</span>.</span><br><span class="line">lines 111-142/142 (END)</span><br></pre></td></tr></table></figure>
+<p>看一下ACTIVE列，它显示了服务的高级状态（或者实际上任何类型的systemd维护的单元，它们不仅仅是服务），它是否<em>active</em>（即正在运行）， <em>inactive</em>（即未运行）还是处于任何其他状态。现在，让我们用<code>systemctl status</code> 命令查看kubelet ：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">[root@kubernetes-node1 ~]<span class="comment"># systemctl status kubelet</span></span><br><span class="line">● kubelet.service - kubelet: The Kubernetes Node Agent</span><br><span class="line">   Loaded: loaded (/etc/systemd/system/kubelet.service; enabled; vendor preset: disabled)</span><br><span class="line">  Drop-In: /etc/systemd/system/kubelet.service.d</span><br><span class="line">           └─10-kubeadm.conf</span><br><span class="line">   Active: active (running) since Tue 2018-04-10 20:06:36 CST; 4 days ago</span><br><span class="line">     Docs: http://kubernetes.io/docs/</span><br><span class="line"> Main PID: 28032 (kubelet)</span><br><span class="line">   CGroup: /system.slice/kubelet.service</span><br><span class="line">           └─28032 /usr/bin/kubelet --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf --pod-manifes...</span><br><span class="line"></span><br><span class="line">Apr 15 03:01:39 kubernetes-node1 kubelet[28032]: W0415 03:01:39.424039   28032 container_manager_linux.go:791] CPUAccounting not enabled <span class="keyword">for</span> pid: 28032</span><br><span class="line">Apr 15 03:01:39 kubernetes-node1 kubelet[28032]: W0415 03:01:39.424051   28032 container_manager_linux.go:794] MemoryAccounting not enabled <span class="keyword">for</span> pid: 28032</span><br><span class="line">Apr 15 03:06:39 kubernetes-node1 kubelet[28032]: W0415 03:06:39.424458   28032 container_manager_linux.go:791] CPUAccounting not enabled <span class="keyword">for</span> pid: 28707</span><br><span class="line">Apr 15 03:06:39 kubernetes-node1 kubelet[28032]: W0415 03:06:39.424498   28032 container_manager_linux.go:794] MemoryAccounting not enabled <span class="keyword">for</span> pid: 28707</span><br><span class="line">Apr 15 03:06:39 kubernetes-node1 kubelet[28032]: W0415 03:06:39.424634   28032 container_manager_linux.go:791] CPUAccounting not enabled <span class="keyword">for</span> pid: 28032</span><br><span class="line">Apr 15 03:06:39 kubernetes-node1 kubelet[28032]: W0415 03:06:39.424646   28032 container_manager_linux.go:794] MemoryAccounting not enabled <span class="keyword">for</span> pid: 28032</span><br><span class="line">Apr 15 03:11:39 kubernetes-node1 kubelet[28032]: W0415 03:11:39.425017   28032 container_manager_linux.go:791] CPUAccounting not enabled <span class="keyword">for</span> pid: 28707</span><br><span class="line">Apr 15 03:11:39 kubernetes-node1 kubelet[28032]: W0415 03:11:39.425052   28032 container_manager_linux.go:794] MemoryAccounting not enabled <span class="keyword">for</span> pid: 28707</span><br><span class="line">Apr 15 03:11:39 kubernetes-node1 kubelet[28032]: W0415 03:11:39.425213   28032 container_manager_linux.go:791] CPUAccounting not enabled <span class="keyword">for</span> pid: 28032</span><br><span class="line">Apr 15 03:11:39 kubernetes-node1 kubelet[28032]: W0415 03:11:39.425227   28032 container_manager_linux.go:794] MemoryAccounting not enabled <span class="keyword">for</span> pid: 28032</span><br></pre></td></tr></table></figure>
+<h1 id="哪个服务拥有哪个进程？"><a href="#哪个服务拥有哪个进程？" class="headerlink" title="哪个服务拥有哪个进程？"></a>哪个服务拥有哪个进程？</h1><p>在大多数Linux系统上，默认运行的进程数量很大。知道哪个过程做什么和它属于哪里变得越来越困难。一些服务甚至维护了一些工作进程，这些工作进程通过许多额外的进程来混淆“ <code>ps</code> ”输出，而这些进程往往不易识别。如果守护进程产生任意的第三方进程，如Apache对CGI进程的操作，或者cron对用户作业做的那样，这会更加复杂。</p>
+<p>对此的一点补救通常是进程继承树，如“ <code>ps xaf</code> ”所示。然而，这通常是不可靠的，因为其父进程死亡的进程被重新设置为PID 1，因此关于继承的所有信息都会丢失。如果一个过程“双重分叉”，那么它就会失去与启动过程的关系。（实际上这应该是一个功能，并且依赖于传统的Unix守护进程逻辑。）此外，进程可以使用<code>PR_SETNAME</code>或修补<code>argv [0]</code>来自由更改其名称，从而使其更难识别它们。</p>
+<p>在systemd中，我们将产生的每个进程放在以其服务命名的<em>控制组中</em>。最基本的控制组（或<em>cgroup</em>）只是一组进程，可以按层次结构排列并单独标记。当进程产生其他进程时，这些孩子将自动成为父cgroup的成员。离开cgroup对于非特权进程是不可能的。因此，cgroups可以作为一种有效的方式来标记它们所属服务之后的进程，并确保该服务无法从标签中逃脱，无论它多长时间分叉或重命名它自己。此外，这可以用来安全地杀死一个服务及其创建的所有进程。</p>
+<p>可能用于关联systemd服务和进程的两个命令。第一个是众所周知的<code>ps</code>命令，该命令已经更新以显示沿着其他处理细节的cgroup信息。这就是它的外观：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br><span class="line">227</span><br><span class="line">228</span><br><span class="line">229</span><br><span class="line">230</span><br><span class="line">231</span><br><span class="line">232</span><br><span class="line">233</span><br><span class="line">234</span><br><span class="line">235</span><br><span class="line">236</span><br></pre></td><td class="code"><pre><span class="line">[root@kubernetes-node1 ~]<span class="comment"># ps xawf -eo pid,user,cgroup,args</span></span><br><span class="line">  PID USER     CGROUP                      COMMAND</span><br><span class="line">    2 root     -                           [kthreadd]</span><br><span class="line">    3 root     -                            \_ [ksoftirqd/0]</span><br><span class="line">    5 root     -                            \_ [kworker/0:0H]</span><br><span class="line">    7 root     -                            \_ [migration/0]</span><br><span class="line">    8 root     -                            \_ [rcu_bh]</span><br><span class="line">    9 root     -                            \_ [rcu_sched]</span><br><span class="line">   10 root     -                            \_ [watchdog/0]</span><br><span class="line">   11 root     -                            \_ [watchdog/1]</span><br><span class="line">   12 root     -                            \_ [migration/1]</span><br><span class="line">   13 root     -                            \_ [ksoftirqd/1]</span><br><span class="line">   15 root     -                            \_ [kworker/1:0H]</span><br><span class="line">   16 root     -                            \_ [watchdog/2]</span><br><span class="line">   17 root     -                            \_ [migration/2]</span><br><span class="line">   18 root     -                            \_ [ksoftirqd/2]</span><br><span class="line">   20 root     -                            \_ [kworker/2:0H]</span><br><span class="line">   21 root     -                            \_ [watchdog/3]</span><br><span class="line">   22 root     -                            \_ [migration/3]</span><br><span class="line">   23 root     -                            \_ [ksoftirqd/3]</span><br><span class="line">   25 root     -                            \_ [kworker/3:0H]</span><br><span class="line">   26 root     -                            \_ [watchdog/4]</span><br><span class="line">   27 root     -                            \_ [migration/4]</span><br><span class="line">   28 root     -                            \_ [ksoftirqd/4]</span><br><span class="line">   30 root     -                            \_ [kworker/4:0H]</span><br><span class="line">   31 root     -                            \_ [watchdog/5]</span><br><span class="line">   32 root     -                            \_ [migration/5]</span><br><span class="line">   33 root     -                            \_ [ksoftirqd/5]</span><br><span class="line">   35 root     -                            \_ [kworker/5:0H]</span><br><span class="line">   36 root     -                            \_ [watchdog/6]</span><br><span class="line">   37 root     -                            \_ [migration/6]</span><br><span class="line">   38 root     -                            \_ [ksoftirqd/6]</span><br><span class="line">   40 root     -                            \_ [kworker/6:0H]</span><br><span class="line">   41 root     -                            \_ [watchdog/7]</span><br><span class="line">   42 root     -                            \_ [migration/7]</span><br><span class="line">   43 root     -                            \_ [ksoftirqd/7]</span><br><span class="line">   45 root     -                            \_ [kworker/7:0H]</span><br><span class="line">   47 root     -                            \_ [kdevtmpfs]</span><br><span class="line">   48 root     -                            \_ [netns]</span><br><span class="line">   49 root     -                            \_ [khungtaskd]</span><br><span class="line">   50 root     -                            \_ [writeback]</span><br><span class="line">   51 root     -                            \_ [kintegrityd]</span><br><span class="line">   52 root     -                            \_ [bioset]</span><br><span class="line">   53 root     -                            \_ [kblockd]</span><br><span class="line">   54 root     -                            \_ [md]</span><br><span class="line">   60 root     -                            \_ [kswapd0]</span><br><span class="line">   61 root     -                            \_ [ksmd]</span><br><span class="line">   62 root     -                            \_ [khugepaged]</span><br><span class="line">   63 root     -                            \_ [crypto]</span><br><span class="line">   71 root     -                            \_ [kthrotld]</span><br><span class="line">   73 root     -                            \_ [kmpath_rdacd]</span><br><span class="line">   74 root     -                            \_ [kpsmoused]</span><br><span class="line">   76 root     -                            \_ [ipv6_addrconf]</span><br><span class="line">   95 root     -                            \_ [deferwq]</span><br><span class="line">  133 root     -                            \_ [kauditd]</span><br><span class="line">  318 root     -                            \_ [scsi_eh_0]</span><br><span class="line">  320 root     -                            \_ [scsi_tmf_0]</span><br><span class="line">  321 root     -                            \_ [vmw_pvscsi_wq_0]</span><br><span class="line">  326 root     -                            \_ [ata_sff]</span><br><span class="line">  334 root     -                            \_ [scsi_eh_1]</span><br><span class="line">  335 root     -                            \_ [scsi_tmf_1]</span><br><span class="line">  336 root     -                            \_ [scsi_eh_2]</span><br><span class="line">  337 root     -                            \_ [scsi_tmf_2]</span><br><span class="line">  338 root     -                            \_ [scsi_eh_3]</span><br><span class="line">  339 root     -                            \_ [scsi_tmf_3]</span><br><span class="line">  340 root     -                            \_ [scsi_eh_4]</span><br><span class="line">  341 root     -                            \_ [scsi_tmf_4]</span><br><span class="line">  342 root     -                            \_ [scsi_eh_5]</span><br><span class="line">  343 root     -                            \_ [scsi_tmf_5]</span><br><span class="line">  344 root     -                            \_ [scsi_eh_6]</span><br><span class="line">  345 root     -                            \_ [scsi_tmf_6]</span><br><span class="line">  346 root     -                            \_ [scsi_eh_7]</span><br><span class="line">  347 root     -                            \_ [scsi_tmf_7]</span><br><span class="line">  348 root     -                            \_ [scsi_eh_8]</span><br><span class="line">  349 root     -                            \_ [scsi_tmf_8]</span><br><span class="line">  350 root     -                            \_ [scsi_eh_9]</span><br><span class="line">  351 root     -                            \_ [scsi_tmf_9]</span><br><span class="line">  352 root     -                            \_ [scsi_eh_10]</span><br><span class="line">  353 root     -                            \_ [scsi_tmf_10]</span><br><span class="line">  354 root     -                            \_ [scsi_eh_11]</span><br><span class="line">  355 root     -                            \_ [scsi_tmf_11]</span><br><span class="line">  356 root     -                            \_ [scsi_eh_12]</span><br><span class="line">  357 root     -                            \_ [scsi_tmf_12]</span><br><span class="line">  358 root     -                            \_ [scsi_eh_13]</span><br><span class="line">  359 root     -                            \_ [scsi_tmf_13]</span><br><span class="line">  360 root     -                            \_ [scsi_eh_14]</span><br><span class="line">  361 root     -                            \_ [scsi_tmf_14]</span><br><span class="line">  362 root     -                            \_ [scsi_eh_15]</span><br><span class="line">  363 root     -                            \_ [scsi_tmf_15]</span><br><span class="line">  364 root     -                            \_ [scsi_eh_16]</span><br><span class="line">  365 root     -                            \_ [scsi_tmf_16]</span><br><span class="line">  366 root     -                            \_ [scsi_eh_17]</span><br><span class="line">  367 root     -                            \_ [scsi_tmf_17]</span><br><span class="line">  368 root     -                            \_ [scsi_eh_18]</span><br><span class="line">  369 root     -                            \_ [scsi_tmf_18]</span><br><span class="line">  370 root     -                            \_ [scsi_eh_19]</span><br><span class="line">  371 root     -                            \_ [scsi_tmf_19]</span><br><span class="line">  372 root     -                            \_ [scsi_eh_20]</span><br><span class="line">  373 root     -                            \_ [scsi_tmf_20]</span><br><span class="line">  374 root     -                            \_ [scsi_eh_21]</span><br><span class="line">  375 root     -                            \_ [scsi_tmf_21]</span><br><span class="line">  376 root     -                            \_ [scsi_eh_22]</span><br><span class="line">  377 root     -                            \_ [scsi_tmf_22]</span><br><span class="line">  378 root     -                            \_ [scsi_eh_23]</span><br><span class="line">  379 root     -                            \_ [scsi_tmf_23]</span><br><span class="line">  380 root     -                            \_ [scsi_eh_24]</span><br><span class="line">  381 root     -                            \_ [scsi_tmf_24]</span><br><span class="line">  382 root     -                            \_ [scsi_eh_25]</span><br><span class="line">  383 root     -                            \_ [scsi_tmf_25]</span><br><span class="line">  384 root     -                            \_ [scsi_eh_26]</span><br><span class="line">  385 root     -                            \_ [scsi_tmf_26]</span><br><span class="line">  386 root     -                            \_ [scsi_eh_27]</span><br><span class="line">  387 root     -                            \_ [scsi_tmf_27]</span><br><span class="line">  388 root     -                            \_ [scsi_eh_28]</span><br><span class="line">  389 root     -                            \_ [scsi_tmf_28]</span><br><span class="line">  390 root     -                            \_ [scsi_eh_29]</span><br><span class="line">  391 root     -                            \_ [scsi_tmf_29]</span><br><span class="line">  392 root     -                            \_ [scsi_eh_30]</span><br><span class="line">  393 root     -                            \_ [scsi_tmf_30]</span><br><span class="line">  422 root     -                            \_ [kworker/u16:31]</span><br><span class="line">  424 root     -                            \_ [scsi_eh_31]</span><br><span class="line">  425 root     -                            \_ [scsi_tmf_31]</span><br><span class="line">  426 root     -                            \_ [scsi_eh_32]</span><br><span class="line">  427 root     -                            \_ [scsi_tmf_32]</span><br><span class="line">  439 root     -                            \_ [ttm_swap]</span><br><span class="line">  470 root     -                            \_ [kworker/0:1H]</span><br><span class="line">  512 root     -                            \_ [kdmflush]</span><br><span class="line">  513 root     -                            \_ [bioset]</span><br><span class="line">  524 root     -                            \_ [kdmflush]</span><br><span class="line">  525 root     -                            \_ [bioset]</span><br><span class="line">  538 root     -                            \_ [bioset]</span><br><span class="line">  539 root     -                            \_ [xfsalloc]</span><br><span class="line">  540 root     -                            \_ [xfs_mru_cache]</span><br><span class="line">  541 root     -                            \_ [xfs-buf/dm-0]</span><br><span class="line">  542 root     -                            \_ [xfs-data/dm-0]</span><br><span class="line">  543 root     -                            \_ [xfs-conv/dm-0]</span><br><span class="line">  544 root     -                            \_ [xfs-cil/dm-0]</span><br><span class="line">  545 root     -                            \_ [xfs-reclaim/dm-]</span><br><span class="line">  546 root     -                            \_ [xfs-log/dm-0]</span><br><span class="line">  547 root     -                            \_ [xfs-eofblocks/d]</span><br><span class="line">  548 root     -                            \_ [xfsaild/dm-0]</span><br><span class="line">  549 root     -                            \_ [kworker/2:1H]</span><br><span class="line">  678 root     -                            \_ [nfit]</span><br><span class="line">  716 root     -                            \_ [xfs-buf/sda1]</span><br><span class="line">  717 root     -                            \_ [xfs-data/sda1]</span><br><span class="line">  718 root     -                            \_ [xfs-conv/sda1]</span><br><span class="line">  719 root     -                            \_ [xfs-cil/sda1]</span><br><span class="line">  720 root     -                            \_ [xfs-reclaim/sda]</span><br><span class="line">  721 root     -                            \_ [xfs-log/sda1]</span><br><span class="line">  722 root     -                            \_ [xfs-eofblocks/s]</span><br><span class="line">  723 root     -                            \_ [xfsaild/sda1]</span><br><span class="line">  754 root     -                            \_ [edac-poller]</span><br><span class="line">  758 root     -                            \_ [kworker/6:1H]</span><br><span class="line">  759 root     -                            \_ [kworker/1:1H]</span><br><span class="line">  895 root     -                            \_ [kworker/7:1H]</span><br><span class="line"> 1449 root     -                            \_ [kworker/4:1H]</span><br><span class="line"> 1505 root     -                            \_ [kworker/3:1H]</span><br><span class="line"> 2704 root     -                            \_ [kworker/5:1H]</span><br><span class="line">27415 root     -                            \_ [kworker/5:2]</span><br><span class="line">27509 root     -                            \_ [kworker/u16:0]</span><br><span class="line"> 6438 root     -                            \_ [kworker/6:6]</span><br><span class="line">14906 root     -                            \_ [kworker/1:2]</span><br><span class="line">17063 root     -                            \_ [kworker/4:2]</span><br><span class="line">23243 root     -                            \_ [kworker/5:0]</span><br><span class="line">25698 root     -                            \_ [kworker/7:1]</span><br><span class="line">29952 root     -                            \_ [kworker/2:0]</span><br><span class="line"> 5454 root     -                            \_ [kworker/4:1]</span><br><span class="line">15305 root     -                            \_ [kworker/2:1]</span><br><span class="line"> 4251 root     -                            \_ [kworker/7:2]</span><br><span class="line">  737 root     -                            \_ [kworker/6:1]</span><br><span class="line">31964 root     -                            \_ [kworker/1:0]</span><br><span class="line">11086 root     -                            \_ [kworker/0:2]</span><br><span class="line">27526 root     -                            \_ [kworker/3:1]</span><br><span class="line">31567 root     -                            \_ [kworker/3:0]</span><br><span class="line">  789 root     -                            \_ [kworker/0:1]</span><br><span class="line"> 1157 root     -                            \_ [kworker/3:2]</span><br><span class="line">    1 root     -                           /usr/lib/systemd/systemd --switched-root --system --deserialize 21</span><br><span class="line">  619 root     10:devices:/system.slice,5: /usr/lib/systemd/systemd-journald</span><br><span class="line">  631 root     10:devices:/system.slice,5: /usr/lib/systemd/systemd-udevd</span><br><span class="line">  642 root     10:devices:/system.slice,5: /usr/sbin/lvmetad -f</span><br><span class="line">  775 root     10:devices:/system.slice,5: /sbin/auditd</span><br><span class="line">  799 polkitd  10:devices:/system.slice,5: /usr/lib/polkit-1/polkitd --no-debug</span><br><span class="line">  801 dbus     10:devices:/system.slice,5: /bin/dbus-daemon --system --address=systemd: --nofork --nopidfile --systemd-activation</span><br><span class="line">  807 root     10:devices:/system.slice,5: /usr/sbin/NetworkManager --no-daemon</span><br><span class="line">  808 root     10:devices:/system.slice,5: /usr/sbin/irqbalance --foreground</span><br><span class="line">  810 root     10:devices:/system.slice,5: /usr/lib/systemd/systemd-logind</span><br><span class="line">  811 root     10:devices:/system.slice,5: /usr/sbin/rsyslogd -n</span><br><span class="line">  822 root     10:devices:/system.slice,5: /usr/sbin/crond -n</span><br><span class="line">  828 root     10:devices:/system.slice/sy /sbin/agetty --noclear tty1 linux</span><br><span class="line"> 1067 root     10:devices:/system.slice,5: /usr/sbin/sshd -D</span><br><span class="line">30318 root     10:devices:/user.slice,5:me  \_ sshd: root@pts/0</span><br><span class="line">30330 root     10:devices:/user.slice,5:me  |   \_ -bash</span><br><span class="line"> 3792 root     10:devices:/user.slice,5:me  |       \_ ps xawf -eo pid,user,cgroup,args</span><br><span class="line">30321 root     10:devices:/user.slice,5:me  \_ sshd: root@notty</span><br><span class="line">30323 root     10:devices:/user.slice,5:me      \_ /usr/libexec/openssh/sftp-server</span><br><span class="line"> 1068 root     10:devices:/system.slice,5: /usr/bin/python -Es /usr/sbin/tuned -l -P</span><br><span class="line"> 1273 root     10:devices:/system.slice,5: /usr/libexec/postfix/master -w</span><br><span class="line"> 1278 postfix  10:devices:/system.slice,5:  \_ qmgr -l -t unix -u</span><br><span class="line">31586 postfix  10:devices:/system.slice,5:  \_ pickup -l -t unix -u</span><br><span class="line">28032 root     10:devices:/system.slice,5: /usr/bin/kubelet --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubel</span><br><span class="line">28707 root     10:devices:/system.slice,5: /usr/bin/dockerd-current --add-runtime docker-runc=/usr/libexec/docker/docker-runc-current --default-runtime=dock</span><br><span class="line">28718 root     10:devices:/system.slice,5:  \_ /usr/bin/docker-containerd-current -l unix:///var/run/docker/libcontainerd/docker-containerd.sock --metrics-i</span><br><span class="line">29263 root     10:devices:/system.slice,5:      \_ /usr/bin/docker-containerd-shim-current 656d2e92ba35f027e0e92fffac799555bd6ccff39524851ffe2d8808fdb6c907</span><br><span class="line">29282 root     11:perf_event:/kubepods.sli      |   \_ /pause</span><br><span class="line">29302 root     10:devices:/system.slice,5:      \_ /usr/bin/docker-containerd-shim-current 15ff649777e6904c365d82f043d1d961f2418c81da6f87758736ee44418ade08</span><br><span class="line">29320 root     11:perf_event:/kubepods.sli      |   \_ /pause</span><br><span class="line">29336 root     10:devices:/system.slice,5:      \_ /usr/bin/docker-containerd-shim-current a1f2c42182828f2f82ac581878034b185572eaa823ad807eaf503df39f820031</span><br><span class="line">29388 root     11:perf_event:/kubepods.sli      |   \_ /pause</span><br><span class="line">29337 root     10:devices:/system.slice,5:      \_ /usr/bin/docker-containerd-shim-current 121185d5f53ead31d941319e3042395f45b6cb8c1d7dd93fa89b773434b79b27</span><br><span class="line">29387 root     11:perf_event:/kubepods.sli      |   \_ /pause</span><br><span class="line">29364 root     10:devices:/system.slice,5:      \_ /usr/bin/docker-containerd-shim-current a87c101f9b6ea444a750c0f0b84cd71aada64fd6d707ea5aa48722603b2aba21</span><br><span class="line">29410 root     11:perf_event:/kubepods.sli      |   \_ /pause</span><br><span class="line">29413 root     10:devices:/system.slice,5:      \_ /usr/bin/docker-containerd-shim-current eae566bf29ac4a378a7a9f651907830779fee7b213e15b090c5471d725a50601</span><br><span class="line">29477 root     11:perf_event:/kubepods.sli      |   \_ /pause</span><br><span class="line">29416 root     10:devices:/system.slice,5:      \_ /usr/bin/docker-containerd-shim-current 8b8770f404adda78586dc7235f6d0e056b821c83d06e3d662c34ae4474f85259</span><br><span class="line">29476 root     11:perf_event:/kubepods.sli      |   \_ /pause</span><br><span class="line">29604 root     10:devices:/system.slice,5:      \_ /usr/bin/docker-containerd-shim-current 8e47ef924ee32f6d6107f7fb20632743824e9d8dfdce456c3692b13fbf6f9e52</span><br><span class="line">29636 root     11:perf_event:/kubepods.sli      |   \_ kube-apiserver --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,</span><br><span class="line">29725 root     10:devices:/system.slice,5:      \_ /usr/bin/docker-containerd-shim-current cdc819cd61bc462cf5e86d0177899c228337c3894032964b3bc5a9fde7178f3c</span><br><span class="line">29776 root     11:perf_event:/kubepods.sli      |   \_ /usr/<span class="built_in">local</span>/bin/kube-proxy --config=/var/lib/kube-proxy/config.conf</span><br><span class="line">29992 root     10:devices:/system.slice,5:      \_ /usr/bin/docker-containerd-shim-current bea14b22d6090441b8f4bc9f89fe416d06875b272816f2a0ffb30cb7f77509d5</span><br><span class="line">30010 root     11:perf_event:/kubepods.sli      |   \_ /kube-dns --domain=cluster.local. --dns-port=10053 --config-dir=/kube-dns-config --v=2</span><br><span class="line">30052 root     10:devices:/system.slice,5:      \_ /usr/bin/docker-containerd-shim-current 121a05887cfe505afc373824dbeb5265752b13f1e604312b5942fec6b2972978</span><br><span class="line">30070 root     11:perf_event:/kubepods.sli      |   \_ /dnsmasq-nanny -v=2 -logtostderr -configDir=/etc/k8s/dns/dnsmasq-nanny -restartDnsmasq=<span class="literal">true</span> -- -k --c</span><br><span class="line">30109 root     11:perf_event:/kubepods.sli      |       \_ /usr/sbin/dnsmasq -k --cache-size=1000 --no-negcache --<span class="built_in">log</span>-facility=- --server=/cluster.local/127</span><br><span class="line">30110 root     10:devices:/system.slice,5:      \_ /usr/bin/docker-containerd-shim-current 17344939037d910e213e62acbe564f6c8b104d4fb000bc393ca360ff01972c5c</span><br><span class="line">30127 65534    11:perf_event:/kubepods.sli      |   \_ /sidecar --v=2 --logtostderr --probe=kubedns,127.0.0.1:10053,kubernetes.default.svc.cluster.local,5,S</span><br><span class="line">30168 root     10:devices:/system.slice,5:      \_ /usr/bin/docker-containerd-shim-current a0e3d010c40a7732eff4c36160792a681f4e437c1cf34a71e9af990b7ecf0343</span><br><span class="line">30186 root     11:perf_event:/kubepods.sli      |   \_ /opt/bin/flanneld --ip-masq --kube-subnet-mgr</span><br><span class="line">10409 root     10:devices:/system.slice,5:      \_ /usr/bin/docker-containerd-shim-current 2995b17f7b1cf824c99ac68bd414f3784dc82942c427f26f7a08a3a384c20612</span><br><span class="line">10432 root     11:perf_event:/kubepods.sli      |   \_ etcd --advertise-client-urls=https://127.0.0.1:2379 --client-cert-auth=<span class="literal">true</span> --data-dir=/var/lib/etcd</span><br><span class="line">13536 root     10:devices:/system.slice,5:      \_ /usr/bin/docker-containerd-shim-current 8f92f56afabea9689b1d9fb996318d5e2aad26c2c369fd246c15b86ba064b15f</span><br><span class="line">13554 root     11:perf_event:/kubepods.sli      |   \_ kube-controller-manager --kubeconfig=/etc/kubernetes/controller-manager.conf --cluster-signing-cert<span class="_">-f</span></span><br><span class="line">13594 root     10:devices:/system.slice,5:      \_ /usr/bin/docker-containerd-shim-current cfdcde0fa4265b33d40c2059c070af0ae1ef7649d7933168bfa4cc12a5da5c59</span><br><span class="line">13612 root     11:perf_event:/kubepods.sli          \_ kube-scheduler --leader-elect=<span class="literal">true</span> --kubeconfig=/etc/kubernetes/scheduler.conf --address=127.0.0.1</span><br><span class="line">28378 root     10:devices:/user.slice,5:me /usr/sbin/anacron -s</span><br></pre></td></tr></table></figure>
+<p>提供相同信息的另一种方式是<code>systemd附带</code>的 <code>systemd-cgls</code>工具。它在树中显示cgroup层次结构。它的输出如下所示：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br></pre></td><td class="code"><pre><span class="line">[root@kubernetes-node1 ~]<span class="comment"># systemd-cgls</span></span><br><span class="line">├─1 /usr/lib/systemd/systemd --switched-root --system --deserialize 21</span><br><span class="line">├─kubepods.slice</span><br><span class="line">│ ├─kubepods-besteffort.slice</span><br><span class="line">│ │ ├─kubepods-besteffort-podf461fa39_3cb7_11e8_bb32_00505696e13c.slice</span><br><span class="line">│ │ │ ├─docker-a0e3d010c40a7732eff4c36160792a681f4e437c1cf34a71e9af990b7ecf0343.scope</span><br><span class="line">│ │ │ │ └─30186 /opt/bin/flanneld --ip-masq --kube-subnet-mgr</span><br><span class="line">│ │ │ └─docker-a1f2c42182828f2f82ac581878034b185572eaa823ad807eaf503df39f820031.scope</span><br><span class="line">│ │ │   └─29388 /pause</span><br><span class="line">│ │ ├─kubepods-besteffort-podaea86e6c_3cb7_11e8_bb32_00505696e13c.slice</span><br><span class="line">│ │ │ ├─docker-cdc819cd61bc462cf5e86d0177899c228337c3894032964b3bc5a9fde7178f3c.scope</span><br><span class="line">│ │ │ │ └─kube-proxy</span><br><span class="line">│ │ │ │   └─29776 /usr/<span class="built_in">local</span>/bin/kube-proxy --config=/var/lib/kube-proxy/config.conf</span><br><span class="line">│ │ │ └─docker-a87c101f9b6ea444a750c0f0b84cd71aada64fd6d707ea5aa48722603b2aba21.scope</span><br><span class="line">│ │ │   └─29410 /pause</span><br><span class="line">│ │ └─kubepods-besteffort-podd0f5be64eb96701ecb2dfd99040bdae9.slice</span><br><span class="line">│ │   ├─docker-2995b17f7b1cf824c99ac68bd414f3784dc82942c427f26f7a08a3a384c20612.scope</span><br><span class="line">│ │   │ └─10432 etcd --advertise-client-urls=https://127.0.0.1:2379 --client-cert-auth=<span class="literal">true</span> --data-dir=/var/lib/etcd --cert-file=/etc/kubernetes/pki/etcd/se</span><br><span class="line">│ │   └─docker-15ff649777e6904c365d82f043d1d961f2418c81da6f87758736ee44418ade08.scope</span><br><span class="line">│ │     └─29320 /pause</span><br><span class="line">│ └─kubepods-burstable.slice</span><br><span class="line">│   ├─kubepods-burstable-podaebaceba_3cb7_11e8_bb32_00505696e13c.slice</span><br><span class="line">│   │ ├─docker-17344939037d910e213e62acbe564f6c8b104d4fb000bc393ca360ff01972c5c.scope</span><br><span class="line">│   │ │ └─30127 /sidecar --v=2 --logtostderr --probe=kubedns,127.0.0.1:10053,kubernetes.default.svc.cluster.local,5,SRV --probe=dnsmasq,127.0.0.1:53,kuberne</span><br><span class="line">│   │ ├─docker-121a05887cfe505afc373824dbeb5265752b13f1e604312b5942fec6b2972978.scope</span><br><span class="line">│   │ │ ├─30070 /dnsmasq-nanny -v=2 -logtostderr -configDir=/etc/k8s/dns/dnsmasq-nanny -restartDnsmasq=<span class="literal">true</span> -- -k --cache-size=1000 --no-negcache --<span class="built_in">log</span>-faci</span><br><span class="line">│   │ │ └─30109 /usr/sbin/dnsmasq -k --cache-size=1000 --no-negcache --<span class="built_in">log</span>-facility=- --server=/cluster.local/127.0.0.1<span class="comment">#10053 --server=/in-addr.arpa/127.0.0</span></span><br><span class="line">│   │ ├─docker-bea14b22d6090441b8f4bc9f89fe416d06875b272816f2a0ffb30cb7f77509d5.scope</span><br><span class="line">│   │ │ └─30010 /kube-dns --domain=cluster.local. --dns-port=10053 --config-dir=/kube-dns-config --v=2</span><br><span class="line">│   │ └─docker-eae566bf29ac4a378a7a9f651907830779fee7b213e15b090c5471d725a50601.scope</span><br><span class="line">│   │   └─29477 /pause</span><br><span class="line">│   ├─kubepods-burstable-pod498af058d9a8b33f17a3c7deeec06574.slice</span><br><span class="line">│   │ ├─docker-8f92f56afabea9689b1d9fb996318d5e2aad26c2c369fd246c15b86ba064b15f.scope</span><br><span class="line">│   │ │ └─13554 kube-controller-manager --kubeconfig=/etc/kubernetes/controller-manager.conf --cluster-signing-cert-file=/etc/kubernetes/pki/ca.crt --contro</span><br><span class="line">│   │ └─docker-8b8770f404adda78586dc7235f6d0e056b821c83d06e3d662c34ae4474f85259.scope</span><br><span class="line">│   │   └─29476 /pause</span><br><span class="line">│   ├─kubepods-burstable-podda46e5eb58febd64dd66deab8e98a51b.slice</span><br><span class="line">│   │ ├─docker-8e47ef924ee32f6d6107f7fb20632743824e9d8dfdce456c3692b13fbf6f9e52.scope</span><br><span class="line">│   │ │ └─29636 kube-apiserver --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestrictio</span><br><span class="line">│   │ └─docker-656d2e92ba35f027e0e92fffac799555bd6ccff39524851ffe2d8808fdb6c907.scope</span><br><span class="line">│   │   └─29282 /pause</span><br><span class="line">│   └─kubepods-burstable-pod099f1c2b79126109140a1f77e211df00.slice</span><br><span class="line">│     ├─docker-cfdcde0fa4265b33d40c2059c070af0ae1ef7649d7933168bfa4cc12a5da5c59.scope</span><br><span class="line">│     │ └─13612 kube-scheduler --leader-elect=<span class="literal">true</span> --kubeconfig=/etc/kubernetes/scheduler.conf --address=127.0.0.1</span><br><span class="line">│     └─docker-121185d5f53ead31d941319e3042395f45b6cb8c1d7dd93fa89b773434b79b27.scope</span><br><span class="line">│       └─29387 /pause</span><br><span class="line">├─user.slice</span><br><span class="line">│ └─user-0.slice</span><br><span class="line">│   ├─session-131.scope</span><br><span class="line">│   │ ├─30321 sshd: root@notty</span><br><span class="line">│   │ └─30323 /usr/libexec/openssh/sftp-server</span><br><span class="line">│   ├─session-130.scope</span><br><span class="line">│   │ ├─ 4343 systemd-cgls</span><br><span class="line">│   │ ├─ 4344 less</span><br><span class="line">│   │ ├─30318 sshd: root@pts/0</span><br><span class="line">│   │ └─30330 -bash</span><br><span class="line">│   └─session-129.scope</span><br><span class="line">│     └─28378 /usr/sbin/anacron -s</span><br><span class="line">└─system.slice</span><br><span class="line">  ├─kubelet.service</span><br><span class="line">  │ └─28032 /usr/bin/kubelet --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf --pod-manifest-path=/et</span><br><span class="line">  ├─tuned.service</span><br><span class="line">  │ └─1068 /usr/bin/python -Es /usr/sbin/tuned -l -P</span><br><span class="line">  ├─sshd.service</span><br><span class="line">  │ └─1067 /usr/sbin/sshd -D</span><br><span class="line">  ├─postfix.service</span><br><span class="line">  │ ├─ 1273 /usr/libexec/postfix/master -w</span><br><span class="line">  │ ├─ 1278 qmgr -l -t unix -u</span><br><span class="line">  │ └─31586 pickup -l -t unix -u</span><br><span class="line">  ├─docker.service</span><br><span class="line">  │ ├─10409 /usr/bin/docker-containerd-shim-current 2995b17f7b1cf824c99ac68bd414f3784dc82942c427f26f7a08a3a384c20612 /var/run/docker/libcontainerd/2995b17f7</span><br><span class="line">  │ ├─13536 /usr/bin/docker-containerd-shim-current 8f92f56afabea9689b1d9fb996318d5e2aad26c2c369fd246c15b86ba064b15f /var/run/docker/libcontainerd/8f92f56af</span><br><span class="line">  │ ├─13594 /usr/bin/docker-containerd-shim-current cfdcde0fa4265b33d40c2059c070af0ae1ef7649d7933168bfa4cc12a5da5c59 /var/run/docker/libcontainerd/cfdcde0fa</span><br><span class="line">  │ ├─28707 /usr/bin/dockerd-current --add-runtime docker-runc=/usr/libexec/docker/docker-runc-current --default-runtime=docker-runc --<span class="built_in">exec</span>-opt native.cgrou</span><br><span class="line">  │ ├─28718 /usr/bin/docker-containerd-current -l unix:///var/run/docker/libcontainerd/docker-containerd.sock --metrics-interval=0 --start-timeout 2m --<span class="built_in">stat</span></span><br><span class="line">  │ ├─29263 /usr/bin/docker-containerd-shim-current 656d2e92ba35f027e0e92fffac799555bd6ccff39524851ffe2d8808fdb6c907 /var/run/docker/libcontainerd/656d2e92b</span><br><span class="line">  │ ├─29302 /usr/bin/docker-containerd-shim-current 15ff649777e6904c365d82f043d1d961f2418c81da6f87758736ee44418ade08 /var/run/docker/libcontainerd/15ff64977</span><br><span class="line">  │ ├─29336 /usr/bin/docker-containerd-shim-current a1f2c42182828f2f82ac581878034b185572eaa823ad807eaf503df39f820031 /var/run/docker/libcontainerd/a1f2c4218</span><br><span class="line">  │ ├─29337 /usr/bin/docker-containerd-shim-current 121185d5f53ead31d941319e3042395f45b6cb8c1d7dd93fa89b773434b79b27 /var/run/docker/libcontainerd/121185d5f</span><br><span class="line">  │ ├─29364 /usr/bin/docker-containerd-shim-current a87c101f9b6ea444a750c0f0b84cd71aada64fd6d707ea5aa48722603b2aba21 /var/run/docker/libcontainerd/a87c101f9</span><br><span class="line">  │ ├─29413 /usr/bin/docker-containerd-shim-current eae566bf29ac4a378a7a9f651907830779fee7b213e15b090c5471d725a50601 /var/run/docker/libcontainerd/eae566bf2</span><br><span class="line">  │ ├─29416 /usr/bin/docker-containerd-shim-current 8b8770f404adda78586dc7235f6d0e056b821c83d06e3d662c34ae4474f85259 /var/run/docker/libcontainerd/8b8770f40</span><br><span class="line">  │ ├─29604 /usr/bin/docker-containerd-shim-current 8e47ef924ee32f6d6107f7fb20632743824e9d8dfdce456c3692b13fbf6f9e52 /var/run/docker/libcontainerd/8e47ef924</span><br><span class="line">  │ ├─29725 /usr/bin/docker-containerd-shim-current cdc819cd61bc462cf5e86d0177899c228337c3894032964b3bc5a9fde7178f3c /var/run/docker/libcontainerd/cdc819cd6</span><br><span class="line">  │ ├─29992 /usr/bin/docker-containerd-shim-current bea14b22d6090441b8f4bc9f89fe416d06875b272816f2a0ffb30cb7f77509d5 /var/run/docker/libcontainerd/bea14b22d</span><br><span class="line">  │ ├─30052 /usr/bin/docker-containerd-shim-current 121a05887cfe505afc373824dbeb5265752b13f1e604312b5942fec6b2972978 /var/run/docker/libcontainerd/121a05887</span><br><span class="line">  │ ├─30110 /usr/bin/docker-containerd-shim-current 17344939037d910e213e62acbe564f6c8b104d4fb000bc393ca360ff01972c5c /var/run/docker/libcontainerd/173449390</span><br><span class="line">  │ └─30168 /usr/bin/docker-containerd-shim-current a0e3d010c40a7732eff4c36160792a681f4e437c1cf34a71e9af990b7ecf0343 /var/run/docker/libcontainerd/a0e3d010c</span><br><span class="line">  ├─crond.service</span><br><span class="line">  │ └─822 /usr/sbin/crond -n</span><br><span class="line">  ├─rsyslog.service</span><br><span class="line">  │ └─811 /usr/sbin/rsyslogd -n</span><br><span class="line">  ├─systemd-logind.service</span><br><span class="line">  │ └─810 /usr/lib/systemd/systemd-logind</span><br><span class="line">  ├─irqbalance.service</span><br><span class="line">  │ └─808 /usr/sbin/irqbalance --foreground</span><br><span class="line">  ├─NetworkManager.service</span><br><span class="line">  │ └─807 /usr/sbin/NetworkManager --no-daemon</span><br><span class="line">  ├─dbus.service</span><br><span class="line">  │ └─801 /bin/dbus-daemon --system --address=systemd: --nofork --nopidfile --systemd-activation</span><br><span class="line">  ├─polkit.service</span><br><span class="line">  │ └─799 /usr/lib/polkit-1/polkitd --no-debug</span><br><span class="line">  ├─auditd.service</span><br><span class="line">  │ └─775 /sbin/auditd</span><br><span class="line">  ├─lvm2-lvmetad.service</span><br><span class="line">  │ └─642 /usr/sbin/lvmetad -f</span><br><span class="line">  ├─systemd-udevd.service</span><br><span class="line">  │ └─631 /usr/lib/systemd/systemd-udevd</span><br><span class="line">  ├─system-getty.slice</span><br><span class="line">  │ └─getty@tty1.service</span><br><span class="line">  │   └─828 /sbin/agetty --noclear tty1 linux</span><br><span class="line">  └─systemd-journald.service</span><br><span class="line">    └─619 /usr/lib/systemd/systemd-journald</span><br></pre></td></tr></table></figure>
+<p>正如你所看到的，这个命令显示了他们的cgroup进程以及服务，因为systemd在服务之后标记了cgroup。例如，您可以轻松看到审计服务 <code>auditd.service</code>生成三个单独的进程， <code>auditd</code>，<code>audisp</code>和<code>sedispatch</code>。</p>
+<p>如果仔细观察，您会注意到已将一些进程分配给cgroup <code>/user/1</code>。在这一点，简单地将它留在该systemd中，不仅在cgroup中维护服务，还在用户会话进程中维护服务。</p>
+<h1 id="如何将SysV-Init脚本转换为systemd服务文件？"><a href="#如何将SysV-Init脚本转换为systemd服务文件？" class="headerlink" title="如何将SysV Init脚本转换为systemd服务文件？"></a>如何将SysV Init脚本转换为systemd服务文件？</h1><p>传统上，Unix和Linux服务（<em>守护进程</em>）通过SysV init脚本启动。这些是Bourne Shell脚本，通常驻留在诸如<code>/etc/rc.d/init.d/</code>的目录中，当使用诸如<code>start</code>，<code>stop</code>或<code>restart</code>控制之类的一些标准化参数之一调用时 ，即启动，停止或重新启动有问题的服务。对于这个开始通常包括调用后台程序二进制文件，然后派生一个后台进程（更准确地说<em>daemonizes</em>）。Shell脚本通常很慢，很难阅读，非常冗长和脆弱。虽然它们非常灵活（毕竟它们只是代码），但有些事情很难与shell脚本正确配合，例如命令执行parallized执行，正确监督进程或只是配置执行上下文的所有细节。systemd提供了与这些shell脚本的兼容性，但由于指出了缺陷，建议为安装的所有守护程序安装本机systemd服务文件。另外，与SysV初始化脚本相比，它必须根据分发系统进行调整。服务文件与任何运行systemd的分发版（现在变得越来越多）兼容。接下来的内容是一个简洁的指南，指导如何使用SysV初始化脚本并将其转换为本地systemd服务文件。理想的情况下，上游项目应该将systemd服务文件发布并安装到它们的tarball中。如果您已经根据指导原则成功转换了一个SysV脚本，那么将该文件作为补丁提交给上游可能是一个好主意。如何准备这样的补丁将在稍后的部分中讨论，使用systemd手册页出货包含大量关于此的有用信息。</p>
+<p>所以，让我们直接作为一个例子，我们将把ABRT守护进程的init脚本转换为一个systemd服务文件。ABRT是每个Fedora安装的标准组件，并且是Automatic Bug Reporting Tool的缩写，它很好地描述了它的功能，即它是用于收集崩溃转储的服务。</p>
+<p>转换这种脚本时的第一步是读取它，并从通常非常长的脚本中提取有用的信息。在几乎所有情况下，脚本都由大部分样板代码组成，这些代码在所有init脚本中都相同或至少非常相似，并且通常从一个到另一个复制和粘贴。那么，让我们从上面链接的脚本中提取有趣的信息：</p>
+<ul>
+<li>该服务的描述字符串是“ <em>用于检测应用程序崩溃的守护程序</em> ”。事实证明，标题注释包括多余的描述字符串，其中一些描述的实际服务较少，但是启动脚本的init脚本较少。systemd服务也包含描述，它应该描述服务而不是服务文件。</li>
+<li>LSB头包含依赖信息。systemd由于其围绕基于套接字的激活而设计，通常不需要（或很少）手动配置的依赖关系。（有关套接字激活的详细信息，在这种情况下，对<code>$syslog</code>（对abrtd进行编码需要syslog守护进程）的依赖关系 是唯一有价值的信息。虽然头文件列出了另一个依赖项（<code>$local_fs</code>），但这对于systemd是冗余的，因为正常的系统服务始终在所有本地文件系统可用的情况下启动。</li>
+<li>LSB头部表明这个服务应该以运行级别3（多用户）和5（图形）开始。</li>
+<li>守护进程二进制文件是<code>/usr/sbin/abrtd</code></li>
+</ul>
+<p>这已经是了。这个115行shell脚本的全部剩余内容仅仅是样板文件或其他冗余代码：处理同步和序列化启动（即与锁文件有关的代码）或输出状态消息（即代码调用回显）的代码，或者干脆解析动词。</p>
+<p>从上面提取的信息中，我们现在可以编写我们的systemd服务文件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">[Unit]</span><br><span class="line">Description=Daemon to detect crashing apps</span><br><span class="line">After=syslog.target</span><br><span class="line"></span><br><span class="line">[Service]</span><br><span class="line">ExecStart=/usr/sbin/abrtd</span><br><span class="line">Type=forking</span><br><span class="line"></span><br><span class="line">[Install]</span><br><span class="line">WantedBy=multi-user.target</span><br></pre></td></tr></table></figure>
+<p>对该文件内容的一点解释： <code>[Unit]</code>部分包含有关服务的一般信息。systemd不仅管理系统服务，还管理系统的设备，挂载点，定时器和其他组件。systemd中所有这些对象的通用术语是一个<em>单元</em>， <code>[单元]</code>部分对其信息进行编码，这些信息不仅适用于服务，还适用于其他单元类型systemd维护。在这种情况下，我们设置以下单元设置：我们设置描述字符串并配置守护程序应在Syslog [2]之后启动，类似于原始初始化脚本的LSB标头中编码的内容。对于这个Syslog依赖关系，我们创建了一个<code>After=</code>类型的依赖关系<code>`在systemd单元</code>syslog.target上<code>。后者是systemd中的一个特殊目标单元，并且是引入syslog实现的标准化名称。请注意，</code>After=`类型的依赖关系只编码建议的顺序，但实际上并不会导致在abrtd时启动syslog - 而这正是我们想要的，因为即使没有syslog，abrtd实际上也能正常工作。但是，如果两者都开始（通常它们是），那么它们的顺序就由这种依赖性来控制。</p>
+<p>下一部分是<code>[Service]</code>，它编码有关服务本身的信息。它包含所有那些仅适用于服务的设置，而不包括系统维护的其他类型的单元（挂载点，设备，定时器…）。这里使用两个设置： <code>ExecStart=</code>在启动服务时获取执行二进制文件的路径。使用<code>Type=</code>我们配置服务如何通知init系统启动完成。由于传统的Unix守护进程在分叉并初始化后台守护进程后返回父进程，我们将类型设置为<code>分叉</code>这里。这告诉systemd等待启动二进制返回，然后考虑进程在守护进程之后仍然运行。</p>
+<p>最后一节是<code>[Install]</code>。它编码关于建议的安装应该是什么样子的信息，即在哪些情况下以及由哪些触发器启动服务。在这种情况下，我们简单地说，当多用户。<code>目标</code>单元被激活时，该服务应该开始。这是一个特殊的单元，它基本上扮演着经典的SysV Runlevel 3 的角色。<code>WantedBy=</code>设置在运行时对守护进程影响不大。它只能由<code>systemctl enable</code>命令读取 ，这是在systemd中启用服务的推荐方式。该命令将确保我们的小服务在<code>multi-user.target</code>立即自动激活。</p>
+<p>就是这样。现在我们已经有了一个最小的工作systemd服务文件。为了测试它，我们将它复制到 <code>/etc/systemd/system/abrtd.service</code>并调用<code>systemctl daemon-reload</code>。这将使systemd注意到它，现在我们可以使用它启动服务：<code>systemctl start abrtd.service</code>。我们可以通过<code>systemctl status abrtd.service</code>来验证<code>状态</code>。我们可以通过<code>systemctl stop abrtd.service</code>再次停止它。最后，我们可以启用它，以便<code>systemctl enable abrtd.service</code>在将来的引导中默认激活它。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">[Unit]</span><br><span class="line">Description=ABRT Automated Bug Reporting Tool</span><br><span class="line">After=syslog.target</span><br><span class="line"></span><br><span class="line">[Service]</span><br><span class="line">Type=dbus</span><br><span class="line">BusName=com.redhat.abrt</span><br><span class="line">ExecStart=/usr/sbin/abrtd -d -s</span><br><span class="line"></span><br><span class="line">[Install]</span><br><span class="line">WantedBy=multi-user.target</span><br></pre></td></tr></table></figure>
+<p>那么，我们改变了什么？有两件事：我们稍微改进了描述字符串。但更重要的是，我们将服务类型更改为<code>dbus</code>并配置了服务的D-Bus总线名称。我们为什么这样做？正如所提到的经典SysV服务 <em>守护进程</em>启动后，通常涉及双重分叉和从任何终端分离。当通过脚本调用守护进程时，这是非常有用和必要的，但在使用适当的进程保护程序（如systemd）时，这是不必要的（并且很慢），并且会适得其反。原因在于分叉守护进程通常与systemd启动的原始进程没有什么关系（在所有的守护进程方案的整个想法是去除这个关系之后），因此systemd很难在fork之后找出完成哪个进程属于服务实际上是主进程，哪些进程可能只是辅助进程。但是，这些信息对于实施高级保姆至关重要，即监督过程，异常终止的自动重生，collectig崩溃和退出代码信息等。为了让systemd更容易找出守护进程的主进程，我们将服务类型更改为 <code>dbus</code>。这种服务类型的语义适用于所有在D-Bus系统总线上取名的服务，作为其初始化的最后一步。ABRT就是其中之一。通过这个设置，systemd将生成ABRT进程，该进程将不再分叉（这是通过<code>-d -s</code>开关配置到守护进程中），并且只要<code>com.redhat.abrt</code>出现，systemd就会认为服务已完全启动公交车。这样systemd产生的进程是守护进程的主要进程，systemd有一个可靠的方法来确定守护进程何时完全启动，并且systemd可以很容易地监督它。</p>
+<p>这就是它的全部。我们现在有一个简单的systemd服务文件，它比在115中编码的原始SysV init脚本编码10行更多的信息。即使现在，利用更多功能systemd提供了进一步改进的空间。例如，我们可以设置<code>Restart=restart-always</code> 总是<code>告诉systemd在它停止时自动重启这个服务。或者，我们可以使用</code>OOMScoreAdjust=-500<code>来请求内核在OOM杀手发生严重破坏时请留下这个过程。或者，我们可以使用</code>CPUSchedulingPolicy=idle`来确保abrtd进程仅在后台崩溃转储，始终允许内核优先考虑可能正在运行的任何其他操作并需要CPU时间。</p>
+<p>当然，并非所有的SysV脚本都像这一个一样容易转换。但事实证明绝大多数实际上是。</p>
+<h1 id="关闭的三个级别"><a href="#关闭的三个级别" class="headerlink" title="关闭的三个级别"></a>关闭的三个级别</h1><p>在systemd中，有三个关闭服务的级别。让我们来看看这些是：</p>
+<ol>
+<li>你可以 <strong>停止 </strong>一个服务. 这只是终止服务的运行实例，并没有别的。如果由于某种形式的激活（例如手动激活，套接字激活，总线激活，通过系统启动激活或通过硬件插头激活），则在服务被再次请求时将被启动。因此停止服务是一项非常简单，暂时和肤浅的操作。以下是如何为NTP服务执行此操作的示例：</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ systemctl stop ntpd.service</span><br></pre></td></tr></table></figure>
+<p>   这大致等同于大多数SysV灵感系统可用的以下传统命令：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ service ntpd stop</span><br></pre></td></tr></table></figure></p>
+<p>   如果你执行后一个命令，它将被透明地转换为前者。</p>
+<ol>
+<li><p>您可以<strong>禁用</strong>服务。这从它的激活触发器中解除了一项服务。这意味着，取决于您的服务，它将不再在启动时通过套接字或总线激活或通过硬件插件（或任何其他适用于它的触发器）来激活。但是，如果您愿意，您仍然可以手动启动它。如果已经有一个已启动的实例，禁用一个服务将<em>不会</em>产生停止它的效果。以下是如何禁用服务的示例：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ systemctl <span class="built_in">disable</span> ntpd.service</span><br></pre></td></tr></table></figure>
+<p>这大致等同于以下命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ chkconfig ntpd off</span><br></pre></td></tr></table></figure>
+<p>如果有必要，后者的命令也会透明地转换为前者。</p>
+<p>通常，您希望合并停止和禁用服务，以摆脱当前实例并确保它不会再次启动（除非手动触发）：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ systemctl <span class="built_in">disable</span> ntpd.service </span><br><span class="line">$ systemctl stop ntpd.service</span><br></pre></td></tr></table></figure>
+<p>这样的命令例如在Fedora上卸载systemd服务的过程中使用。</p>
+<p>禁用服务是永久性的变化; 直到你撤销它，即使在重新启动时，它也会被保留。</p>
+</li>
+<li><p>你可以<strong>mask</strong>一项服务。这就像禁用服务，类似disable。它不仅确保服务不再自动启动，甚至可以确保服务甚至无法手动启动。这在systemd中是一个隐藏的功能，因为它通常不是很有用，可能会让用户感到困惑。但这是你如何做到的：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ ln -s /dev/null /etc/systemd/system/ntpd.service</span><br><span class="line">$ systemctl daemon-reload</span><br></pre></td></tr></table></figure>
+<p>通过将服务文件符号链接到 <code>/dev/null</code> 告诉 systemd永远不会启动相关服务并完全阻止其执行. 存储再<code>/etc/systemd/system</code> 中的单元将覆盖 <code>/lib/systemd/system</code> 具有相同名称的单元文件. 前一个目录是管理员区域，后者是您的软件包管理器的后者。通过在<code>/etc/systemd/system/ntpd.service</code> 安装符号链接， 您可以确保systemd永远不会读取上游提供的服务文件<code>/lib/systemd/system/ntpd.service</code>.</p>
+<p>systemd会识别符号链接到 <code>/dev/null</code> 并将它们显示为<em>masked</em>.如果你尝试手动启动这样的服务（例如通过 <code>systemctl start</code>），这将失败并出现错误。.</p>
+<p>SysV系统上的类似技巧并没有（正式）存在。但是，还有一些非官方的黑客攻击，例如编辑init脚本并在顶部放置一个 exit 0 者移除它的执行位。但是，这些解决方案有各种缺点，例如它们会干扰包管理器。</p>
+<p>屏蔽服务是永久的变化，就像禁用服务一样。</p>
+</li>
+</ol>
+<p>现在我们已经学会了如何关闭三个层面的服务,我们如何再次打开服务？<code>systemctl start</code>来撤销 <code>stop</code>,使用<code>systemctl enable</code>来撤销<code>systemctl disable</code> ,使用 <code>rm</code> 来撤销<code>ln</code></p>
+<p>下一集介绍chroot sysconfig 等</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>Goooo
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.sysctl.me/2018/04/15/Systemd/" title="强迫将自己的操作迁移到Systemd（一）">https://www.sysctl.me/2018/04/15/Systemd/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/en" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Linux/" rel="tag"># Linux</a>
+              <a href="/tags/Systemd/" rel="tag"># Systemd</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/04/01/Program-design/Cyclic-structure-invariant/" rel="prev" title="循环不变式">
+      <i class="fa fa-chevron-left"></i> 循环不变式
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/04/15/coffee/" rel="next" title="咖啡们">
+      咖啡们 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#systemd是什么？"><span class="nav-number">1.</span> <span class="nav-text">systemd是什么？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#比较Linux的三个最相关的init系统：sysvinit，Upstart和systemd"><span class="nav-number">2.</span> <span class="nav-text">比较Linux的三个最相关的init系统：sysvinit，Upstart和systemd</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#常规特性"><span class="nav-number">2.1.</span> <span class="nav-text">常规特性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#可用的本地服务设置"><span class="nav-number">2.2.</span> <span class="nav-text">可用的本地服务设置</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#关于Systemd的管理"><span class="nav-number">3.</span> <span class="nav-text">关于Systemd的管理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#启动"><span class="nav-number">3.1.</span> <span class="nav-text">启动</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#哪个服务拥有哪个进程？"><span class="nav-number">4.</span> <span class="nav-text">哪个服务拥有哪个进程？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#如何将SysV-Init脚本转换为systemd服务文件？"><span class="nav-number">5.</span> <span class="nav-text">如何将SysV Init脚本转换为systemd服务文件？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#关闭的三个级别"><span class="nav-number">6.</span> <span class="nav-text">关闭的三个级别</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Goooo"
+      src="/images/img.png">
+  <p class="site-author-name" itemprop="name">Goooo</p>
+  <div class="site-description" itemprop="description">一条啥也不会点废鱼</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">109</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">22</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">71</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/xth0331" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;xth0331" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:xietianhao0331@gmail.com" title="E-Mail → mailto:xietianhao0331@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/en" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+        
+        <script type="text/javascript" charset="utf-8" src="/js/tagcloud.js"></script>
+        <script type="text/javascript" charset="utf-8" src="/js/tagcanvas.js"></script>
+        <div class="widget-wrap">
+            <h3 class="widget-title">标签们</h3>
+            <div id="myCanvasContainer" class="widget tagcloud">
+                <canvas width="250" height="250" id="resCanvas" style="width=100%">
+                    <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ansible/" rel="tag">Ansible</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Backup/" rel="tag">Backup</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Bond/" rel="tag">Bond</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CPU/" rel="tag">CPU</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ceph/" rel="tag">Ceph</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cobbler/" rel="tag">Cobbler</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Coffee/" rel="tag">Coffee</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Corosync/" rel="tag">Corosync</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cyclic-invariant/" rel="tag">Cyclic invariant</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Docker/" rel="tag">Docker</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Effectiveness/" rel="tag">Effectiveness</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Exhaustion/" rel="tag">Exhaustion</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Filesystem/" rel="tag">Filesystem</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HAProxy/" rel="tag">HAProxy</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hardware/" rel="tag">Hardware</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Https/" rel="tag">Https</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ICMP/" rel="tag">ICMP</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JDK/" rel="tag">JDK</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Jenkins/" rel="tag">Jenkins</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JunOS/" rel="tag">JunOS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/KEEPALIVED/" rel="tag">KEEPALIVED</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Keepalived/" rel="tag">Keepalived</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/" rel="tag">Linux</a><span class="tag-list-count">19</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Log/" rel="tag">Log</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Markdown/" rel="tag">Markdown</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Modular-Programming/" rel="tag">Modular Programming</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Monitoring/" rel="tag">Monitoring</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Netconf/" rel="tag">Netconf</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Network/" rel="tag">Network</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Networking/" rel="tag">Networking</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Nginx/" rel="tag">Nginx</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OS/" rel="tag">OS</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OpenStack/" rel="tag">OpenStack</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Package-Manager/" rel="tag">Package Manager</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Partition/" rel="tag">Partition</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Programming/" rel="tag">Programming</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Python/" rel="tag">Python</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RAM/" rel="tag">RAM</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RHCS/" rel="tag">RHCS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RPM/" rel="tag">RPM</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Recursion/" rel="tag">Recursion</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Recursive/" rel="tag">Recursive</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Redirect/" rel="tag">Redirect</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Route/" rel="tag">Route</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SSH/" rel="tag">SSH</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Storage/" rel="tag">Storage</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Storage-and-Filesystem/" rel="tag">Storage and Filesystem</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Swap/" rel="tag">Swap</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Sys/" rel="tag">Sys</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Systemd/" rel="tag">Systemd</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Terminal/" rel="tag">Terminal</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Terraform/" rel="tag">Terraform</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Tools/" rel="tag">Tools</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ubuntu/" rel="tag">Ubuntu</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Veeam/" rel="tag">Veeam</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vim/" rel="tag">Vim</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Virtualization/" rel="tag">Virtualization</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vmware/" rel="tag">Vmware</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vsphere/" rel="tag">Vsphere</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Windows/" rel="tag">Windows</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Yum/" rel="tag">Yum</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/apple/" rel="tag">apple</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/elasticsearch/" rel="tag">elasticsearch</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/iteration/" rel="tag">iteration</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/logs/" rel="tag">logs</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/oop/" rel="tag">oop</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tools/" rel="tag">tools</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%88%86%E6%B2%BB/" rel="tag">分治</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E5%8E%8B%E7%BC%A9/" rel="tag">数据压缩</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%84%99%E8%A7%86%E9%93%BE/" rel="tag">鄙视链</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%87%8D%E5%A4%8D%E6%95%B0%E6%8D%AE%E5%88%A0%E9%99%A4/" rel="tag">重复数据删除</a><span class="tag-list-count">1</span></li></ul>
+                </canvas>
+            </div>
+        </div>
+        
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Goooo</span>
+</div>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.7.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://www-sysctl-me-1.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "https://www.sysctl.me/2018/04/15/Systemd/";
+    this.page.identifier = "2018/04/15/Systemd/";
+    this.page.title = "强迫将自己的操作迁移到Systemd（一）";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://www-sysctl-me-1.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/koharu.model.json"},"display":{"position":"left","width":300,"height":600},"mobile":{"show":false},"react":{"opacity":0.7}});</script></body>
+</html>

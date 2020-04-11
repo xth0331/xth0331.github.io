@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://www.sysctl.me').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","width":320,"display":"post","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="存储和文件系统性能适当设置在很大程度上取决于存储的目的，I&#x2F;O和文件系统性能会受下列因素的影响：  数据的写入或读取模式 数据重新排列与底层对齐 块大小 日志大小和位置 记录访问时间 确保数据可靠性 预取数据 预分配磁盘空间 文件碎片 资源争用">
+<meta property="og:type" content="article">
+<meta property="og:title" content="影响存储和文件系统性能的因素">
+<meta property="og:url" content="https://www.sysctl.me/2019/01/07/Linux/Performance-tuning/Storage%20and%20Filesystem/Factors-Affecting-Storage-and-File-System-Performance/index.html">
+<meta property="og:site_name" content="Sysctl">
+<meta property="og:description" content="存储和文件系统性能适当设置在很大程度上取决于存储的目的，I&#x2F;O和文件系统性能会受下列因素的影响：  数据的写入或读取模式 数据重新排列与底层对齐 块大小 日志大小和位置 记录访问时间 确保数据可靠性 预取数据 预分配磁盘空间 文件碎片 资源争用">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-01-07T15:13:00.000Z">
+<meta property="article:modified_time" content="2020-01-22T14:47:33.999Z">
+<meta property="article:author" content="Goooo">
+<meta property="article:tag" content="Storage and Filesystem">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://www.sysctl.me/2019/01/07/Linux/Performance-tuning/Storage%20and%20Filesystem/Factors-Affecting-Storage-and-File-System-Performance/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>影响存储和文件系统性能的因素 | Sysctl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Sysctl" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Sysctl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">观察指南，博客</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="搜索..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/xth0331" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.sysctl.me/2019/01/07/Linux/Performance-tuning/Storage%20and%20Filesystem/Factors-Affecting-Storage-and-File-System-Performance/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/img.png">
+      <meta itemprop="name" content="Goooo">
+      <meta itemprop="description" content="一条啥也不会点废鱼">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Sysctl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          影响存储和文件系统性能的因素
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-01-07 23:13:00" itemprop="dateCreated datePublished" datetime="2019-01-07T23:13:00+08:00">2019-01-07</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-01-22 22:47:33" itemprop="dateModified" datetime="2020-01-22T22:47:33+08:00">2020-01-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2019/01/07/Linux/Performance-tuning/Storage%20and%20Filesystem/Factors-Affecting-Storage-and-File-System-Performance/#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/01/07/Linux/Performance-tuning/Storage and Filesystem/Factors-Affecting-Storage-and-File-System-Performance/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>存储和文件系统性能适当设置在很大程度上取决于存储的目的，I/O和文件系统性能会受下列因素的影响：</p>
+<ul>
+<li>数据的写入或读取模式</li>
+<li>数据重新排列与底层对齐</li>
+<li>块大小</li>
+<li>日志大小和位置</li>
+<li>记录访问时间</li>
+<li>确保数据可靠性</li>
+<li>预取数据</li>
+<li>预分配磁盘空间</li>
+<li>文件碎片</li>
+<li>资源争用<a id="more"></a>
+<h1 id="I-O调度器"><a href="#I-O调度器" class="headerlink" title="I/O调度器"></a>I/O调度器</h1></li>
+</ul>
+<p>I/O调度程序确定I/O操作在存储设备上运行的时间和持续时间。也被称为I/O elevator。</p>
+<p>linux体用了三个I/O调度程序：</p>
+<ul>
+<li><p><strong>deadline</strong></p>
+<p>除了SATA磁盘为所有块设备的默认I/O调度器。<code>deadline</code>尝试为指向到达I/O调度器的请求提供有保障的延迟。该调度器适合大多数用例，尤其适用于读取操作比写入操作更频繁的请求。</p>
+<p>将排队的I/O请求分配为读或者写批处理，按照LBA递增顺序执行。默认设置下，读取批处理优先于写批处理，这是要因为应用程序可能组织读取I/O。批处理后，<code>deadline</code>检查写入操作因等待处理器世间而处于多久的饥饿状态，并且适当地调度下一个读批处理或写批处理。</p>
+</li>
+<li><p><strong>cfq</strong></p>
+<p>默认调度器只适用于标识为SATA硬盘的设备。完全公平队列调度器，<code>cfq</code>，将进程分成第三个独立类型：实时，尽其所能和空闲。实时类别的进程总是先于尽其所能类别进程执行，而尽其所能类别进程总是在空闲类别进程之间执行。这意味着实时类别的进程可以使尽其所能和空闲进程等待处理器时间而忍受饥饿。默认设置下，分配进程到尽其所能类别。</p>
+<p><code>cfq</code>使用历史数据来预测应用是否会在不久之后发出更多I/O请求。如果将有更多I/O请求，<code>cfq</code>空闲则会等待新的I/O，即使有来自其他进程的I/O在等待处理。</p>
+<p>因为有空闲的趋势，<code>cfq</code>调度器不应用与连接不会引起大量搜寻penalty（惩罚）的硬件，除非它为此目的的而被调整。<code>cfq</code>调度器也不应用于连接其他断续工作型调度器，例如基于主机的硬件<code>RAID</code>控制器，因为这些调度器的堆叠有造成大量延迟的趋势。</p>
+</li>
+<li><p><strong>noop</strong></p>
+<p><code>noop</code>I/O调度器实现了简单的FIFO（先入先出）调度算法。请求通过简单的最后命中缓存在通用块层合并。对于使用快速存储的CPU绑定系统，这可能是最佳调度器。</p>
+</li>
+</ul>
+<h1 id="文件系统"><a href="#文件系统" class="headerlink" title="文件系统"></a>文件系统</h1><h2 id="XFS"><a href="#XFS" class="headerlink" title="XFS"></a>XFS</h2><p>XFS是一个强大且高度可拓展的64位文件系统。他是CentOS7的默认文件系统。XFS使用基于区段的分配，并具有多种分配方案，包括预先分诶和延迟的分配，这两种都会减少碎片和提高性能。它还支持故障恢复的元数据日志。当挂载并激活时，能够对XFS进行碎片整理。</p>
+<p>XFS支持最大容量可达500TB的文件系统，以及最大容量为8EB的文件偏移量（稀疏文件）。</p>
+<h2 id="EXT4"><a href="#EXT4" class="headerlink" title="EXT4"></a>EXT4</h2><p>ext4是ext3文件系统的可缩放扩展。它的默认行为对大部分工作负载是最佳的。然而，它只支持最大容量为50TB的文件系统以及最大容量为16TB的文件。</p>
+<h2 id="Btrfs"><a href="#Btrfs" class="headerlink" title="Btrfs"></a>Btrfs</h2><p>Btrfs（B-tree文件系统）是一种相对较新的写时复制（COW）文件系统，作为技术预览发布。一些独特的Btrfs功能包括：</p>
+<ul>
+<li>特定文件，卷或子卷而不是整个文件系统的快照；</li>
+<li>支持多种廉价磁盘冗余阵列（RAID）；</li>
+<li>返回将映射I/O错误引用到文件系统对象；</li>
+<li>透明压缩（分区上的所有文件都自动压缩）;</li>
+<li>数据和元数据的校验和。</li>
+</ul>
+<p>虽然Btrfs被认为是一个稳定的文件系统，但它还在不断发展，因此与更成熟的文件系统相比，某些功能（修复工具）是最基本的。</p>
+<p>目前当需要高级功能（例如快照没压缩和文件数据校验和）时，选择Btrfs是合适的，但性能相对不重要。如果不需要高级功能，则失败和风险相对较弱的性能会使其他文件系统更受欢迎。与其他文件系统相比，另一个缺点是支持的最大文件系统大小为50TB。</p>
+<h2 id="GFS2"><a href="#GFS2" class="headerlink" title="GFS2"></a>GFS2</h2><p>全局文件系统2（GFS2）是一个高可用行附加组件的一部分，提供集群文件系统支持。GFS2在集群中的所有服务器上提供一致的文件系统影响，允许服务器通中读取和写入单个共享文件系统。</p>
+<p>支持GFS2，最大文件系统大小为100TB。</p>
+<h1 id="文件系统的调整注意事项"><a href="#文件系统的调整注意事项" class="headerlink" title="文件系统的调整注意事项"></a>文件系统的调整注意事项</h1><h2 id="格式化时的注意事项"><a href="#格式化时的注意事项" class="headerlink" title="格式化时的注意事项"></a>格式化时的注意事项</h2><p>格式化设备后，无法更改某些文件系统部分的配置，格式化存储设备前要做的决定和可用选项。</p>
+<ul>
+<li><p><strong>Size</strong></p>
+<p>按照工作负载创建合理大小的文件系统。较小的文件系统具有相应较短的备份时间，并且需要较少的时间和内存来进行文件系统检查。但是如果你的文件系统太小，其性能将受到高度碎片的影响。</p>
+</li>
+<li><p><strong>Block size</strong></p>
+<p>块是文件系统的工作单元。块大小决定了单个块中可以存储多少数据，因此可以确定一次写入或读取的最小数据量。</p>
+<p>默认块大小适用于大多数用例。但是如果块大小（或多个块的大小）与通常一次读取或写入的数据量相同或稍大，则文件系统将更好地执行并有效低存储数据。一个小文件仍将使用整个块。文件可以分布在多个块上，但这回产生额外的运行时开销。此外，某些文件系统仅限于一定数量的块，这反过来限制了文件系统的最大大小。</p>
+<p>使用<code>mkfs</code>命令格式化设备时，块大小被指定为文件系统选项的一部分。指定块大小的参数因文件系统而异。</p>
+</li>
+<li><p><strong>Geometry</strong></p>
+<p>文件系统几何涉及跨文件系统的数据分布。如果系统使用条带存储（如RAID），则可以在格式化设备时通过将数据和元数据与基础数据集合对齐来提高性能。</p>
+<p>很多数据导出的推荐集合在使用特定文件系统格式化设备时会被自动设置。如果设备没有导出这些推荐几何，或想要变更推荐设置，使用<code>mkfs</code>格式化设备时，需要手动指定几何。</p>
+</li>
+<li><p><strong>External journals</strong></p>
+<p>日志文件系统记录在执行操作之前在日志文件中执行写操作期间所做的更改。这降低了存储设备在系统崩溃或电源故障时损坏的可能性，并加快了恢复过程。</p>
+<p>元数据密集型工作负载射击队日志频繁的更新。交大的日志使用更多内存，但会降低写入操作的频率。此外，通过将日志放在与主存储一样快或更快的专用存储上，可以改善具有元数据密集型工作负载的设备的查找时间。</p>
+</li>
+</ul>
+<h2 id="挂载时的注意事项"><a href="#挂载时的注意事项" class="headerlink" title="挂载时的注意事项"></a>挂载时的注意事项</h2><blockquote>
+<p>适用于大部分文件系统的调整决定，且可在挂载设备时指定。</p>
+</blockquote>
+<ul>
+<li><p><strong>Barriers</strong></p>
+<p>文件系统屏障确保文件系统元数据在持久存储上正确编写和排序，并且<code>fsync</code>在断电时传输的数据仍然存在。</p>
+</li>
+<li><p><strong>Access Time</strong></p>
+<p>每次读取文件时，其元数据都会根据访问发生的时间（atime）进行更新。这涉及额外的写入I/O。在大多数情况下，这种开销很小，因为默认情况下，<code>atime</code>只有当上一次访问时间早于上次修改（mtime）或状态更改（ctime）时，才会更新字段。</p>
+<p>但是，如果更新此元数据非常耗时，并且如果不需要准确的访问时间数据，则可以使用<code>noatime</code>mount选项挂载文件系统。这回在读取文件时禁用元数据更新。它还启用了<code>nodiratime</code>行为，在读取目录时禁用元数据更新。</p>
+</li>
+<li><p><strong>Read-ahead</strong></p>
+<p>预读行为我通过预先获取可能很快需要的数据并将其加载到页面缓存中来加速文件访问，在页面缓存中可以比磁盘上更快地检索它。预读值越高，系统预取数据越早。</p>
+<p>Linux尝试根据检测到的文件系统设置适当的预读值。但是并不总是能够进行准确的检测。例如，如果存储阵列将自身作为单个LUN呈现给系统，则系统会检测单个LUN，并不会为阵列设置适当的预读值。</p>
+<p>设计大量顺序I/O流的工作负载通常受益于搞预读值。与使用LVM条带化一样，Linux提供的于存储相关的调优配置文件提高了预读值，但这些调整对于所有工作负载并不总是足够。</p>
+</li>
+</ul>
+<h2 id="维护"><a href="#维护" class="headerlink" title="维护"></a>维护</h2><blockquote>
+<p>对于固态磁盘和精简配置存储，建议定期丢弃文件系统未使用的块。丢弃未使用块有两种方法：批量丢弃和在线丢弃。</p>
+</blockquote>
+<ul>
+<li><p><strong>Batch discard（批量丢弃）</strong></p>
+<p>这种丢弃是<code>fstrim</code>指令的一部分。它丢弃文件系统中与管理员指定的标准相匹配的所有不使用的块。</p>
+<blockquote>
+<p>CentOS支持XFS和ext4格式化设备上的batch discard，这些设备实际丢弃操作即<code>/sys/block/devname/queue/discard_max_bytes</code>值不为0的HDD设备和<code>/sys/block/sda/queue/discard_granularity</code>不为0的SSD。</p>
+</blockquote>
+</li>
+<li><p><strong>online discard（在线丢弃）</strong></p>
+<p>这种凡是的丢弃操作在挂载期间使用<code>discard</code>选项配置，实时运行不受用户干扰。然后。online discard只丢弃从使用转换到空闲的块。</p>
+<blockquote>
+<p>推荐使用batch discard 除非要求用 online discard 维持，或batch discard  不可用于系统工作负载。</p>
+</blockquote>
+</li>
+<li><p><strong>Pre-allocation（预分配）</strong></p>
+<p>预分配将磁盘空间标记为已经将磁盘空间分配给一个文件，而未将数据写入该空间。这可用于限制数据碎片和交叉的读取性能。CentOS支持XFS、ext4、GFS2设备预分配空间。应用程序也可以通过<code>fallocate</code>、<code>glibc</code>调用预先分配空间。</p>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>Goooo
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.sysctl.me/2019/01/07/Linux/Performance-tuning/Storage%20and%20Filesystem/Factors-Affecting-Storage-and-File-System-Performance/" title="影响存储和文件系统性能的因素">https://www.sysctl.me/2019/01/07/Linux/Performance-tuning/Storage and Filesystem/Factors-Affecting-Storage-and-File-System-Performance/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/en" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Storage-and-Filesystem/" rel="tag"># Storage and Filesystem</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/01/06/Linux/Performance-tuning/MEMORY/Configure-system-memory-capacity/" rel="prev" title="配置系统内存容量">
+      <i class="fa fa-chevron-left"></i> 配置系统内存容量
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/02/03/vSphere/Virtual-template-production-Win/" rel="next" title="虚拟化模板制作-Windows">
+      虚拟化模板制作-Windows <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#I-O调度器"><span class="nav-number">1.</span> <span class="nav-text">I&#x2F;O调度器</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#文件系统"><span class="nav-number">2.</span> <span class="nav-text">文件系统</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#XFS"><span class="nav-number">2.1.</span> <span class="nav-text">XFS</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#EXT4"><span class="nav-number">2.2.</span> <span class="nav-text">EXT4</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Btrfs"><span class="nav-number">2.3.</span> <span class="nav-text">Btrfs</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#GFS2"><span class="nav-number">2.4.</span> <span class="nav-text">GFS2</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#文件系统的调整注意事项"><span class="nav-number">3.</span> <span class="nav-text">文件系统的调整注意事项</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#格式化时的注意事项"><span class="nav-number">3.1.</span> <span class="nav-text">格式化时的注意事项</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#挂载时的注意事项"><span class="nav-number">3.2.</span> <span class="nav-text">挂载时的注意事项</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#维护"><span class="nav-number">3.3.</span> <span class="nav-text">维护</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Goooo"
+      src="/images/img.png">
+  <p class="site-author-name" itemprop="name">Goooo</p>
+  <div class="site-description" itemprop="description">一条啥也不会点废鱼</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">109</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">22</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">71</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/xth0331" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;xth0331" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:xietianhao0331@gmail.com" title="E-Mail → mailto:xietianhao0331@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/en" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+        
+        <script type="text/javascript" charset="utf-8" src="/js/tagcloud.js"></script>
+        <script type="text/javascript" charset="utf-8" src="/js/tagcanvas.js"></script>
+        <div class="widget-wrap">
+            <h3 class="widget-title">标签们</h3>
+            <div id="myCanvasContainer" class="widget tagcloud">
+                <canvas width="250" height="250" id="resCanvas" style="width=100%">
+                    <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ansible/" rel="tag">Ansible</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Backup/" rel="tag">Backup</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Bond/" rel="tag">Bond</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CPU/" rel="tag">CPU</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ceph/" rel="tag">Ceph</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cobbler/" rel="tag">Cobbler</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Coffee/" rel="tag">Coffee</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Corosync/" rel="tag">Corosync</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cyclic-invariant/" rel="tag">Cyclic invariant</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Docker/" rel="tag">Docker</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Effectiveness/" rel="tag">Effectiveness</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Exhaustion/" rel="tag">Exhaustion</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Filesystem/" rel="tag">Filesystem</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HAProxy/" rel="tag">HAProxy</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hardware/" rel="tag">Hardware</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Https/" rel="tag">Https</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ICMP/" rel="tag">ICMP</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JDK/" rel="tag">JDK</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Jenkins/" rel="tag">Jenkins</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JunOS/" rel="tag">JunOS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/KEEPALIVED/" rel="tag">KEEPALIVED</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Keepalived/" rel="tag">Keepalived</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/" rel="tag">Linux</a><span class="tag-list-count">19</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Log/" rel="tag">Log</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Markdown/" rel="tag">Markdown</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Modular-Programming/" rel="tag">Modular Programming</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Monitoring/" rel="tag">Monitoring</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Netconf/" rel="tag">Netconf</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Network/" rel="tag">Network</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Networking/" rel="tag">Networking</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Nginx/" rel="tag">Nginx</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OS/" rel="tag">OS</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OpenStack/" rel="tag">OpenStack</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Package-Manager/" rel="tag">Package Manager</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Partition/" rel="tag">Partition</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Programming/" rel="tag">Programming</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Python/" rel="tag">Python</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RAM/" rel="tag">RAM</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RHCS/" rel="tag">RHCS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RPM/" rel="tag">RPM</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Recursion/" rel="tag">Recursion</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Recursive/" rel="tag">Recursive</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Redirect/" rel="tag">Redirect</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Route/" rel="tag">Route</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SSH/" rel="tag">SSH</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Storage/" rel="tag">Storage</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Storage-and-Filesystem/" rel="tag">Storage and Filesystem</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Swap/" rel="tag">Swap</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Sys/" rel="tag">Sys</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Systemd/" rel="tag">Systemd</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Terminal/" rel="tag">Terminal</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Terraform/" rel="tag">Terraform</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Tools/" rel="tag">Tools</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ubuntu/" rel="tag">Ubuntu</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Veeam/" rel="tag">Veeam</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vim/" rel="tag">Vim</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Virtualization/" rel="tag">Virtualization</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vmware/" rel="tag">Vmware</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vsphere/" rel="tag">Vsphere</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Windows/" rel="tag">Windows</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Yum/" rel="tag">Yum</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/apple/" rel="tag">apple</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/elasticsearch/" rel="tag">elasticsearch</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/iteration/" rel="tag">iteration</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/logs/" rel="tag">logs</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/oop/" rel="tag">oop</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tools/" rel="tag">tools</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%88%86%E6%B2%BB/" rel="tag">分治</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E5%8E%8B%E7%BC%A9/" rel="tag">数据压缩</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%84%99%E8%A7%86%E9%93%BE/" rel="tag">鄙视链</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%87%8D%E5%A4%8D%E6%95%B0%E6%8D%AE%E5%88%A0%E9%99%A4/" rel="tag">重复数据删除</a><span class="tag-list-count">1</span></li></ul>
+                </canvas>
+            </div>
+        </div>
+        
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Goooo</span>
+</div>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.7.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://www-sysctl-me-1.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "https://www.sysctl.me/2019/01/07/Linux/Performance-tuning/Storage%20and%20Filesystem/Factors-Affecting-Storage-and-File-System-Performance/";
+    this.page.identifier = "2019/01/07/Linux/Performance-tuning/Storage and Filesystem/Factors-Affecting-Storage-and-File-System-Performance/";
+    this.page.title = "影响存储和文件系统性能的因素";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://www-sysctl-me-1.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/koharu.model.json"},"display":{"position":"left","width":300,"height":600},"mobile":{"show":false},"react":{"opacity":0.7}});</script></body>
+</html>

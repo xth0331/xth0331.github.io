@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://www.sysctl.me').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","width":320,"display":"post","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="什么是RPM？RPM包只是一个包含系统所需的其他文件和信息的文件。具体来说，RPM包由包含文件的cpio存档和包含有关包的元数据的RPM标头组成。rpm软件包管理器使用这种元数据来确定的依赖。在那安装文件和其他信息。 有两种类型的RPM包：  源RPM（SRPM） 二进制RPM  SRPM和二进制RPM弓箭文件格式和工具，但具有不同的内容并用于不同的目的。SRPM包含源代码，可选的补丁和SPEC文">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RPM包">
+<meta property="og:url" content="https://www.sysctl.me/2018/12/17/Linux/RPM/RPM-package/index.html">
+<meta property="og:site_name" content="Sysctl">
+<meta property="og:description" content="什么是RPM？RPM包只是一个包含系统所需的其他文件和信息的文件。具体来说，RPM包由包含文件的cpio存档和包含有关包的元数据的RPM标头组成。rpm软件包管理器使用这种元数据来确定的依赖。在那安装文件和其他信息。 有两种类型的RPM包：  源RPM（SRPM） 二进制RPM  SRPM和二进制RPM弓箭文件格式和工具，但具有不同的内容并用于不同的目的。SRPM包含源代码，可选的补丁和SPEC文">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2018-12-17T02:48:11.000Z">
+<meta property="article:modified_time" content="2020-01-22T14:35:00.637Z">
+<meta property="article:author" content="Goooo">
+<meta property="article:tag" content="RPM">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://www.sysctl.me/2018/12/17/Linux/RPM/RPM-package/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>RPM包 | Sysctl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Sysctl" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Sysctl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">观察指南，博客</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="搜索..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/xth0331" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.sysctl.me/2018/12/17/Linux/RPM/RPM-package/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/img.png">
+      <meta itemprop="name" content="Goooo">
+      <meta itemprop="description" content="一条啥也不会点废鱼">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Sysctl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          RPM包
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-12-17 10:48:11" itemprop="dateCreated datePublished" datetime="2018-12-17T10:48:11+08:00">2018-12-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-01-22 22:35:00" itemprop="dateModified" datetime="2020-01-22T22:35:00+08:00">2020-01-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2018/12/17/Linux/RPM/RPM-package/#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2018/12/17/Linux/RPM/RPM-package/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="什么是RPM？"><a href="#什么是RPM？" class="headerlink" title="什么是RPM？"></a>什么是RPM？</h1><p>RPM包只是一个包含系统所需的其他文件和信息的文件。具体来说，RPM包由包含文件的<code>cpio</code>存档和包含有关包的元数据的RPM标头组成。<code>rpm</code>软件包管理器使用这种元数据来确定的依赖。在那安装文件和其他信息。</p>
+<p>有两种类型的RPM包：</p>
+<ul>
+<li>源RPM（SRPM）</li>
+<li>二进制RPM</li>
+</ul>
+<p>SRPM和二进制RPM弓箭文件格式和工具，但具有不同的内容并用于不同的目的。SRPM包含源代码，可选的补丁和SPEC文件，它描述了如何将源代码构建为二进制文件。<br><a id="more"></a></p>
+<h2 id="RPM打包工具"><a href="#RPM打包工具" class="headerlink" title="RPM打包工具"></a>RPM打包工具</h2><p>查看安装位置</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">yum -y install rpmdevtools</span><br><span class="line">rpm -ql rpmdevtools</span><br></pre></td></tr></table></figure>
+<h2 id="RPM打包工作区"><a href="#RPM打包工作区" class="headerlink" title="RPM打包工作区"></a>RPM打包工作区</h2><p>要设置作为RPM打包工作区的目录布局，请使用<code>rpmdev-setuptree</code></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">rpmdev-setuptree</span><br><span class="line">tree ~/rpmbuild/</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">rpmbuild/</span><br><span class="line">├── BUILD</span><br><span class="line">├── RPMS</span><br><span class="line">├── SOURCES</span><br><span class="line">├── SPECS</span><br><span class="line">└── SRPMS</span><br><span class="line"></span><br><span class="line">5 directories, 0 files</span><br></pre></td></tr></table></figure>
+<p>创建的目录用于以下目的：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>目录</th>
+<th>目的</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BUILD</td>
+<td>构建包时，会在此处创建<code>%buildroots</code>目录，如果日志输出未提供足够的信息，这对于查找失败原因有帮助。</td>
+</tr>
+<tr>
+<td>RPMS</td>
+<td>二进制RPM在此处创建，位于不同体系结构的子目录中，例如在<code>x86_64</code>和<code>noarch</code>中</td>
+</tr>
+<tr>
+<td>SOURCES</td>
+<td>打包器放置压缩的源代码存档和补丁。<code>rpmbuild</code>在这里查找他们。</td>
+</tr>
+<tr>
+<td>SPECS</td>
+<td>打包器将SPEC文件放在此处。</td>
+</tr>
+<tr>
+<td>SRPMS</td>
+<td>当<code>rpmbuild</code>用于构建SRPM而不是二进制RPM时，将在此处创建生成SRPM。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="什么是SPEC文件"><a href="#什么是SPEC文件" class="headerlink" title="什么是SPEC文件"></a>什么是SPEC文件</h2><p>SPEC文件可以被任务是<code>rpmbuild</code>程序用于构建RPM的方法。通过定义指令来告诉构建系统要做什么，这些部分在<code>Preamble</code>和<code>Body</code>中定义。<code>Preamble</code>包含<code>Body</code>中使用的一系列元数据项。<code>Body</code>包含说明的主要部分。</p>
+<h2 id="Preamble-项"><a href="#Preamble-项" class="headerlink" title="Preamble 项"></a>Preamble 项</h2><p>列出RPM SPEC文件中的Preamble部分的选项：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>SPEC指令</th>
+<th>定义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Name</code></td>
+<td>包的基本名称，应与SPEC文件名匹配</td>
+</tr>
+<tr>
+<td><code>Version</code></td>
+<td>软件的上游版本号</td>
+</tr>
+<tr>
+<td><code>Release</code></td>
+<td>此版本软件发布的次数。通常，将初始值设为<code>1%{?dist}</code>，并在每个新版本的包中增加它。在构建新版本时重置为1。</td>
+</tr>
+<tr>
+<td><code>Summary</code></td>
+<td>包的简短摘要。</td>
+</tr>
+<tr>
+<td><code>license</code></td>
+<td>正在打包的软件的许可证</td>
+</tr>
+<tr>
+<td><code>URL</code></td>
+<td>有关该程序的更多信息的完整URL，通常这是打包软件上游项目的网站。</td>
+</tr>
+<tr>
+<td><code>Source0</code></td>
+<td>上游源代码的压缩归档的路径或URL。这应该指向存档的可访问且可靠的存储，例如上游页面而不是打包器的本地存储。如果需要，可以添加更多的SourceX,数字递增。例如：Source1。</td>
+</tr>
+<tr>
+<td><code>Patch0</code></td>
+<td>必要时应用于源代码的第一个补丁的名称。如果需要，可以添加更多PatchX指令，每次递增数字，例如：Patch1，Patch2，Patch3等。</td>
+</tr>
+<tr>
+<td><code>BuildArch</code></td>
+<td>如果包不依赖于体系结构，例如，如果完全使用解释型编程语言编写，请将其设置为<code>BuildArch: noarch</code>。如果未设置，则程序包会自动继承构建它的计算机的体系结构<code>x86_64</code>。</td>
+</tr>
+<tr>
+<td><code>BuildRequires</code></td>
+<td>以逗号或空格分隔的包列表，用于构建使用编译语言编写的程序。可以有多个<code>BuildRequires</code>条目。每个条目在SPEC文件中都有自己的行。</td>
+</tr>
+<tr>
+<td><code>Requires</code></td>
+<td>软件包在安装后运行所需的软件包列表，可以有多条<code>Requires</code>条目，每个条目在SPEC文件中都有自己的行。</td>
+</tr>
+<tr>
+<td><code>ExcludeArch</code></td>
+<td>如果某个软件无法在特定的处理器体系上运行，则可以在此处排除该体系结构。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><code>Name</code>,<code>Version</code>和<code>Release</code>指令包含RPM包的文件名。RPM包维护者和系统管理员经常将这三个指令称为<code>NVR</code>或<code>N-V-R</code>，因为RPM包文件名具有<code>NAME-VERSION-RELEASE</code>格式。</p>
+<p>可以通过使用<code>rpm</code>查询特定的包来获取<code>NAME-VERSION-RELEASE</code>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">rpm -q python</span><br><span class="line">python-2.7.5-76.el7.x86_64</span><br></pre></td></tr></table></figure>
+<p>这里<code>python</code>是Package Name，<code>2.7.5</code>是Version，<code>76.el7</code>是Release，<code>x86_64</code>是体系结构，与<strong>NVR</strong>不同，体系结构标记不受RPM包装程序的直接控制，而是由<code>rpmbuild</code>构建环境定义。例外是与架构无关的<code>noarch</code>包。</p>
+<h2 id="Body-项"><a href="#Body-项" class="headerlink" title="Body 项"></a>Body 项</h2><p>此表列出了RPM SPEC文件的Body部分中使用的项：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>SPEC指令</th>
+<th>定义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>%descriptipn</code></td>
+<td>RPM中打包的软件的完整描述。该描述可以跨越多行并且可以分成段落。</td>
+</tr>
+<tr>
+<td><code>%prep</code></td>
+<td>用于准备要构建的软件的命令或一系列命令，例如，解压缩存档<code>Source0</code>、该指令可以包含shell脚本。</td>
+</tr>
+<tr>
+<td><code>%build</code></td>
+<td>用于将软件实际构建为机器码或字节码的命令或一系列命令。</td>
+</tr>
+<tr>
+<td><code>%install</code></td>
+<td>用于将所需构建组件从<code>%builffit</code>（构建发生的位置）复制到<code>%buildroot</code>目录（包含要打包的文件的目录结构）的命令。通常意味着将文件从<code>~/rpmbuild/BUILD</code>复制到<code>~/rpmbuild/BUILDROOT</code>。这尽在创建包时运行，而不是在安装时运行。</td>
+</tr>
+<tr>
+<td><code>%check</code></td>
+<td>用于测试软件的命令。通常包括单元测试等内容。</td>
+</tr>
+<tr>
+<td><code>%files</code></td>
+<td>将在最终用户的系统中安装的文件列表。</td>
+</tr>
+<tr>
+<td><code>changelog</code></td>
+<td>不同<code>Version</code>或<code>Release</code>之间发生的更改记录。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="BuildRoots"><a href="#BuildRoots" class="headerlink" title="BuildRoots"></a>BuildRoots</h2><p>在RPM打包的北京下，<code>buildroot</code>是一个chroot环境。这意味着使用与最终用户系统中相同的文件系统层次结构将构建组件放置在此处，其中<code>buildroot</code>充当根目录，构建组件的防止应符合最终用户系统文件层次结构标准。</p>
+<p><code>buildroot</code>中的文件稍后会被放入<code>cpio</code>存档中，后者将成为RPM的主要部分，在最终用户的系统上安装RPM时，会在根目录中提取这些文件，从而保留正确的层次结构。</p>
+<h2 id="RPM宏"><a href="#RPM宏" class="headerlink" title="RPM宏"></a>RPM宏</h2><p>RPM宏是直接文本替换，可以在使用某些内置功能时根据语句的可选评估有条件的分配。这意味着您可以让RPM为您执行文本替换。</p>
+<p>例如，在SPEC文件中多次引用打包软件版本时，这很有用。您只能在<code>%{version}</code>宏中定义一次版本。然后再整个SPEC文件中使用<code>%{version}</code>。每次出现都会自动替换之前定义的版本。</p>
+<blockquote>
+<p>如果看到一个不熟悉的宏，可以使用一下方法对其进行评估：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rpm --<span class="built_in">eval</span> %&#123;_MACRO&#125;</span><br></pre></td></tr></table></figure>
+<p>例如：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">rpm --<span class="built_in">eval</span> %&#123;_bindir&#125;</span><br><span class="line">rpm --<span class="built_in">eval</span> %&#123;_libexecdir&#125; </span><br></pre></td></tr></table></figure>
+</blockquote>
+<p><code>%{?dist}</code>一个常见的宏，表示“分发标签”。表示用于构建的分布。</p>
+<p>例如：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rpm --<span class="built_in">eval</span> %&#123;?dist&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="使用SPEC文件"><a href="#使用SPEC文件" class="headerlink" title="使用SPEC文件"></a>使用SPEC文件</h2><p>将软件打包成RPM的很多一部分工作时编辑SPEC文件。</p>
+<p>要打包新软件，需要创建一个新的SPEC文件，不要从头开始手动编写，使用<code>rpmdev-new-spec</code>命令。它会创建一个未填充的SPEC文件，并填写必要的指令和字段。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rpmdev-newspec bello</span><br></pre></td></tr></table></figure>
+<p>生成的<code>bello.spec</code>内容如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">Name:           bello</span><br><span class="line">Version:</span><br><span class="line">Release:        1%&#123;?dist&#125;</span><br><span class="line">Summary:</span><br><span class="line"></span><br><span class="line">License:</span><br><span class="line">URL:</span><br><span class="line">Source0:</span><br><span class="line"></span><br><span class="line">BuildRequires:</span><br><span class="line">Requires:</span><br><span class="line"></span><br><span class="line">%description</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">%prep</span><br><span class="line">%setup -q</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">%build</span><br><span class="line">%configure</span><br><span class="line">make %&#123;?_smp_mflags&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">%install</span><br><span class="line">rm -rf <span class="variable">$RPM_BUILD_ROOT</span></span><br><span class="line">%make_install</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">%files</span><br><span class="line">%doc</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">%changelog</span><br></pre></td></tr></table></figure>
+<p>完善<code>bello.spec</code>内容：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">Name:           bello</span><br><span class="line">Version:        0.1</span><br><span class="line">Release:        1%&#123;?dist&#125;</span><br><span class="line">Summary:        Hello World example implemented <span class="keyword">in</span> bash script</span><br><span class="line"></span><br><span class="line">License:        GPLv3+</span><br><span class="line">URL:            https://www.example.com/%&#123;name&#125;</span><br><span class="line">Source0:        https://www.example.com/%&#123;name&#125;/releases/%&#123;name&#125;-%&#123;version&#125;.tar.gz</span><br><span class="line"></span><br><span class="line">Requires:       bash</span><br><span class="line"></span><br><span class="line">BuildArch:      noarch</span><br><span class="line"></span><br><span class="line">%description</span><br><span class="line">The long-tail description <span class="keyword">for</span> our Hello World Example implemented <span class="keyword">in</span></span><br><span class="line">bash script.</span><br><span class="line"></span><br><span class="line">%prep</span><br><span class="line">%setup -q</span><br><span class="line"></span><br><span class="line">%build</span><br><span class="line"></span><br><span class="line">%install</span><br><span class="line"></span><br><span class="line">mkdir -p %&#123;buildroot&#125;/%&#123;_bindir&#125;</span><br><span class="line"></span><br><span class="line">install -m 0755 %&#123;name&#125; %&#123;buildroot&#125;/%&#123;_bindir&#125;/%&#123;name&#125;</span><br><span class="line"></span><br><span class="line">%files</span><br><span class="line">%license LICENSE</span><br><span class="line">%&#123;_bindir&#125;/%&#123;name&#125;</span><br><span class="line"></span><br><span class="line">%changelog</span><br><span class="line">* Tue May 31 2016 Adam Miller &lt;maxamillion@fedoraproject.org&gt; - 0.1-1</span><br><span class="line">- First bello package</span><br><span class="line">- Example second item <span class="keyword">in</span> the changelog <span class="keyword">for</span> version-release 0.1-1</span><br></pre></td></tr></table></figure>
+<p>完善<code>pello.spec</code>内容：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line">Name:           pello</span><br><span class="line">Version:        0.1.1</span><br><span class="line">Release:        1%&#123;?dist&#125;</span><br><span class="line">Summary:        Hello World example implemented <span class="keyword">in</span> python</span><br><span class="line"></span><br><span class="line">License:        GPLv3+</span><br><span class="line">URL:            https://www.example.com/%&#123;name&#125;</span><br><span class="line">Source0:        https://www.example.com/%&#123;name&#125;/releases/%&#123;name&#125;-%&#123;version&#125;.tar.gz</span><br><span class="line"></span><br><span class="line">BuildRequires:  python</span><br><span class="line">Requires:       python</span><br><span class="line">Requires:       bash</span><br><span class="line"></span><br><span class="line">BuildArch:      noarch</span><br><span class="line"></span><br><span class="line">%description</span><br><span class="line">The long-tail description <span class="keyword">for</span> our Hello World Example implemented <span class="keyword">in</span></span><br><span class="line">Python.</span><br><span class="line"></span><br><span class="line">%prep</span><br><span class="line">%setup -q</span><br><span class="line"></span><br><span class="line">%build</span><br><span class="line"></span><br><span class="line">python -m compileall %&#123;name&#125;.py</span><br><span class="line"></span><br><span class="line">%install</span><br><span class="line"></span><br><span class="line">mkdir -p %&#123;buildroot&#125;/%&#123;_bindir&#125;</span><br><span class="line">mkdir -p %&#123;buildroot&#125;/usr/lib/%&#123;name&#125;</span><br><span class="line"></span><br><span class="line">cat &gt; %&#123;buildroot&#125;/%&#123;_bindir&#125;/%&#123;name&#125; &lt;&lt;-EOF</span><br><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line">/usr/bin/python /usr/lib/%&#123;name&#125;/%&#123;name&#125;.pyc</span><br><span class="line">EOF</span><br><span class="line"></span><br><span class="line">chmod 0755 %&#123;buildroot&#125;/%&#123;_bindir&#125;/%&#123;name&#125;</span><br><span class="line"></span><br><span class="line">install -m 0644 %&#123;name&#125;.py* %&#123;buildroot&#125;/usr/lib/%&#123;name&#125;/</span><br><span class="line"></span><br><span class="line">%files</span><br><span class="line">%license LICENSE</span><br><span class="line">%dir /usr/lib/%&#123;name&#125;/</span><br><span class="line">%&#123;_bindir&#125;/%&#123;name&#125;</span><br><span class="line">/usr/lib/%&#123;name&#125;/%&#123;name&#125;.py*</span><br><span class="line"></span><br><span class="line">%changelog</span><br><span class="line">* Tue May 31 2016 Adam Miller &lt;maxamillion@fedoraproject.org&gt; - 0.1.1-1</span><br><span class="line">  - First pello package</span><br></pre></td></tr></table></figure>
+<p>完善<code>cello.spec</code>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">Name:           cello</span><br><span class="line">Version:        1.0</span><br><span class="line">Release:        1%&#123;?dist&#125;</span><br><span class="line">Summary:        Hello World example implemented <span class="keyword">in</span> C</span><br><span class="line"></span><br><span class="line">License:        GPLv3+</span><br><span class="line">URL:            https://www.example.com/%&#123;name&#125;</span><br><span class="line">Source0:        https://www.example.com/%&#123;name&#125;/releases/%&#123;name&#125;-%&#123;version&#125;.tar.gz</span><br><span class="line"></span><br><span class="line">Patch0:         cello-output-first-patch.patch</span><br><span class="line"></span><br><span class="line">BuildRequires:  gcc</span><br><span class="line">BuildRequires:  make</span><br><span class="line"></span><br><span class="line">%description</span><br><span class="line">The long-tail description <span class="keyword">for</span> our Hello World Example implemented <span class="keyword">in</span></span><br><span class="line">C.</span><br><span class="line"></span><br><span class="line">%prep</span><br><span class="line">%setup -q</span><br><span class="line"></span><br><span class="line">%patch0</span><br><span class="line"></span><br><span class="line">%build</span><br><span class="line">make %&#123;?_smp_mflags&#125;</span><br><span class="line"></span><br><span class="line">%install</span><br><span class="line">%make_install</span><br><span class="line"></span><br><span class="line">%files</span><br><span class="line">%license LICENSE</span><br><span class="line">%&#123;_bindir&#125;/%&#123;name&#125;</span><br><span class="line"></span><br><span class="line">%changelog</span><br><span class="line">* Tue May 31 2016 Adam Miller &lt;maxamillion@fedoraproject.org&gt; - 1.0-1</span><br><span class="line">- First cello package</span><br></pre></td></tr></table></figure>
+<p> <code>/etc/rpmdevtools/</code>目录中有几种流行语言SPEC文件模板。</p>
+<h2 id="构建RPMS"><a href="#构建RPMS" class="headerlink" title="构建RPMS"></a>构建RPMS</h2><p>RPM是使用<code>rpmbuild</code>构建的。</p>
+<p>方案：</p>
+<ol>
+<li>构建源RPM</li>
+<li>构建二进制RPM</li>
+</ol>
+<p><code>rpmbuild</code>需要某个目录和文件结构。这与<code>rpmdev-setuptree</code>程序设置的结构相同。</p>
+<h2 id="源RPMS"><a href="#源RPMS" class="headerlink" title="源RPMS"></a>源RPMS</h2><p>为什么要构建源RPM（SRPM）?</p>
+<ol>
+<li>保留不是道环境的RPM的某个Name-Version-Release的确切来源。这包括确切的SPEC文件，源代码和所有相关补丁。这对于回顾历史记录和调试很有用。</li>
+<li>能够在不同硬件平台或体系架构上构建二进制RPM。</li>
+</ol>
+<h2 id="创建SRPM"><a href="#创建SRPM" class="headerlink" title="创建SRPM"></a>创建SRPM</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rpmbuild -bs SPECFILE</span><br></pre></td></tr></table></figure>
+<p>这里，我们建立<code>bello</code>、<code>pello</code>、<code>cello</code>的SRPM。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> ~/rpmbuild/SPECS/</span><br><span class="line">rpmbuild -bs bello.spec</span><br><span class="line">写道:/root/rpmbuild/SRPMS/bello-0.1-1.el7.centos.src.rpm</span><br><span class="line">rpmbuild -bs cello.spec</span><br><span class="line">写道:/root/rpmbuild/SRPMS/cello-1.0-1.el7.centos.src.rpm</span><br><span class="line">rpmbuild -bs pello.spec</span><br><span class="line">写道:/root/rpmbuild/SRPMS/pello-0.1.1-1.el7.centos.src.rpm</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>注意，SRPM被防止在<code>rpmbuild/SRPMS</code>目录中，</p>
+</blockquote>
+<h2 id="二进制RPMS"><a href="#二进制RPMS" class="headerlink" title="二进制RPMS"></a>二进制RPMS</h2><p>构建二进制RPM有两种方法：</p>
+<ol>
+<li>使用<code>rpmbuild --rebuild</code>命令重建。</li>
+<li>使用<code>rpmbuild -bb</code>命令从SPEC文件构建，<code>-bb</code>选项代表构建二进制。</li>
+</ol>
+<h3 id="从源RPM重建"><a href="#从源RPM重建" class="headerlink" title="从源RPM重建"></a>从源RPM重建</h3><p>要从源RPM重<code>bello</code>、<code>cello</code>以及<code>pello</code>，运行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">rpmbuild --rebuild ~/rpmbuild/SRPMS/bello-0.1-1.el7.centos.src.rpm</span><br><span class="line">rpmbuild --rebuild ~/rpmbuild/SRPMS/cello-1.0-1.el7.centos.src.rpm</span><br><span class="line">rpmbuild --rebuild ~/rpmbuild/SRPMS/pello-0.1.1-1.el7.centos.src.rpm</span><br></pre></td></tr></table></figure>
+<ul>
+<li>创建二进制RPM时生成的输出是详细的，有助于调试</li>
+<li>调用<code>rpmbuild --rebuild</code>：<ul>
+<li>将SRPM内容安装到<code>~/rpmbuild/</code>。</li>
+<li>使用已安装的内容构建。</li>
+<li>删除SPEC和源码。</li>
+</ul>
+</li>
+</ul>
+<p>如果想要保留SPEC和源码，有两个办法：</p>
+<ol>
+<li><p>构建时使用<code>--recompile</code>而不是<code>--rebuild</code>。</p>
+</li>
+<li><p>使用一下命令安装SRPM：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rpm -Uvh</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h3 id="从SPEC构建二进制文件"><a href="#从SPEC构建二进制文件" class="headerlink" title="从SPEC构建二进制文件"></a>从SPEC构建二进制文件</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">rpmbuild --bb ~/rpmbuild/SPEC/bello.spec</span><br><span class="line">rpmbuild --bb ~/rpmbuild/SPEC/cello.spec</span><br><span class="line">rpmbuild --bb ~/rpmbuild/SPEC/pello.spec</span><br></pre></td></tr></table></figure>
+<h2 id="检查RPM"><a href="#检查RPM" class="headerlink" title="检查RPM"></a>检查RPM</h2><p>使用<code>rpmlint</code>检查RPM包:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rpmlint ~/build/RPMS/x86_64/cello-1.0-1.el7.x86_64.rpm</span><br></pre></td></tr></table></figure>
+<p>使用<code>rpmlint</code>检查SPEC文件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rpmlint ~/rpmbuild/SPECS/cello.spec</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>Goooo
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.sysctl.me/2018/12/17/Linux/RPM/RPM-package/" title="RPM包">https://www.sysctl.me/2018/12/17/Linux/RPM/RPM-package/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/en" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/RPM/" rel="tag"># RPM</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/12/12/Linux/RPM/Create-an-RPM-package/" rel="prev" title="创建一个RPM包">
+      <i class="fa fa-chevron-left"></i> 创建一个RPM包
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/12/20/Linux/Performance-tuning/Performance-monitoring-tools/Performance-monitoring-tools/" rel="next" title="性能监控工具">
+      性能监控工具 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#什么是RPM？"><span class="nav-number">1.</span> <span class="nav-text">什么是RPM？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#RPM打包工具"><span class="nav-number">1.1.</span> <span class="nav-text">RPM打包工具</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#RPM打包工作区"><span class="nav-number">1.2.</span> <span class="nav-text">RPM打包工作区</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#什么是SPEC文件"><span class="nav-number">1.3.</span> <span class="nav-text">什么是SPEC文件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Preamble-项"><span class="nav-number">1.4.</span> <span class="nav-text">Preamble 项</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Body-项"><span class="nav-number">1.5.</span> <span class="nav-text">Body 项</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#BuildRoots"><span class="nav-number">1.6.</span> <span class="nav-text">BuildRoots</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#RPM宏"><span class="nav-number">1.7.</span> <span class="nav-text">RPM宏</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#使用SPEC文件"><span class="nav-number">1.8.</span> <span class="nav-text">使用SPEC文件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#构建RPMS"><span class="nav-number">1.9.</span> <span class="nav-text">构建RPMS</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#源RPMS"><span class="nav-number">1.10.</span> <span class="nav-text">源RPMS</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#创建SRPM"><span class="nav-number">1.11.</span> <span class="nav-text">创建SRPM</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#二进制RPMS"><span class="nav-number">1.12.</span> <span class="nav-text">二进制RPMS</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#从源RPM重建"><span class="nav-number">1.12.1.</span> <span class="nav-text">从源RPM重建</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#从SPEC构建二进制文件"><span class="nav-number">1.12.2.</span> <span class="nav-text">从SPEC构建二进制文件</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#检查RPM"><span class="nav-number">1.13.</span> <span class="nav-text">检查RPM</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Goooo"
+      src="/images/img.png">
+  <p class="site-author-name" itemprop="name">Goooo</p>
+  <div class="site-description" itemprop="description">一条啥也不会点废鱼</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">109</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">22</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">71</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/xth0331" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;xth0331" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:xietianhao0331@gmail.com" title="E-Mail → mailto:xietianhao0331@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/en" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+        
+        <script type="text/javascript" charset="utf-8" src="/js/tagcloud.js"></script>
+        <script type="text/javascript" charset="utf-8" src="/js/tagcanvas.js"></script>
+        <div class="widget-wrap">
+            <h3 class="widget-title">标签们</h3>
+            <div id="myCanvasContainer" class="widget tagcloud">
+                <canvas width="250" height="250" id="resCanvas" style="width=100%">
+                    <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ansible/" rel="tag">Ansible</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Backup/" rel="tag">Backup</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Bond/" rel="tag">Bond</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CPU/" rel="tag">CPU</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ceph/" rel="tag">Ceph</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cobbler/" rel="tag">Cobbler</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Coffee/" rel="tag">Coffee</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Corosync/" rel="tag">Corosync</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cyclic-invariant/" rel="tag">Cyclic invariant</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Docker/" rel="tag">Docker</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Effectiveness/" rel="tag">Effectiveness</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Exhaustion/" rel="tag">Exhaustion</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Filesystem/" rel="tag">Filesystem</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HAProxy/" rel="tag">HAProxy</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hardware/" rel="tag">Hardware</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Https/" rel="tag">Https</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ICMP/" rel="tag">ICMP</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JDK/" rel="tag">JDK</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Jenkins/" rel="tag">Jenkins</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JunOS/" rel="tag">JunOS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/KEEPALIVED/" rel="tag">KEEPALIVED</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Keepalived/" rel="tag">Keepalived</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/" rel="tag">Linux</a><span class="tag-list-count">19</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Log/" rel="tag">Log</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Markdown/" rel="tag">Markdown</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Modular-Programming/" rel="tag">Modular Programming</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Monitoring/" rel="tag">Monitoring</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Netconf/" rel="tag">Netconf</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Network/" rel="tag">Network</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Networking/" rel="tag">Networking</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Nginx/" rel="tag">Nginx</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OS/" rel="tag">OS</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OpenStack/" rel="tag">OpenStack</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Package-Manager/" rel="tag">Package Manager</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Partition/" rel="tag">Partition</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Programming/" rel="tag">Programming</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Python/" rel="tag">Python</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RAM/" rel="tag">RAM</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RHCS/" rel="tag">RHCS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RPM/" rel="tag">RPM</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Recursion/" rel="tag">Recursion</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Recursive/" rel="tag">Recursive</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Redirect/" rel="tag">Redirect</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Route/" rel="tag">Route</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SSH/" rel="tag">SSH</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Storage/" rel="tag">Storage</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Storage-and-Filesystem/" rel="tag">Storage and Filesystem</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Swap/" rel="tag">Swap</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Sys/" rel="tag">Sys</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Systemd/" rel="tag">Systemd</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Terminal/" rel="tag">Terminal</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Terraform/" rel="tag">Terraform</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Tools/" rel="tag">Tools</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ubuntu/" rel="tag">Ubuntu</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Veeam/" rel="tag">Veeam</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vim/" rel="tag">Vim</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Virtualization/" rel="tag">Virtualization</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vmware/" rel="tag">Vmware</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vsphere/" rel="tag">Vsphere</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Windows/" rel="tag">Windows</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Yum/" rel="tag">Yum</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/apple/" rel="tag">apple</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/elasticsearch/" rel="tag">elasticsearch</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/iteration/" rel="tag">iteration</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/logs/" rel="tag">logs</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/oop/" rel="tag">oop</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tools/" rel="tag">tools</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%88%86%E6%B2%BB/" rel="tag">分治</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E5%8E%8B%E7%BC%A9/" rel="tag">数据压缩</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%84%99%E8%A7%86%E9%93%BE/" rel="tag">鄙视链</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%87%8D%E5%A4%8D%E6%95%B0%E6%8D%AE%E5%88%A0%E9%99%A4/" rel="tag">重复数据删除</a><span class="tag-list-count">1</span></li></ul>
+                </canvas>
+            </div>
+        </div>
+        
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Goooo</span>
+</div>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.7.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://www-sysctl-me-1.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "https://www.sysctl.me/2018/12/17/Linux/RPM/RPM-package/";
+    this.page.identifier = "2018/12/17/Linux/RPM/RPM-package/";
+    this.page.title = "RPM包";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://www-sysctl-me-1.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/koharu.model.json"},"display":{"position":"left","width":300,"height":600},"mobile":{"show":false},"react":{"opacity":0.7}});</script></body>
+</html>

@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://www.sysctl.me').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","width":320,"display":"post","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="虚拟化概述什么是虚拟化？虚拟化是一个广泛的计算术语，用于运行软件，通常是多个操作系统，与单个系统上的其他程序隔离。虚拟化是通过使用管理程序完成的。这是一个软件层或子系统，可以控制硬件，并且可以在单个（通常是物理）机器上运行多个操作系统（称为VM（虚拟机）或guests）。这台装有操作系统的机器被称为HOST。有几种虚拟化方法：  完全虚拟化 完全虚拟化使用未经修改的客户操作系统版本。访客通过管理程">
+<meta property="og:type" content="article">
+<meta property="og:title" content="KVM虚拟化基础">
+<meta property="og:url" content="https://www.sysctl.me/2017/11/11/Virtualization/index.html">
+<meta property="og:site_name" content="Sysctl">
+<meta property="og:description" content="虚拟化概述什么是虚拟化？虚拟化是一个广泛的计算术语，用于运行软件，通常是多个操作系统，与单个系统上的其他程序隔离。虚拟化是通过使用管理程序完成的。这是一个软件层或子系统，可以控制硬件，并且可以在单个（通常是物理）机器上运行多个操作系统（称为VM（虚拟机）或guests）。这台装有操作系统的机器被称为HOST。有几种虚拟化方法：  完全虚拟化 完全虚拟化使用未经修改的客户操作系统版本。访客通过管理程">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/klfal2eGaE.png?imageslim">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/II2Dkmdjl9.png?imageslim">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/biK84fLgk7.png?imageslim">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/8i1FkgF5hj.png?imageslim">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/dbb7gLLl1C.png?imageslim">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/LBffiK0LDL.png?imageslim">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/caJB1EmIBk.png?imageslim">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/2AegFiDc4i.png?imageslim">
+<meta property="article:published_time" content="2017-11-11T01:46:11.000Z">
+<meta property="article:modified_time" content="2020-01-22T14:40:07.852Z">
+<meta property="article:author" content="Goooo">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="Virtualization">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog-image.nos-eastchina1.126.net/klfal2eGaE.png?imageslim">
+
+<link rel="canonical" href="https://www.sysctl.me/2017/11/11/Virtualization/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>KVM虚拟化基础 | Sysctl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Sysctl" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Sysctl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">观察指南，博客</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="搜索..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/xth0331" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.sysctl.me/2017/11/11/Virtualization/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/img.png">
+      <meta itemprop="name" content="Goooo">
+      <meta itemprop="description" content="一条啥也不会点废鱼">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Sysctl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          KVM虚拟化基础
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2017-11-11 09:46:11" itemprop="dateCreated datePublished" datetime="2017-11-11T09:46:11+08:00">2017-11-11</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-01-22 22:40:07" itemprop="dateModified" datetime="2020-01-22T22:40:07+08:00">2020-01-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2017/11/11/Virtualization/#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2017/11/11/Virtualization/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="虚拟化概述"><a href="#虚拟化概述" class="headerlink" title="虚拟化概述"></a>虚拟化概述</h1><h2 id="什么是虚拟化？"><a href="#什么是虚拟化？" class="headerlink" title="什么是虚拟化？"></a>什么是虚拟化？</h2><p><em>虚拟化</em>是一个广泛的计算术语，用于运行软件，通常是多个操作系统，与单个系统上的其他程序隔离。虚拟化是通过使用<em>管理程序</em>完成的。这是一个软件层或子系统，可以控制硬件，并且可以在单个（通常是物理）机器上运行多个操作系统（称为VM（虚拟机）或guests）。这台装有操作系统的机器被称为<em>HOST</em>。有几种虚拟化方法：</p>
+<ul>
+<li><p><strong>完全虚拟化</strong></p>
+<p>完全虚拟化使用未经修改的客户操作系统版本。访客通过管理程序创建的通道来访问主机的CPU。因为guest虚拟机与CPU直接通信，所以这是最快的虚拟化方法。</p>
+</li>
+<li><p><strong>半虚拟化</strong></p>
+<p>半虚拟化使用修改的客户操作系统。访客与管理程序进行通信。虚拟机管理程序将来自guest虚拟机的未修改的调用传递给CPU和其他接口，包括实际的和虚拟的。由于呼叫是通过管理程序路由的，因此此方法比完全虚拟化慢。</p>
+</li>
+<li><p><strong>软件虚拟化（或仿真）</strong></p>
+<p>软件虚拟化使用二进制翻译和其他仿真技术来运行未经修改的操作系统。管理程序将来宾呼叫转换为主机系统可以使用的格式。由于所有的调用都被翻译，所以这个方法比虚拟化要慢。请注意，红帽不支持红帽企业Linux上的软件虚拟化。</p>
+<a id="more"></a>
+<h2 id="虚拟化解决方案"><a href="#虚拟化解决方案" class="headerlink" title="虚拟化解决方案"></a>虚拟化解决方案</h2></li>
+</ul>
+<p>红帽提供以下主要的虚拟化解决方案，每个解决方案都有不同的用户焦点和功能：</p>
+<ul>
+<li><p>红帽企业Linux</p>
+<p>红帽企业版Linux 7中包含了 创建，运行和管理虚拟机以及<a href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/virtualization_getting_started_guide/chap-Virtualization_Getting_Started-Products" target="_blank" rel="noopener">大量虚拟化工具和功能的</a>能力。该解决方案支持每台主机有限的运行guest 虚拟机数量，以及有限的来宾类型。因此，红帽企业Linux上的虚拟化对于需要在多个环境中进行测试的开发人员，或者对于运行多个服务器的小型企业（没有严格的正常运行时间要求或服务级别协议（SLA））是有用的。<strong>重要</strong>本指南提供了关于红帽企业Linux上虚拟化的信息，并没有详细介绍其他虚拟化解决方案。</p>
+</li>
+<li><p>红帽虚拟化</p>
+<p>红帽虚拟化（RHV）基于基于内核的虚拟机（<a href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/virtualization_getting_started_guide/chap-Virtualization_Getting_Started-Products#sec-Virtualization_Getting_Started-Products-kvm_and_virt" target="_blank" rel="noopener">KVM</a>）技术，如红帽企业Linux上的虚拟化，但提供了一系列增强的功能。专为企业级可扩展性和性能而设计，可以从集中的图形界面管理整个虚拟基础架构，包括主机，虚拟机，网络，存储和用户。<strong>注意</strong>有关红帽企业版Linux和红帽虚拟化之间的差异的更多信息，请参阅<a href="https://access.redhat.com/solutions/629513" target="_blank" rel="noopener">红帽客户门户。</a>运行大型部署或任务关键型应用程序的企业可以使用红帽虚拟化。适用于红帽虚拟化的大型部署的例子包括数据库，交易平台和消息系统，这些系统必须连续运行而不会停机。<strong>注意</strong>有关红帽虚拟化的更多信息，或下载完全支持的60天评估版本，请参阅<a href="http://www.redhat.com/en/technologies/virtualization/enterprise-virtualization" target="_blank" rel="noopener">http://www.redhat.com/en/technologies/virtualization/enterprise-virtualization</a>。或者，请参阅<a href="https://access.redhat.com/documentation/en/red-hat-virtualization/" target="_blank" rel="noopener">红帽虚拟化文档套件</a>。</p>
+</li>
+<li><p>红帽OpenStack平台</p>
+<p>红帽OpenStack平台为创建，部署和扩展安全可靠的公共或私有<a href="https://www.redhat.com/en/insights/openstack" target="_blank" rel="noopener">OpenStack</a>云提供了一个综合基础。<strong>注意</strong>有关红帽OpenStack平台的更多信息。</p>
+</li>
+</ul>
+<h2 id="为什么要使用虚拟化？"><a href="#为什么要使用虚拟化？" class="headerlink" title="为什么要使用虚拟化？"></a>为什么要使用虚拟化？</h2><p>虚拟化对服务器部署和个人台式电脑都有用。桌面虚拟化提供经济高效的集中管理和更好的灾难恢复。另外，通过使用连接工具（如<em>ssh）</em>，可以远程连接到桌面。</p>
+<p>当用于服务器时，虚拟化不仅可以使大型网络受益，还可以使用多台服务器进行部署。虚拟化提供实时迁移，高可用性，容错和简化的备份。</p>
+<h2 id="虚拟化成本"><a href="#虚拟化成本" class="headerlink" title="虚拟化成本"></a>虚拟化成本</h2><p>虚拟化的引入可能很昂贵，但是从长远来看，这往往会节省资金。考虑以下好处：</p>
+<ul>
+<li><p>较少的权力</p>
+<p>使用虚拟化消除了多个物理平台的需求。这相当于减少了机器运行和冷却的功率，从而降低了能源成本。购买多个物理平台的初始成本，加上机器的功耗和所需的冷却，通过使用虚拟化大幅削减。</p>
+</li>
+<li><p>少维护</p>
+<p>如果在将物理系统迁移到虚拟化系统之前进行了适当的规划，则需要更少的时间来维护它们。这意味着需要花费更少的钱在零件和劳动力上。</p>
+</li>
+<li><p>已安装软件的使用寿命延长</p>
+<p>老版本的软件可能无法直接在更新的裸机上运行。通过在更大，更快的系统上虚拟运行较旧的软件，可以延长软件的使用寿命，同时利用更新系统的更好性能。</p>
+</li>
+<li><p>可预测的成本</p>
+<p>红帽企业Linux订阅以固定的速率提供对虚拟化的支持，使预测成本变得容易。</p>
+</li>
+<li><p>更小的空间</p>
+<p>将服务器整合到更少的机器上意味着计算机系统需要更少的物理空间。</p>
+</li>
+</ul>
+<h2 id="性能"><a href="#性能" class="headerlink" title="性能"></a>性能</h2><p>较早的虚拟化版本仅支持单个CPU。结果，虚拟机器经历了明显的性能限制。这造成了虚拟化解决方案缓慢的长期误解。</p>
+<p>这不再是这种情况。现代虚拟化技术大大提高了虚拟机的速度。基准测试表明，虚拟机可以像裸机系统一样有效运行典型的服务器应用程序：</p>
+<ul>
+<li>红帽企业Linux 6.4和KVM记录<a href="http://www.redhat.com/about/news/archive/2013/2/red-hat-and-ibm-achieve-leading-performance-benchmark-results" target="_blank" rel="noopener">了业界领先的TPC-C基准测试</a>，其中IBM DB2数据库运行在完全虚拟化的x86环境中，提供了88％的裸机性能。由于资源需求，数据库以前只保留用于裸机部署。</li>
+<li>行业标准的SAP销售和分销（SD）标准应用基准测试发现，与在相同硬件上运行的裸机系统相比，红帽企业Linux 6.2和KVM <a href="https://access.redhat.com/articles/216943" target="_blank" rel="noopener">的虚拟化效率高达85％</a>。</li>
+<li>红帽企业Linux 6.1和KVM 在标准性能评估公司（SPEC）记录<a href="https://www.redhat.com/en/about/press-releases/Red-Hat-Achieves-New-Top-Virtualization-Performance-Benchmark-with-HP" target="_blank" rel="noopener">的SPECvirt_sc2010基准测试中</a>获得了<a href="https://www.redhat.com/en/about/press-releases/Red-Hat-Achieves-New-Top-Virtualization-Performance-Benchmark-with-HP" target="_blank" rel="noopener">创纪录的虚拟化性能</a>，设置了任何已发布的SPECvirt结果的最佳虚拟性能标志。SPECvirt_sc2010度量度量虚拟化数据中心服务器中系统组件的端到端性能。</li>
+</ul>
+<h2 id="迁移"><a href="#迁移" class="headerlink" title="迁移"></a>迁移</h2><p><em>迁移</em>描述了将访客虚拟机从一台主机移动到另一台主机的过程。这是可能的，因为虚拟机在虚拟环境中运行，而不是直接在硬件上运行。有两种迁移虚拟机的方式：在线和离线。</p>
+<p><strong>迁移类型</strong></p>
+<ul>
+<li><p><strong>离线迁移</strong></p>
+<p>脱机迁移会暂停来宾虚拟机，然后将虚拟机内存的映像移动到目标主机。然后在目标主机上恢复虚拟机，释放源主机上虚拟机使用的内存。</p>
+</li>
+<li><p><strong>实时迁移</strong></p>
+<p>实时迁移是将活动虚拟机从一台物理主机迁移到另一台物理主机的过程。请注意，这在所有红帽企业Linux版本之间是不可能的。</p>
+</li>
+</ul>
+<h3 id="迁移虚拟机的好处"><a href="#迁移虚拟机的好处" class="headerlink" title="迁移虚拟机的好处"></a>迁移虚拟机的好处</h3><p>迁移对于：</p>
+<ul>
+<li><p><strong>负载均衡</strong></p>
+<p>当主机过载时，可以使用实时迁移将其一个或多个虚拟机迁移到其他主机。同样，可以使用脱机迁移来迁移未运行且倾向于过载的计算机。</p>
+</li>
+<li><p><strong>升级或更改主机</strong></p>
+<p>当需要升级，添加或删除主机上的硬件设备时，可以将虚拟机安全地重新分配给其他主机。这意味着客人不会因为对主机所做的更改而遭受任何停机时间。</p>
+</li>
+<li><p><strong>节能</strong></p>
+<p>可以将虚拟机重新分配给其他主机，并且卸载的主机系统可以关闭以节省能源并在低使用期间降低成本。</p>
+</li>
+<li><p><strong>地理移民</strong></p>
+<p>虚拟机可以移动到其他物理位置以降低延迟或其他原因。</p>
+</li>
+</ul>
+<p>当迁移过程移动虚拟机的内存时，与虚拟机关联的磁盘卷也将被迁移。该过程使用实时块迁移来执行。</p>
+<h3 id="虚拟化到虚拟化迁移（V2V）"><a href="#虚拟化到虚拟化迁移（V2V）" class="headerlink" title="虚拟化到虚拟化迁移（V2V）"></a>虚拟化到虚拟化迁移（V2V）</h3><p>作为一种特殊类型的迁移，红帽企业Linux 7提供了将虚拟机从其他类型的虚拟机管理程序转换为KVM的工具。该<code>virt-v2v</code>工具从Xen，其他版本的KVM和VMware ESX转换并导入虚拟机。</p>
+<h2 id="安全"><a href="#安全" class="headerlink" title="安全"></a>安全</h2><p>KVM虚拟机使用以下功能来提高其安全性：</p>
+<ul>
+<li><p>SELinux的</p>
+<p>安全增强型Linux或SELinux为所有Linux系统提供强制访问控制（MAC），因此也受益于Linux客户机。在SELinux的控制下，所有的进程和文件都被赋予一个<em>类型</em>，并且通过各种类型的精细控制来限制它们在系统上的访问。SELinux限制了攻击者的能力，可以防止许多常见的安全漏洞，例如缓冲区溢出攻击和特权升级。</p>
+</li>
+<li><p>sVirt</p>
+<p>sVirt是Red Hat Enterprise Linux 7中的一项技术，它集成了SELinux和虚拟化技术。它使用强制访问控制（MAC）来提高使用虚拟机时的安全性，并针对可能用于攻击主机或其他虚拟机的虚拟机管理程序错误加强系统。</p>
+</li>
+</ul>
+<h2 id="灾难恢复"><a href="#灾难恢复" class="headerlink" title="灾难恢复"></a>灾难恢复</h2><p>当系统虚拟化时，灾难恢复更快，更容易。在物理系统上，如果出现严重错误，通常需要完全重新安装操作系统，导致几个小时的恢复时间。但是，如果系统是虚拟化的，则由于迁移能力而更快。如果遵循实时迁移的要求，则可以在另一个主机上重新启动虚拟机，并且最长的可能延迟是恢复访客数据。而且，因为每个虚拟化系统都是完全独立的，所以一个系统的停机时间不会影响其他任何系统。</p>
+<h1 id="红帽虚拟化产品和功能介绍"><a href="#红帽虚拟化产品和功能介绍" class="headerlink" title="红帽虚拟化产品和功能介绍"></a>红帽虚拟化产品和功能介绍</h1><p>本章介绍红帽企业版Linux 7中的主要虚拟化产品和功能。</p>
+<h2 id="红帽企业Linux中的KVM和虚拟化"><a href="#红帽企业Linux中的KVM和虚拟化" class="headerlink" title="红帽企业Linux中的KVM和虚拟化"></a>红帽企业Linux中的KVM和虚拟化</h2><p>KVM（基于内核的虚拟机）是适用于各种架构的Linux的完整虚拟化解决方案。它内置于标准的红帽企业Linux 7内核中，并与Quick Emulator（QEMU）集成在一起，可运行多个客户操作系统。Red Hat Enterprise Linux中的KVM管理程序使用<strong>libvirt</strong> API进行管理，并为<strong>libvirt</strong>（例如<code>virt-manager</code>和<code>virsh</code>）构建工具。虚拟机作为多线程的Linux进程执行并运行，由这些工具控制。</p>
+<p><strong>警告</strong></p>
+<p>QEMU和<strong>libvirt</strong>也支持使用QEMU Tiny Code Generator（TCG）的动态翻译模式，它不需要硬件虚拟化支持。Red Hat不支持这种配置。</p>
+<p>有关此限制的更多信息，请参阅“ <a href="https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Virtualization_Deployment_and_Administration_Guide/sect-Virtualization_restrictions-KVM_restrictions.html" target="_blank" rel="noopener"><em>Red Hat Enterprise Linux 7虚拟化部署和管理指南”</em></a>。</p>
+<p><img src="https://blog-image.nos-eastchina1.126.net/klfal2eGaE.png?imageslim" alt="KVM架构"></p>
+<p><strong>图3.1。KVM架构</strong></p>
+<p>红帽企业版7上的KVM支持的虚拟化功能包括：</p>
+<ul>
+<li><p>过量使用</p>
+<p>KVM管理程序支持系统资源的<em>过度</em>使用。过度使用意味着分配比系统上可用资源更多的虚拟CPU或内存，这样资源可以在一个guest虚拟机需要时动态交换，而另一个guest虚拟机不使用。这可以提高客户机使用主机资源的效率，并且可以使用户需要更少的主机。<strong>重要</strong>过度使用涉及系统稳定性的可能风险。有关KVM过度使用的更多信息，以及应采取的预防措施，请参阅“ <a href="http://access.redhat.com/site/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Virtualization_Deployment_and_Administration_Guide/chap-Overcommitting_with_KVM.html" target="_blank" rel="noopener"><em>红帽企业版Linux 7虚拟化部署和管理指南”</em></a>。</p>
+</li>
+<li><p>KSM</p>
+<p><strong>KVM虚拟机管理程序使用的<em>内核相同页面合并（KSM）</em>使KVM来宾共享相同的内存页面。这些共享页面通常是通用的库或其他相同的，高度使用的数据。通过避免内存重复，KSM允许相同或相似客户操作系统的更高客户密度。</strong>注意<em>*有关KSM的更多信息，请参阅“ [</em>Red Hat Enterprise Linux 7虚拟化调整和优化指南”*](<a href="https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Virtualization_Tuning_and_Optimization_Guide/chap-KSM.html)。" target="_blank" rel="noopener">https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Virtualization_Tuning_and_Optimization_Guide/chap-KSM.html)。</a></p>
+</li>
+<li><p>QEMU嘉宾代理</p>
+<p>该<em>QEMU访客代理</em>客户机操作系统上运行，它使主机发出的来宾操作系统的命令。<strong>注意</strong>有关QEMU访客代理的更多信息，请参阅“ <a href="http://access.redhat.com/site/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Virtualization_Deployment_and_Administration_Guide/chap-QEMU_Guest_Agent.html" target="_blank" rel="noopener"><em>Red Hat Enterprise Linux 7虚拟化部署和管理指南”</em></a>。</p>
+</li>
+<li><p>磁盘I / O限制</p>
+<p>当多个虚拟机同时运行时，它们会通过使用过多的磁盘I / O来干扰整个系统的性能。KVM中的<em>磁盘I / O限制</em>提供了对从单个虚拟机发送到主机的磁盘I / O请求设置限制的功能。这可以防止虚拟机过度使用共享资源，并影响其他虚拟机的性能。<strong>注意</strong>有关使用磁盘I / O限制的说明，请参阅“ <a href="https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Virtualization_Tuning_and_Optimization_Guide/sect-Virtualization_Tuning_Optimization_Guide-BlockIO-Techniques.html#sect-Virtualization_Tuning_Optimization_Guide-BlockIO-IO_Throttling" target="_blank" rel="noopener"><em>Red Hat Enterprise Linux 7虚拟化调整和优化指南”</em></a>。</p>
+</li>
+<li><p>自动NUMA平衡</p>
+<p><em>自动非均匀内存访问（NUMA）平衡</em>移动任务，可以是更接近正在访问的内存的线程或进程。这提高了在非统一内存访问（NUMA）硬件系统上运行的应用程序的性能，而无需Red Hat Enterprise Linux 7 guest虚拟机所需的任何手动调整。<strong>注意</strong>有关自动NUMA平衡的更多信息，请参阅“ <a href="https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Virtualization_Tuning_and_Optimization_Guide/sect-Virtualization_Tuning_Optimization_Guide-NUMA-Auto_NUMA_Balancing.html" target="_blank" rel="noopener"><em>Red Hat Enterprise Linux 7虚拟化调优和优化指南”</em></a>。</p>
+</li>
+<li><p>虚拟CPU热添加</p>
+<p>虚拟CPU（vCPU）热添加功能可根据需要提高运行虚拟机的处理能力，而无需关闭客户机。分配给虚拟机的vCPU可以添加到正在运行的guest虚拟机，以满足工作负载的需求，或维护与工作负载相关的服务级别协议（SLA）。<strong>注意</strong>有关虚拟CPU热添加的更多信息，请参阅“ <a href="http://access.redhat.com/site/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Virtualization_Deployment_and_Administration_Guide/sect-Managing_guest_virtual_machines_with_virsh-Displaying_per_guest_virtual_machine_information.html#sect-Displaying_per_guest_virtual_machine_information-Configuring_virtual_CPU_count" target="_blank" rel="noopener"><em>红帽企业版Linux 7虚拟化部署和管理指南”</em></a>。</p>
+</li>
+<li><p>嵌套的虚拟化</p>
+<p>作为一项技术预览，红帽企业Linux 7.2及更高版本提供硬件辅助的嵌入式虚拟化。此功能使KVM客人可以充当管理程序并创建他们自己的客人。例如，这可以用于在虚拟机上调试虚拟机管理程序，或者在有限数量的物理机器上测试更大的虚拟部署。<strong>注意</strong>有关设置和使用嵌套虚拟化的更多信息，请参阅<a href="http://access.redhat.com/site/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Virtualization_Deployment_and_Administration_Guide/Nested_Virt.html" target="_blank" rel="noopener"><em>“红帽企业版Linux 7虚拟化部署和管理指南”</em></a>。</p>
+</li>
+<li><p>KVM Guest 虚拟机兼容性</p>
+<p>红帽企业Linux 7服务器有一定的支持限制。以下URL解释了红帽企业版Linux的处理器和内存量限制：对于主机系统：<a href="https://access.redhat.com/site/articles/rhel-limits" target="_blank" rel="noopener">https</a>：<a href="https://access.redhat.com/site/articles/rhel-limits" target="_blank" rel="noopener">//access.redhat.com/site/articles/rhel-limits</a>对于KVM管理程序：<a href="https://access.redhat.com/site/articles/rhel-kvm-limits" target="_blank" rel="noopener">https</a>：<a href="https://access.redhat.com/site/articles/rhel-kvm-limits" target="_blank" rel="noopener">//access.redhat.com/site/articles/rhel-kvm-limits</a>有关受支持的操作系统以及主机和来宾组合的完整图表，请参阅<a href="https://access.redhat.com/certified-hypervisors" target="_blank" rel="noopener">红帽客户门户</a><strong>注意</strong>要验证您的处理器是否支持虚拟化扩展，以及有关禁用虚拟化扩展的信息，请参阅“ <a href="http://access.redhat.com/site/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Virtualization_Deployment_and_Administration_Guide/sect-Troubleshooting-Enabling_Intel_VT_x_and_AMD_V_virtualization_hardware_extensions_in_BIOS.html" target="_blank" rel="noopener"><em>Red Hat Enterprise Linux 7虚拟化部署和管理指南”</em></a>。</p>
+</li>
+</ul>
+<h3 id="LIBVIRT和LIBVIRT工具"><a href="#LIBVIRT和LIBVIRT工具" class="headerlink" title="LIBVIRT和LIBVIRT工具"></a>LIBVIRT和LIBVIRT工具</h3><p>的libvirt的包提供了管理程序的虚拟化独立API可以与各种操作系统的虚拟化功能进行交互。这包括：</p>
+<ul>
+<li><p>一个虚拟化层来安全地管理主机上的虚拟机。</p>
+</li>
+<li><p>用于管理本地和联网主机的界面。</p>
+</li>
+<li><p>调配，创建，修改，监控，控制，迁移和停止虚拟机所需的API。虽然可以同时使用<strong>libvirt</strong>访问多个主机，但这些API仅限于单节点操作。</p>
+<p><strong>注意</strong></p>
+<p>只有管理程序支持的操作可以使用libvirt执行。</p>
+</li>
+</ul>
+<p><strong>libvirt</strong>专注于管理单个主机，并提供API来枚举，监视和使用受管节点上可用的资源，包括CPU，内存，存储，网络和非一致内存访问（NUMA）分区。管理工具不需要与运行主机的机器在同一台物理机器上。在这种情况下，运行管理工具的机器使用安全协议与运行主机的机器通信。</p>
+<p>红帽企业版Linux 7支持<strong>libvirt，</strong>并且包含基于<strong>libvirt</strong>的工具作为虚拟化管理的默认方法（如在Red Hat Virtualization Management中）。</p>
+<p>该libvirt的包为GNU宽通用公共许可证下的免费软件。该libvirt的项目旨在提供一个长期稳定的C API到虚拟化管理工具，在不同的虚拟机管理程序技术之上运行。的libvirt的包支持红帽企业Linux 5，和KVM红帽企业Linux 5，红帽企业Linux 6和Red Hat企业Linux 7的Xen。</p>
+<p>值得注意的是，libvirt的还提供了用于控制红帽企业Linux 7虚拟化的两种主要工具：virsh和virt-manager</p>
+<h3 id="虚拟化硬件设备"><a href="#虚拟化硬件设备" class="headerlink" title="虚拟化硬件设备"></a>虚拟化硬件设备</h3><p>红帽企业版Linux 7上的虚拟化允许虚拟机将主机的物理硬件用作三种不同类型的设备：</p>
+<ul>
+<li>虚拟化和仿真设备</li>
+<li>准虚拟化设备</li>
+<li>物理共享设备</li>
+</ul>
+<p>这些硬件设备都显示为物理连接到虚拟机，但设备驱动程序以不同的方式工作。</p>
+<h3 id="虚拟化和仿真设备"><a href="#虚拟化和仿真设备" class="headerlink" title="虚拟化和仿真设备"></a>虚拟化和仿真设备</h3><p>KVM作为软件实现了许多虚拟机的核心设备。这些模拟硬件设备对于虚拟化操作系统至关重要。仿真设备是完全以软件存在的虚拟设备。</p>
+<p>另外，KVM提供了仿真驱动程序。这些形成了虚拟机和Linux内核（管理源设备）之间的转换层。设备级别的指令完全由KVM管理程序翻译。任何可以被Linux内核识别的相同类型的设备（存储设备，网络设备，键盘或鼠标）都可以用作仿真驱动程序的后备源设备。</p>
+<ul>
+<li><p>虚拟CPU（vCPU）</p>
+<p>在Red Hat Enterprise Linux 7.2及更高版本上，主机系统最多可以有240个虚拟CPU（vCPU），无论主机CPU的数量如何，都可以呈现给客户使用。这在红帽企业Linux 7.0中是160。</p>
+</li>
+<li><p>仿真的系统组件</p>
+<p>仿真以下核心系统组件以提供基本的系统功能：英特尔i440FX主机PCI桥接器PIIX3 PCI到ISA桥接器PS / 2鼠标和键盘EvTouch USB绘图板PCI UHCI USB控制器和虚拟USB集线器仿真的串行端口EHCI控制器，虚拟USB存储器和USB鼠标USB 3.0 xHCI主机控制器（Red Hat Enterprise Linux 7.3中的技术预览）</p>
+</li>
+<li><p>仿真的存储驱动程序</p>
+<p>存储设备和存储池可以使用模拟驱动程序将存储设备连接到虚拟机。来宾使用模拟存储驱动程序来访问存储池。请注意，与所有虚拟设备一样，存储驱动程序不是存储设备。驱动程序用于将后备存储设备，文件或存储池卷连接到虚拟机。后备存储设备可以是任何支持的存储设备类型，文件或存储池卷。仿真的IDE驱动程序KVM提供两个仿真的PCI IDE接口。仿真的IDE驱动程序可用于将最多四个虚拟IDE硬盘或虚拟IDE CD-ROM驱动器的任意组合连接到每个虚拟机。仿真的IDE驱动程序也用于虚拟化的CD-ROM和DVD-ROM驱动器。仿真的软盘驱动器驱动程序仿真的软盘驱动器驱动程序用于创建虚拟软盘驱动器。</p>
+</li>
+<li><p>仿真声音设备</p>
+<p><code>intel-hda</code>以下客户操作系统支持 仿真（Intel）HDA声音设备：红帽企业Linux 7，用于AMD64和Intel 64架构红帽企业Linux 4,5和6，用于32位AMD和Intel架构以及AMD64和Intel 64架构<strong>注意</strong>以下仿真声音设备也可用，但由于某些客户机操作系统的兼容性问题，因此不推荐使用该设备：<code>ac97</code>，一个模拟英特尔82801AA AC97音频兼容声卡</p>
+</li>
+<li><p>仿真图形卡</p>
+<p>提供以下仿真图形卡。Cirrus CLGD 5446 PCI显卡带有Bochs VESA扩展的标准VGA图形卡（硬件级别，包括所有非标准模式）客人可以使用独立计算环境简单协议（SPICE）协议或虚拟网络计算（VNC）系统连接到这些设备。</p>
+</li>
+<li><p>仿真的网络设备</p>
+<p>提供以下两个仿真网络设备：该<code>e1000</code>设备模拟英特尔E1000网络适配器（英特尔82540EM，82573L，82544GC）。该<code>rtl8139</code>设备模拟Realtek 8139网络适配器。</p>
+</li>
+<li><p>仿真看门狗设备</p>
+<p>当机器过载或无响应时，可以使用看门狗来自动重启虚拟机。红帽企业版Linux 7提供了以下仿真看门狗设备：<code>i6300esb</code>，一个仿真的英特尔6300 ESB PCI看门狗设备。它在客户机操作系统Red Hat Enterprise Linux 6.0及以上版本中受支持，并且是推荐使用的设备。<code>ib700</code>，一个仿真的iBase 700 ISA看门狗设备。该<code>ib700</code>监视设备仅在使用红帽企业版Linux 6.2及以上的房间。在来宾操作系统Red Hat Enterprise Linux 6.2及以上版本的i386和x86_64体系结构中，两种看门狗设备均受支持。</p>
+</li>
+</ul>
+<h3 id="半虚拟化设备"><a href="#半虚拟化设备" class="headerlink" title="半虚拟化设备"></a>半虚拟化设备</h3><p>半虚拟化为客人在主机上使用设备提供了一种快速有效的通信方式。KVM使用virtio API作为虚拟机管理程序和guest虚拟机之间的一个层，为虚拟机提供半虚拟化设备。</p>
+<p>一些准虚拟化设备减少了I / O延迟，并将I / O吞吐量提高到接近裸机级别，而其他半虚拟化设备为虚拟机增加了功能，而这些虚拟机不具备其他功能。建议对运行I / O密集型应用程序的虚拟机使用半虚拟化设备，而不要使用仿真设备。</p>
+<p>所有virtio设备都有两部分：主机设备和来宾驱动程序。半虚拟化设备驱动程序允许来宾操作系统访问主机系统上的物理设备。</p>
+<p>要使用此设备，必须在来宾操作系统上安装半虚拟化设备驱动程序。默认情况下，半虚拟化设备驱动程序包含在红帽企业Linux 4.7及更高版本，红帽企业Linux 5.4及更高版本以及红帽企业Linux 6.0及更高版本中。</p>
+<p><strong>注意</strong></p>
+<p>有关使用半虚拟化设备和驱动程序的更多信息，请参阅“ <a href="http://access.redhat.com/site/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Virtualization_Deployment_and_Administration_Guide/chap-KVM_Para_virtualized_virtio_Drivers.html" target="_blank" rel="noopener"><em>红帽企业版Linux 7虚拟化部署和管理指南”</em></a>。<a href="http://access.redhat.com/site/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Virtualization_Deployment_and_Administration_Guide/chap-KVM_Para_virtualized_virtio_Drivers.html" target="_blank" rel="noopener">**</a></p>
+<ul>
+<li><p>半虚拟化网络设备（virtio-net）</p>
+<p>半虚拟化网络设备是一种虚拟网络设备，可为虚拟机提供网络访问，从而提高I / O性能和延迟。</p>
+</li>
+<li><p>半虚拟块设备（virtio-blk）</p>
+<p>半虚拟化块设备是一种高性能虚拟存储设备，可为虚拟机提供存储，从而提高I / O性能和延迟。半虚拟化块设备由虚拟机管理程序支持，并且连接到虚拟机（软盘驱动器除外，必须进行仿真）。</p>
+</li>
+<li><p>半虚拟化控制器设备（virtio-scsi）</p>
+<p>半虚拟化SCSI控制器设备为virtio-blk提供了更灵活和可扩展的选择。virtio-scsi guest可以继承目标设备的功能集，可以处理数百个设备，而virtio-blk只能处理28个设备。virtio-scsi完全支持以下客户机操作系统：红帽企业Linux 7红帽企业Linux 6.4及以上</p>
+</li>
+<li><p>半虚拟时钟</p>
+<p>使用时间戳计数器（TSC）作为时钟源的用户可能会遇到计时问题。KVM通过为客户提供半虚拟化时钟，在没有固定时间戳计数器的主机周围工作。另外，半虚拟时钟协助客户运行睡眠（S3）或暂停RAM操作之后所需的时间调整。</p>
+</li>
+<li><p>准虚拟串行设备（virtio-serial）</p>
+<p>半虚拟串行设备是一种面向字节流的字符流设备，在主机的用户空间和客户的用户空间之间提供了简单的通信接口。</p>
+</li>
+<li><p>气球装置（virtio-balloon）</p>
+<p>气球设备可以指定虚拟机的一部分RAM没有被使用（一个称为<em>膨胀</em>气球的过程），这样内存就可以释放给主机（或主机上的其他虚拟机）使用。当虚拟机再次需要内存时，可以<em>缩小</em>气球，主机可以将RAM分配回虚拟机。</p>
+</li>
+<li><p>半虚拟随机数发生器（virtio-rng）</p>
+<p>半虚拟化随机数生成器使虚拟机能够直接从主机收集熵或随机性，以用于加密数据和安全性。由于典型的输入（如硬件使用）不可用，因此虚拟机通常可能因为熵而不足。采购熵可能是耗时的。<strong>virtio-rng</strong>通过从主机直接向客户虚拟机注入熵来使得这个过程更快。</p>
+</li>
+<li><p>半虚拟化显卡（QXL）</p>
+<p>半虚拟化图形卡与QXL驱动程序配合使用，可以有效地从远程主机显示虚拟机的图形。QXL驱动程序需要使用SPICE。</p>
+</li>
+</ul>
+<h3 id="物理主机设备"><a href="#物理主机设备" class="headerlink" title="物理主机设备"></a>物理主机设备</h3><p>某些硬件平台使虚拟机可以直接访问各种硬件设备和组件。虚拟化中的这个过程称为<em>设备分配</em>，或者也称为<em>直通</em>。</p>
+<ul>
+<li><p>VFIO设备分配</p>
+<p>虚拟功能I / O（VFIO）是红帽企业版Linux 7中的新内核驱动程序，为虚拟机提供了对物理硬件的高性能访问。VFIO将主机系统上的PCI设备直接连接到虚拟机，为客户提供独占访问PCI设备的一系列任务。这使得PCI设备能够以物理方式连接到来宾虚拟机的方式显示和运行。通过将设备分配移出KVM管理程序，VFIO改进了之前的PCI设备分配体系结构，并在内核级别实施设备隔离。VFIO提供更好的安全性，并与安全启动兼容。这是Red Hat Enterprise Linux 7中的默认设备分配机制。VFIO将红帽企业版Linux 7中分配的设备数量从32个增加到32个，而红帽企业版Linux 6中的最多8个设备。VFIO还支持分配NVIDIA GPU。</p>
+</li>
+<li><p>USB，PCI和SCSI直通</p>
+<p>KVM管理程序支持将主机系统上的USB，PCI和SCSI设备连接到虚拟机。USB，PCI和SCSI设备分配使设备可以看起来像虚拟机物理连接一样。因此，它为客人提供独占访问这些设备的各种任务。</p>
+</li>
+<li><p>SR-IOV</p>
+<p>SR-IOV（单根I / O虚拟化）是一种PCI Express（PCI-e）标准，它扩展了单个物理PCI功能，以共享其独立的虚拟功能（VF）的PCI资源。每个功能都可以通过PCI设备分配由不同的虚拟机使用。支持SR-IOV的PCI-e设备提供单根功能（例如，单个以太网端口），并将多个独立的虚拟设备呈现为唯一的PCI设备功能。每个虚拟设备可能都有自己独特的PCI配置空间，内存映射寄存器和各个基于MSI的中断。。</p>
+</li>
+<li><p>NPIV</p>
+<p>N_Port ID虚拟化（NPIV）是一些光纤通道设备可用的功能。NPIV共享单个物理N_Port作为多个N_Port ID。NPIV为SR-IOV为PCIe接口提供的光纤通道主机总线适配器（HBA）提供了类似的功能。借助NPIV，虚拟机可以为存储区域网络（SAN）提供虚拟光纤通道启动器。NPIV可以为企业级存储解决方案提供高密度的虚拟化环境。</p>
+</li>
+</ul>
+<h3 id="客户CPU模型"><a href="#客户CPU模型" class="headerlink" title="客户CPU模型"></a>客户CPU模型</h3><p><em>CPU模型</em>定义哪些主机CPU功能暴露给来宾操作系统。<strong>KVM</strong>和<strong>libvirt</strong>包含许多处理器型号的定义，允许用户启用仅在较新CPU型号中可用的CPU功能。可以暴露给guest虚拟机的一组CPU功能取决于主机CPU，内核和<strong>KVM</strong>代码中的支持。</p>
+<p>为确保具有不同CPU特性集的主机之间的虚拟机安全迁移，<strong>KVM</strong>默认情况下不会将主机CPU的所有功能公开给来宾操作系统。相反，CPU功能是基于所选的CPU模型公开的。如果虚拟机启用了给定的CPU功能，则无法将其迁移到不支持向客户端公开该功能的主机。</p>
+<h2 id="存储"><a href="#存储" class="headerlink" title="存储"></a>存储</h2><p>虚拟机的存储从分配给虚拟机的物理存储抽象出来。它使用半虚拟化或仿真的块设备驱动程序连接到虚拟机。</p>
+<h3 id="存储池"><a href="#存储池" class="headerlink" title="存储池"></a>存储池</h3><p>甲<em>存储池</em>是由管理的文件，目录或存储设备<strong>libvirt的</strong>用于向虚拟机提供存储的目的。存储池分为存储虚拟机映像的存储<em>卷</em>或附加到虚拟机作为附加存储。</p>
+<ul>
+<li><p>本地存储池</p>
+<p>本地存储池直接连接到主机服务器。它们包括本地目录，直接连接的磁盘，物理分区和本地设备上的逻辑卷管理（LVM）卷组。本地存储池对于不需要迁移或大量虚拟机的开发，测试和小型部署非常有用。本地存储池可能不适合许多生产环境，因为它们不支持实时迁移。</p>
+</li>
+<li><p>联网（共享）存储池</p>
+<p>网络存储池包括使用标准协议通过网络共享的存储设备。使用<strong>virt-manager</strong>在主机之间迁移虚拟机时需要网络存储，但在迁移时为可选<code>virsh</code>。网络存储池由<strong>libvirt</strong>管理。</p>
+</li>
+</ul>
+<h3 id="存储卷"><a href="#存储卷" class="headerlink" title="存储卷"></a>存储卷</h3><p>存储池分为<em>存储卷</em>。存储卷是物理分区，LVM逻辑卷，基于文件的磁盘映像以及由<strong>libvirt</strong>处理的其他存储类型的抽象。存储卷作为本地存储设备呈现给虚拟机，而不管底层硬件如何。</p>
+<h3 id="仿真存储设备"><a href="#仿真存储设备" class="headerlink" title="仿真存储设备"></a>仿真存储设备</h3><p>虚拟机可以呈现一系列由主机模拟的存储设备。每种类型的存储设备都适合特定的使用情况，从而实现最大的灵活性和与客户操作系统的兼容性。</p>
+<ul>
+<li><p>为Virtio-SCSI</p>
+<p>对于使用大量磁盘或高级存储功能（如TRIM）的guest虚拟机，<strong>virtio-scsi</strong>是推荐的半虚拟化设备。在使用Red Hat Enterprise Linux 7以外的操作系统的guest虚拟机上可能需要安装guest虚拟机驱动程序。</p>
+</li>
+<li><p>为Virtio-BLK</p>
+<p><strong>virtio-blk</strong>是一个半虚拟化的存储设备，适用于向客户展示图像文件。<strong>virtio-blk</strong>可以为虚拟机提供最佳的磁盘I / O性能，但功能比virtio-scsi少。</p>
+</li>
+<li><p>IDE</p>
+<p>对于不支持virtio驱动程序的传统guest虚拟机，建议使用IDE。IDE性能低于virtio-scsi或virtio-blk，但是它与不同的系统广泛兼容。</p>
+</li>
+<li><p>光盘</p>
+<p>ATAPI CD-ROM和virtio-scsi CD-ROM是可用的，并且使客人可以使用ISO文件或主机的CD-ROM驱动器。virtio-scsi CD-ROM可以与安装了virtio-scsi驱动程序的guest虚拟机一起使用。ATAPI光盘提供更广泛的兼容性，但性能较低。</p>
+</li>
+<li><p>USB大容量存储设备和软盘</p>
+<p>当需要可移动介质时，仿真的USB大容量存储设备和软盘可用。USB大容量存储设备比软盘容量大，因此比软盘更受欢迎。</p>
+</li>
+</ul>
+<h3 id="主机存储"><a href="#主机存储" class="headerlink" title="主机存储"></a>主机存储</h3><p>磁盘映像可以存储在连接到主机的一系列本地和远程存储技术上。</p>
+<ul>
+<li><p>图像文件</p>
+<p>图像文件只能存储在主机文件系统上。映像文件可以存储在本地文件系统（如ext4或xfs）或网络文件系统（如NFS）上。像<strong>libguestfs</strong>这样的工具可以管理，备份和监视文件。KVM上的磁盘映像格式包括：生的原始图像文件包含没有额外元数据的磁盘的内容。如果主机文件系统允许的话，原始文件可以是预先分配的，也可以是稀疏的。稀疏文件按需分配主机磁盘空间，因此是精简配置的一种形式。预分配的文件已完全配置，但具有比稀疏文件更高的性能。当磁盘I / O性能非常关键，并且很少需要通过网络传输映像文件时，原始文件是可取的。qcow2，qcow2映像文件提供了许多高级磁盘映像功能，包括备份文件，快照，压缩和加密。它们可以用来从模板图像实例化虚拟机。通过网络传输qcow2文件通常效率更高，因为只有虚拟机写入的扇区才被分配到映像中。红帽企业版Linux 7支持qcow2版本3的图像文件格式。</p>
+</li>
+<li><p>LVM卷</p>
+<p>逻辑卷（LV）可用于磁盘映像，并使用系统的LVM工具进行管理。LVM提供比文件系统更高的性能，因为其更简单的块存储模型。LVM精简配置为LVM卷提供了快照和高效的空间使用，可以用作迁移到qcow2的替代方案。</p>
+</li>
+<li><p>主机设备</p>
+<p>主机设备（如物理CD-ROM，原始磁盘和逻辑单元号（LUN））可以呈现给来宾。这使得SAN或iSCSI LUN以及本地CD-ROM介质能够被客户使用，性能良好。在SAN上而不是在主机上完成存储管理时，可以使用主机设备。</p>
+</li>
+<li><p>分布式存储系统</p>
+<p>Gluster卷可以用作磁盘映像。这使得网络上的高性能集群存储成为可能。红帽企业Linux 7包含对GlusterFS磁盘映像的本地支持。这使KVM主机能够从GlusterFS卷启动虚拟机映像，并将来自GlusterFS卷的映像用作虚拟机的数据磁盘。与GlusterFS FUSE相比，KVM的原生支持提供了更高的性能。</p>
+</li>
+</ul>
+<h2 id="虚拟网络"><a href="#虚拟网络" class="headerlink" title="虚拟网络"></a>虚拟网络</h2><p>虚拟客户与任何网络的连接使用物理主机的软件网络组件。这些软件组件可以通过使用<code>libvirt</code>虚拟网络配置来重新安排和重新配置。因此，主机充当虚拟网络交换机，可以以许多不同的方式来配置虚拟网络交换机以适应客户的网络需求。</p>
+<p>默认情况下，单个主机上的所有guest虚拟机都连接到同名的libvirt虚拟网络<code>default</code>。此网络上的访客可以进行以下连接：</p>
+<ul>
+<li><p>彼此和虚拟主机</p>
+<p>入站和出站流量都是可能的，但受到来宾操作系统的网络堆栈中的防火墙以及连接到访客接口的libvirt网络过滤规则的影响。</p>
+</li>
+<li><p>与虚拟主机之外的网络上的其他主机一起使用</p>
+<p>只有出站流量是可能的，受到网络地址转换（NAT）规则以及主机系统的防火墙的影响。</p>
+</li>
+</ul>
+<p>但是，如果需要，可以将访客接口设置为以下模式之一：</p>
+<ul>
+<li><p>隔离模式</p>
+<p>客户端连接到不允许虚拟化主机之外的任何流量的网络。</p>
+</li>
+<li><p>路由模式</p>
+<p>客户端连接到一个网络，该客户端与外部主机之间路由流量，而不执行任何NAT。这将启用传入连接，但需要额外的路由表条目用于外部网络上的系统。</p>
+</li>
+<li><p>桥接模式</p>
+<p>客户端连接到桥接设备，该设备也直接连接到连接到本地以太网的物理以太网设备。这使得guest虚拟机在物理网络上直接可见，从而启用传入连接，但不需要任何额外的路由表条目。</p>
+</li>
+</ul>
+<p>对于从虚拟机进行基本出站的网络访问，通常不需要额外的网络设置，因为<code>default</code>网络与libvirt包一起安装，并在<code>libvirtd</code>服务启动时自动启动。如果需要更高级的功能，可以使用virsh或virt-manager创建和配置额外的网络，并且可以编辑XML配置文件以使用其中一个新网络。</p>
+<h2 id="入门教程"><a href="#入门教程" class="headerlink" title="入门教程"></a>入门教程</h2><p>必需的包</p>
+<p>在使用虚拟化之前，必须在计算机上安装一套基本的虚拟化软件包。</p>
+<p><strong>程序4.1。使用安装虚拟化软件包yum</strong></p>
+<p>要在Red Hat Enterprise Linux的，在使用虚拟化<code>qemu-kvm</code>，<code>qemu-img</code>以及<code>libvirt</code>必须安装的软件包。这些在主机系统上提供用户级KVM仿真器，磁盘镜像管理器和虚拟化管理工具。</p>
+<ol>
+<li><p>安装qemu-kvm，qemu-img，libvirt和virt-manager软件包：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum install qemu-kvm qemu-img libvirt virt-manager</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h2 id="使用VIRTUAL-MACHINE-MANAGER创建虚拟机"><a href="#使用VIRTUAL-MACHINE-MANAGER创建虚拟机" class="headerlink" title="使用VIRTUAL MACHINE MANAGER创建虚拟机"></a>使用VIRTUAL MACHINE MANAGER创建虚拟机</h2><p><strong>虚拟机管理器</strong>（也称为 virt-manager<strong>）是在红帽企业版Linux中快速部署虚拟机的图形化工具。在本教程中，您将熟悉其基本功能，并能够使用</strong> Virtual Machine Manager创建虚拟机。</p>
+<h3 id="虚拟机管理器简介"><a href="#虚拟机管理器简介" class="headerlink" title="虚拟机管理器简介"></a>虚拟机管理器简介</h3><p>要打开<strong>虚拟机管理器</strong>，请单击<strong>应用程序</strong> → <strong>系统工具</strong> → <strong>虚拟机管理器</strong> ; 或按<strong>超级</strong>键→键入<code>virt-manager</code>→按下<strong>Enter键</strong>。</p>
+<p>下图显示了<strong>Virtual Machine Manager</strong>界面。该界面使您可以从一个中央位置控制所有虚拟机。</p>
+<p><img src="https://blog-image.nos-eastchina1.126.net/II2Dkmdjl9.png?imageslim" alt="mark"></p>
+<p><strong>图4.1。虚拟机管理器界面</strong></p>
+<p>界面常用的元素包括：</p>
+<ul>
+<li><p><strong>创建新的虚拟机</strong>：单击以创建新的虚拟机。</p>
+</li>
+<li><p><strong>虚拟机</strong>：配置的连接和与之关联的所有访客虚拟机的列表。虚拟机创建时，在此处列出。guest虚拟机正在运行时，动画图表会在<strong> CPU使用率</strong>列中显示guest虚拟机的CPU使用<strong>情况</strong>。</p>
+<p>从此列表中选择虚拟机后，使用以下按钮来控制所选虚拟机的状态：</p>
+<ul>
+<li><strong>打开</strong>：在新窗口中打开访客虚拟机控制台和详细信息。</li>
+<li><strong>运行</strong>：打开虚拟机。</li>
+<li><strong>暂停</strong>：暂停虚拟机。</li>
+<li><strong>关机</strong>：关闭虚拟机。单击箭头将显示一个下拉菜单，其中包含几个关闭虚拟机的选项，包括重新启动，关机，强制重置，强制关闭和保存。</li>
+</ul>
+</li>
+</ul>
+<p>右键单击虚拟机将显示具有更多功能的菜单，其中包括：</p>
+<ul>
+<li><strong>克隆</strong>：克隆虚拟机。</li>
+<li><strong>迁移</strong>：将虚拟机迁移到其他主机。</li>
+<li><strong>删除</strong>：删除虚拟机。</li>
+</ul>
+<h3 id="使用Virtual-Machine-Manager创建虚拟机"><a href="#使用Virtual-Machine-Manager创建虚拟机" class="headerlink" title="使用Virtual Machine Manager创建虚拟机"></a>使用Virtual Machine Manager创建虚拟机</h3><p>按照以下步骤在<strong>Virtual Machine Manager</strong>上创建一个Red Hat Enterprise Linux 6虚拟机。</p>
+<p><strong>程序4.2。使用Virtual Machine Manager创建客户虚拟机</strong></p>
+<ol>
+<li><p><strong>打开虚拟机管理器</strong></p>
+<p>点击<strong>应用程序</strong> → <strong>系统工具</strong> → <strong>虚拟机管理器</strong></p>
+<p>要么</p>
+<p>按<strong>超级</strong>键，输入<code>virt-manager</code>，然后按<strong>Enter键</strong></p>
+</li>
+<li><p><strong>创建一个新的虚拟机</strong></p>
+<p>点击 <strong>新建VM</strong>向导。</p>
+</li>
+<li><p><strong>指定安装方法</strong></p>
+<p>通过选择安装新虚拟机的方法来启动创建过程。</p>
+<p><img src="https://blog-image.nos-eastchina1.126.net/biK84fLgk7.png?imageslim" alt="mark"></p>
+<p><strong>图4.2。选择安装方法</strong></p>
+<p>对于本教程，请选择<strong>本地安装媒体（ISO映像）</strong>。此安装方法使用安装盘的映像（在本例中为<code>.iso</code>文件）。点击<strong>转发</strong>继续下一步。</p>
+</li>
+<li><p><strong>找到安装媒体</strong></p>
+<ol>
+<li>选择该<code>Use ISO Image</code>选项。</li>
+<li>单击<strong>浏览</strong> → <strong>浏览本地</strong>按钮。</li>
+<li>在机器上安装虚拟软件包中找到下载的ISO 。</li>
+<li>选择ISO文件，然后单击<strong>打开</strong>。</li>
+<li>确保Virtual Machine Manager正确检测到操作系统类型。如果不是，取消<code>Automatically detect operating system based on install media</code>选择<strong>的Linux</strong>从<strong>操作系统类型</strong>下拉和<strong>红帽企业Linux 6</strong>从<strong>版本</strong>下拉。</li>
+</ol>
+<p><img src="https://blog-image.nos-eastchina1.126.net/8i1FkgF5hj.png?imageslim" alt="mark"></p>
+<p><strong>图4.3。本地ISO映像安装</strong></p>
+</li>
+<li><p><strong>配置内存和CPU</strong></p>
+<p>您可以使用向导的第3步来配置分配给虚拟机的内存量和CPU数量。该向导显示可用于分配的CPU数量和内存量。</p>
+<p>在本教程中，保留默认设置，然后单击<strong>前进</strong>。</p>
+<p><img src="https://blog-image.nos-eastchina1.126.net/dbb7gLLl1C.png?imageslim" alt="mark"></p>
+<p>​</p>
+<p><strong>图4.4。配置CPU和内存</strong></p>
+</li>
+<li><p><strong>配置存储</strong></p>
+<p>使用向导的第4步，可以将存储分配给来宾虚拟机。该向导显示存储选项，包括在主机上存储虚拟机的位置。在本教程中，保留默认设置，然后单击<strong>前进</strong>。</p>
+<p><img src="https://blog-image.nos-eastchina1.126.net/LBffiK0LDL.png?imageslim" alt="mark"></p>
+<p><strong>图4.5。配置存储</strong></p>
+</li>
+<li><p><strong>名称和审查</strong></p>
+<p>使用向导的步骤5，可以为虚拟机创建一个名称并配置网络设置。在本教程中，输入虚拟机的名称，验证设置，然后单击<strong>完成</strong>。<strong>Virtual Machine Manager</strong>将创建一个具有指定硬件设置的虚拟机。</p>
+<p><img src="https://blog-image.nos-eastchina1.126.net/caJB1EmIBk.png?imageslim" alt="mark"></p>
+<p><strong>图4.6。命名和验证</strong></p>
+</li>
+</ol>
+<p>在<strong>Virtual Machine Manager</strong>创建红帽企业版Linux 6虚拟机之后，虚拟机的窗口将打开，所选操作系统的安装将开始。按照红帽企业版Linux 6安装程序中的说明完成虚拟机操作系统的安装。</p>
+<h3 id="探索访客虚拟机"><a href="#探索访客虚拟机" class="headerlink" title="探索访客虚拟机"></a>探索访客虚拟机</h3><p>您可以通过在</p>
+<p><strong>Virtual Machine Manager</strong></p>
+<p>窗口中选择一个虚拟机并单击</p>
+<p><strong>Open</strong></p>
+<p>来查看虚拟机的控制台。您可以像控制物理系统一样从控制台操作红帽企业版Linux 6虚拟机。</p>
+<p><img src="https://blog-image.nos-eastchina1.126.net/2AegFiDc4i.png?imageslim" alt="mark"></p>
+<p><strong>图4.7。来宾虚拟机控制台</strong></p>
+<ul>
+<li><strong>显示图形控制台</strong>：显示虚拟机的显示。虚拟机可以像控制物理机一样从控制台操作。</li>
+<li><strong>显示虚拟硬件详细信息</strong>：显示有关客户正在使用的<strong>虚拟硬件的详细</strong>信息。其中包括基本系统详细信息，性能，处理器，内存和引导设置以及系统虚拟设备的详细信息。</li>
+<li><strong>运行</strong>：打开虚拟机。</li>
+<li><strong>暂停</strong>：暂停虚拟机。</li>
+<li><strong>关机</strong>：关闭虚拟机。单击箭头将显示一个下拉菜单，其中包含几个关闭虚拟机的选项，包括重新启动，关机，强制重置，强制关闭和保存。</li>
+<li><strong>管理快照</strong>：启用创建，运行和管理虚拟机的快照。</li>
+<li><strong>发送密钥</strong>：向虚拟机发送Ctrl + Alt + Backspace，Ctrl + Alt + Delete，Ctrl + Alt + F1，PrintScreen等组合键。</li>
+<li><strong>全屏</strong>：将虚拟机切换到全屏视图。</li>
+</ul>
+<h2 id="虚拟化工具"><a href="#虚拟化工具" class="headerlink" title="虚拟化工具"></a>虚拟化工具</h2><h3 id="virsh"><a href="#virsh" class="headerlink" title="virsh"></a>virsh</h3><p><em>virsh</em>是用于管理虚拟机管理程序和来宾虚拟机的命令行界面（CLI）工具，是控制红帽企业版Linux 7虚拟化的主要手段。其功能包括创建，配置，暂停，列出和关闭虚拟机，以及管理虚拟网络，或加载虚拟机磁盘映像。因此，它是创建虚拟化管理脚本的理想选择。没有root权限的用户也可以使用该<code>virsh</code>命令，但是处于只读模式。 <code>virsh</code>作为libvirt-client包的一部分进行安装。</p>
+<h3 id="VIRT-MANAGER中"><a href="#VIRT-MANAGER中" class="headerlink" title="VIRT-MANAGER中"></a>VIRT-MANAGER中</h3><p><em>虚拟机管理器</em>（也称为<em>virt-manager</em>）是一种用于管理虚拟机的轻量级图形工具，比用户更友好，功能更强大<code>virsh</code>。它使用户能够使用GUI执行的动作相当于数的<code>virsh</code>和<code>virt-</code>的命令，如控制现有机器的生命周期，供应新的机器，管理虚拟网络，访问虚拟机的图形控制台和查看性能统计数据。</p>
+<h3 id="VIRT-INSTALL"><a href="#VIRT-INSTALL" class="headerlink" title="VIRT-INSTALL"></a>VIRT-INSTALL</h3><p><em>irt-install</em>是用于配置新虚拟机的命令行工具。它支持基于文本和图形化安装，使用串行控制台，SPICE或VNC客户机 - 服务器对图形。安装介质可以是本地的，也可以远程存在于NFS，HTTP或FTP服务器上。该工具还可以配置为无人值守运行，并使用kickstart方法为guest虚拟机做好准备，从而实现安装的自动化。该工具包含在virt-install软件包中。</p>
+<h3 id="GUESTFISH"><a href="#GUESTFISH" class="headerlink" title="GUESTFISH"></a>GUESTFISH</h3><p><em>guestfish</em>是用于检查和修改虚拟机磁盘映像的外壳和命令行实用程序，因为这些操作不能使用<code>virsh</code>或执行<code>virt-manager</code>。该<code>guestfish</code>工具使用libguestfs库并公开<code>guestfs</code>API 提供的所有功能。</p>
+<p><strong>警告</strong></p>
+<p>使用<code>guestfish</code>上运行的虚拟机可能导致磁盘映像损坏。如果正在运行的虚拟机正在使用磁盘映像，请使用<code>guestfish</code>带有<code>--ro</code>（只读）选项的命令。</p>
+<h3 id="GNOME-BOXES"><a href="#GNOME-BOXES" class="headerlink" title="GNOME BOXES"></a>GNOME BOXES</h3><p><em>Boxes</em>是一个轻量级的图形桌面虚拟化工具，用于查看和访问虚拟机和远程系统。它可以作为一个更容易使用的替代方案virt-manager，但提供更少的客人管理选项。Boxes提供了一种以最少配置从桌面测试不同操作系统和应用程序的方法。虚拟系统可以手动安装，也可以使用快速安装功能进行安装，该功能可以自动预配置具有最佳设置的虚拟机。这个工具是由gnome-box包提供的。</p>
+<h3 id="其他有用的工具"><a href="#其他有用的工具" class="headerlink" title="其他有用的工具"></a>其他有用的工具</h3><p>以下工具可用于使用主机上的命令访问和修改客户机虚拟机的磁盘映像。</p>
+<ul>
+<li><p><a href="http://libguestfs.org/guestmount.1.html" target="_blank" rel="noopener"><code>guestmount</code></a></p>
+<p>用于在主机上安装虚拟机文件系统和磁盘映像的命令行实用程序。要以这种方式卸载内容，请使用<a href="http://libguestfs.org/guestunmount.1.html" target="_blank" rel="noopener"><code>guestunmount</code></a>Both工具作为libguestfs-tools-c软件包的一部分。<strong>警告</strong>使用<code>guestmount</code>在<code>--rw</code>（读/写）模式来访问当前正在使用由客户磁盘可能导致磁盘损坏。不要使用<code>guestmount</code>在<code>--rw</code>（读/写）上的虚拟机实时模式。如果正在使用磁盘映像，请使用<code>guestmount</code>带有<code>--ro</code>（只读）选项的命令。</p>
+</li>
+<li><p><a href="http://libguestfs.org/virt-builder.1.html" target="_blank" rel="noopener"><code>virt-builder</code></a></p>
+<p>用于快速构建和定制新虚拟机的命令行实用程序。该工具作为libguestfs-tools软件包的一部分安装在Red Hat Enterprise Linux 7.1及更高版本中。</p>
+</li>
+<li><p><a href="https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Virtualization_Deployment_and_Administration_Guide/sect-Guest_virtual_machine_disk_access_with_offline_tools-Other_commands.html" target="_blank" rel="noopener"><code>virt-cat</code></a></p>
+<p>一个命令行实用程序，可用于快速查看指定虚拟机的磁盘或磁盘映像中的一个或多个文件的内容。该工具作为libguestfs-tools软件包的一部分进行安装。</p>
+</li>
+<li><p><a href="http://libguestfs.org/virt-copy-in.1.html" target="_blank" rel="noopener"><code>virt-copy-in</code></a> 和 <a href="http://libguestfs.org/virt-copy-out.1.html" target="_blank" rel="noopener"><code>virt-copy-out</code></a></p>
+<p>用于将文件或目录从主机复制到来宾，以及从来宾到主机的命令行实用程序。这些工具是作为libguestfs-tools包的一部分安装的。<strong>警告</strong>使用<code>virt-copy-in</code>仅关闭未使用的另一个磁盘编辑工具的虚拟机。使用<code>virt-copy-in</code>活动guest图像或正在编辑可能会导致磁盘损坏在虚拟机中的图像上。</p>
+</li>
+<li><p><a href="https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Virtualization_Deployment_and_Administration_Guide/sect-Guest_virtual_machine_disk_access_with_offline_tools-Using_virt_customize.html" target="_blank" rel="noopener"><code>virt-customize</code></a></p>
+<p>用于自定义虚拟机磁盘映像的命令行实用程序。virt-customize可用于安装软件包，编辑配置文件，运行脚本和设置密码。该工具作为libguestfs-tools软件包的一部分安装在Red Hat Enterprise Linux 7.1及更高版本中。</p>
+</li>
+<li><p><a href="https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Virtualization_Deployment_and_Administration_Guide/sect-Guest_virtual_machine_disk_access_with_offline_tools-virt_df_Monitoring_disk_usage.html" target="_blank" rel="noopener"><code>virt-df</code></a></p>
+<p>一个命令行实用程序，用于显示虚拟机的实际物理磁盘使用情况，与命令行实用程序类似<code>df</code>。请注意，该工具在远程连接中不起作用。它作为libguestfs-tools软件包的一部分进行安装。</p>
+</li>
+<li><p><a href="https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Virtualization_Deployment_and_Administration_Guide/sect-Guest_virtual_machine_disk_access_with_offline_tools-Using_virt_diff.html" target="_blank" rel="noopener"><code>virt-diff</code></a></p>
+<p>一个命令行实用程序，用于显示两个虚拟机的文件系统之间的差异。这可以用于例如发现哪些文件在快照之间改变。该工具作为libguestfs-tools软件包的一部分安装在Red Hat Enterprise Linux 7.1及更高版本中。</p>
+</li>
+<li><p><a href="https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Virtualization_Deployment_and_Administration_Guide/sect-Guest_virtual_machine_disk_access_with_offline_tools-Other_commands.html" target="_blank" rel="noopener"><code>virt-edit</code></a></p>
+<p>用于编辑指定虚拟机上存在的文件的命令行实用程序。该工具作为libguestfs-tools软件包的一部分进行安装。<strong>警告</strong>使用<code>virt-edit</code>活的虚拟机可能会在虚拟机磁盘损坏。尽管该<code>virt-edit</code>命令将尝试阻止用户在实时虚拟机上编辑文件，但不能保证捕获所有实例。不要<code>virt-edit</code>在活动的虚拟机上使用。</p>
+</li>
+<li><p><a href="http://libguestfs.org/virt-filesystems.1.html" target="_blank" rel="noopener"><code>virt-filesystems</code></a></p>
+<p>用于发现磁盘映像或虚拟机中的文件系统，分区，逻辑卷及其大小的命令行实用程序。一个常见的用法是在shell脚本中，遍历磁盘映像中的所有文件系统。该工具作为libguestfs-tools软件包的一部分进行安装。<strong>注意</strong>这个工具取代<code>virt-list-filesystems</code>和<code>virt-list-partitions</code>。</p>
+</li>
+<li><p><a href="http://libguestfs.org/virt-format.1.html" target="_blank" rel="noopener"><code>virt-format</code></a></p>
+<p>一个命令行实用程序，可以格式化来宾图像文件，也可以在主机上逻辑卷。该工具作为libguestfs-tools软件包的一部分进行安装。<strong>警告</strong>使用<code>virt-format</code>仅关闭未使用的另一个磁盘编辑工具的虚拟机。使用<code>virt-format</code>活动guest图像或正在编辑可能会导致磁盘损坏在虚拟机中的图像上。</p>
+</li>
+<li><p><a href="https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Virtualization_Deployment_and_Administration_Guide/sect-Guest_virtual_machine_disk_access_with_offline_tools-virt_inspector_inspecting_guest_virtual_machines.html" target="_blank" rel="noopener"><code>virt-inspector</code></a></p>
+<p>一个命令行实用程序，可以检查虚拟机或磁盘映像以确定其操作系统的版本和其他信息。它也可以生成XML输出，可以将其输出到其他程序中。请注意，<code>virt-inspector</code>一次只能检查一个虚拟机。该工具作为libguestfs-tools软件包的一部分进行安装。</p>
+</li>
+<li><p><a href="http://libguestfs.org/virt-log.1.html" target="_blank" rel="noopener"><code>virt-log</code></a></p>
+<p>用于列出来自虚拟机的日志文件的命令行工具。该工具作为libguestfs-tools软件包的一部分安装在Red Hat Enterprise Linux 7.1及更高版本中。</p>
+</li>
+<li><p><a href="https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Virtualization_Deployment_and_Administration_Guide/sect-Guest_virtual_machine_disk_access_with_offline_tools-Other_commands.html" target="_blank" rel="noopener"><code>virt-ls</code></a></p>
+<p>一个列出虚拟机内的文件和目录的命令行工具。该工具作为libguestfs-tools软件包的一部分进行安装。</p>
+</li>
+<li><p><a href="http://libguestfs.org/virt-make-fs.1.html" target="_blank" rel="noopener"><code>virt-make-fs</code></a></p>
+<p>一个命令行实用程序，用于根据tar归档文件或目录中的文件创建文件系统。它类似于像工具<code>mkisofs</code>和<code>mksquashfs</code>，但它可以创建一个通用的文件系统类型，如ext2，ext3和NTFS，创造可以等于或大于它是基于文件的尺寸越大，文件系统的大小。这个工具是作为libguestfs-tools包的一部分提供的。</p>
+</li>
+<li><p><a href="https://access.redhat.com/articles/2702281" target="_blank" rel="noopener"><code>virt-p2v</code></a></p>
+<p>与<a href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/virtualization_getting_started_guide/sect-Virtualization_Getting_Started-Tools-Other#ent-tools-v2v" target="_blank" rel="noopener">virt-v2v</a>结合使用时，可以将物理机转换为KVM虚拟机。请注意，virt-p2v仅在Red Hat Enterprise Linux 7.3和更高版本中受支持。</p>
+</li>
+<li><p><a href="https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Virtualization_Deployment_and_Administration_Guide/sect-Guest_virtual_machine_disk_access_with_offline_tools-virt_rescue_The_rescue_shell.html" target="_blank" rel="noopener"><code>virt-rescue</code></a></p>
+<p>一个命令行实用程序，为不可启动的虚拟机和磁盘映像提供了一个rescue shell和一些简单的恢复工具。它可以在已知<strong>libvirt的</strong>任何虚拟机上运行，也可以直接在磁盘映像上运行。该工具作为libguestfs-tools软件包的一部分进行安装。<strong>警告</strong>使用<code>virt-rescue</code>上运行的虚拟机可能会在虚拟机磁盘损坏。<code>virt-rescue</code>试图阻止它自己在运行虚拟机上的使用，但不能捕获所有的情况。与<code>--ro</code>（只读）选项使用该命令不会导致磁盘损坏，但可能会给出奇怪或不一致的结果。避免<code>virt-rescue</code>在正在运行的虚拟机上使用。</p>
+</li>
+<li><p><a href="https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Virtualization_Deployment_and_Administration_Guide/sect-Guest_virtual_machine_disk_access_with_offline_tools-virt_resize_resizing_guest_virtual_machines_offline.html" target="_blank" rel="noopener"><code>virt-resize</code></a></p>
+<p>一个命令行实用程序来调整虚拟机磁盘的大小，并调整或删除虚拟机磁盘上的所有分区。它通过复制访客映像并保持原始磁盘映像不变。该工具作为libguestfs-tools软件包的一部分进行安装。<strong>重要</strong>使用<code>virt-resize</code>上运行的虚拟机可以给不一致的结果。建议在尝试调整它们的大小之前关闭虚拟机。</p>
+</li>
+<li><p><a href="http://libguestfs.org/virt-sparsify.1.html" target="_blank" rel="noopener"><code>virt-sparsify</code></a></p>
+<p>用于制作虚拟机磁盘（或任何磁盘映像）的精简配置的命令行实用程序。该工具可以将磁盘映像中的可用空间转换为主机上的可用空间。</p>
+</li>
+<li><p><a href="https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Virtualization_Deployment_and_Administration_Guide/sect-Guest_virtual_machine_disk_access_with_offline_tools-Using_virt_sysprep.html" target="_blank" rel="noopener"><code>virt-sysprep</code></a></p>
+<p>用于重置，自定义或取消配置虚拟机的命令行实用程序，以准备创建克隆的模板。该工具作为libguestfs-tools软件包的一部分进行安装。<strong>重要</strong>运行之前，必须关闭虚拟机<code>virt-sysprep</code>。要保留虚拟机的现有内容，请在运行之前快照，复制或克隆磁盘<code>virt-sysprep</code>。</p>
+</li>
+<li><p><a href="http://libguestfs.org/virt-tar-out.1.html" target="_blank" rel="noopener"><code>virt-tar-out</code></a> 和 <a href="http://libguestfs.org/virt-tar-in.1.html" target="_blank" rel="noopener"><code>virt-tar-in</code></a></p>
+<p>用于将虚拟机磁盘映像目录打包为tar包的命令行归档工具，以及将未压缩的tarball分别解压缩为虚拟机磁盘映像或指定的libvirt guest虚拟机。这些工具是作为libguestfs-tools包的一部分安装的。<strong>警告</strong><code>virt-tar-in</code>在活动虚拟机上 使用命令可能会导致虚拟机中的磁盘损坏。在使用此命令之前，必须先关闭虚拟机。</p>
+</li>
+<li><p><code>virt-top</code></p>
+<p><code>top</code>与之 类似的命令行实用程序，显示与来宾虚拟机相关的统计信息。这个工具包含了virt-top包。见<code>man virt-top</code>细节。</p>
+</li>
+<li><p><a href="https://access.redhat.com/articles/1351473" target="_blank" rel="noopener"><code>virt-v2v</code></a></p>
+<p>用于将虚拟机从外部虚拟机管理程序转换为在由libvirt管理的KVM上运行的命令行实用程序。目前，virt-v2v可以转换运行在Xen和VMware ESX上的红帽企业Linux和Windows客户端。virt-v2v工具作为virt-v2v软件包的一部分安装在Red Hat Enterprise Linux 7.1及更高版本中。</p>
+</li>
+<li><p><a href="https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Virtualization_Deployment_and_Administration_Guide/chap-Graphic_User_Interface_tools_for_guest_virtual_machine_management.html#sect-Graphic_User_Interface_tools_for_guest_virtual_machine_management-Using_virt_viewer_command_line" target="_blank" rel="noopener"><code>virt-viewer</code></a></p>
+<p>一个轻量级实用程序，用于通过VNC和SPICE协议显示虚拟机的图形控制台。这个工具是由virt-viewer包提供的。</p>
+</li>
+<li><p><a href="https://people.redhat.com/~rjones/virt-what/virt-what.txt" target="_blank" rel="noopener"><code>virt-what</code></a></p>
+<p>一个shell脚本，用于检测程序是否在虚拟机中运行。这个工具由virt-what包提供。</p>
+</li>
+<li><p><a href="https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Virtualization_Deployment_and_Administration_Guide/reg-virt-machine.html" target="_blank" rel="noopener"><code>virt-who</code></a></p>
+<p>该VIRT-谁包的是，查询一个红帽企业版Linux主机代理<strong>的libvirt</strong>为客人的UUID。然后它将这些数据传递给本地权利服务器，用于颁发证书。这个工具由virt-who包提供。</p>
+</li>
+<li><p><code>virt-xml-validate</code></p>
+<p>一个命令行工具，用于验证<strong>libvirt</strong> XML文件是否符合发布的模式。该工具作为libvirt-client包的一部分进行安装。见<code>man virt-xml-validate</code>细节。</p>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>Goooo
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.sysctl.me/2017/11/11/Virtualization/" title="KVM虚拟化基础">https://www.sysctl.me/2017/11/11/Virtualization/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/en" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Linux/" rel="tag"># Linux</a>
+              <a href="/tags/Virtualization/" rel="tag"># Virtualization</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2017/09/29/Linux/storage/MegaCli/" rel="prev" title="MegaCli使用方法">
+      <i class="fa fa-chevron-left"></i> MegaCli使用方法
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2017/11/11/Markdown%20Reference/" rel="next" title="用Typora编辑Markdown">
+      用Typora编辑Markdown <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#虚拟化概述"><span class="nav-number">1.</span> <span class="nav-text">虚拟化概述</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#什么是虚拟化？"><span class="nav-number">1.1.</span> <span class="nav-text">什么是虚拟化？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#虚拟化解决方案"><span class="nav-number">1.2.</span> <span class="nav-text">虚拟化解决方案</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#为什么要使用虚拟化？"><span class="nav-number">1.3.</span> <span class="nav-text">为什么要使用虚拟化？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#虚拟化成本"><span class="nav-number">1.4.</span> <span class="nav-text">虚拟化成本</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#性能"><span class="nav-number">1.5.</span> <span class="nav-text">性能</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#迁移"><span class="nav-number">1.6.</span> <span class="nav-text">迁移</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#迁移虚拟机的好处"><span class="nav-number">1.6.1.</span> <span class="nav-text">迁移虚拟机的好处</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#虚拟化到虚拟化迁移（V2V）"><span class="nav-number">1.6.2.</span> <span class="nav-text">虚拟化到虚拟化迁移（V2V）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#安全"><span class="nav-number">1.7.</span> <span class="nav-text">安全</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#灾难恢复"><span class="nav-number">1.8.</span> <span class="nav-text">灾难恢复</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#红帽虚拟化产品和功能介绍"><span class="nav-number">2.</span> <span class="nav-text">红帽虚拟化产品和功能介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#红帽企业Linux中的KVM和虚拟化"><span class="nav-number">2.1.</span> <span class="nav-text">红帽企业Linux中的KVM和虚拟化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#LIBVIRT和LIBVIRT工具"><span class="nav-number">2.1.1.</span> <span class="nav-text">LIBVIRT和LIBVIRT工具</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#虚拟化硬件设备"><span class="nav-number">2.1.2.</span> <span class="nav-text">虚拟化硬件设备</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#虚拟化和仿真设备"><span class="nav-number">2.1.3.</span> <span class="nav-text">虚拟化和仿真设备</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#半虚拟化设备"><span class="nav-number">2.1.4.</span> <span class="nav-text">半虚拟化设备</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#物理主机设备"><span class="nav-number">2.1.5.</span> <span class="nav-text">物理主机设备</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#客户CPU模型"><span class="nav-number">2.1.6.</span> <span class="nav-text">客户CPU模型</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#存储"><span class="nav-number">2.2.</span> <span class="nav-text">存储</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#存储池"><span class="nav-number">2.2.1.</span> <span class="nav-text">存储池</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#存储卷"><span class="nav-number">2.2.2.</span> <span class="nav-text">存储卷</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#仿真存储设备"><span class="nav-number">2.2.3.</span> <span class="nav-text">仿真存储设备</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#主机存储"><span class="nav-number">2.2.4.</span> <span class="nav-text">主机存储</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#虚拟网络"><span class="nav-number">2.3.</span> <span class="nav-text">虚拟网络</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#入门教程"><span class="nav-number">2.4.</span> <span class="nav-text">入门教程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#使用VIRTUAL-MACHINE-MANAGER创建虚拟机"><span class="nav-number">2.5.</span> <span class="nav-text">使用VIRTUAL MACHINE MANAGER创建虚拟机</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#虚拟机管理器简介"><span class="nav-number">2.5.1.</span> <span class="nav-text">虚拟机管理器简介</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#使用Virtual-Machine-Manager创建虚拟机"><span class="nav-number">2.5.2.</span> <span class="nav-text">使用Virtual Machine Manager创建虚拟机</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#探索访客虚拟机"><span class="nav-number">2.5.3.</span> <span class="nav-text">探索访客虚拟机</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#虚拟化工具"><span class="nav-number">2.6.</span> <span class="nav-text">虚拟化工具</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#virsh"><span class="nav-number">2.6.1.</span> <span class="nav-text">virsh</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#VIRT-MANAGER中"><span class="nav-number">2.6.2.</span> <span class="nav-text">VIRT-MANAGER中</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#VIRT-INSTALL"><span class="nav-number">2.6.3.</span> <span class="nav-text">VIRT-INSTALL</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#GUESTFISH"><span class="nav-number">2.6.4.</span> <span class="nav-text">GUESTFISH</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#GNOME-BOXES"><span class="nav-number">2.6.5.</span> <span class="nav-text">GNOME BOXES</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#其他有用的工具"><span class="nav-number">2.6.6.</span> <span class="nav-text">其他有用的工具</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Goooo"
+      src="/images/img.png">
+  <p class="site-author-name" itemprop="name">Goooo</p>
+  <div class="site-description" itemprop="description">一条啥也不会点废鱼</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">109</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">22</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">71</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/xth0331" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;xth0331" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:xietianhao0331@gmail.com" title="E-Mail → mailto:xietianhao0331@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/en" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+        
+        <script type="text/javascript" charset="utf-8" src="/js/tagcloud.js"></script>
+        <script type="text/javascript" charset="utf-8" src="/js/tagcanvas.js"></script>
+        <div class="widget-wrap">
+            <h3 class="widget-title">标签们</h3>
+            <div id="myCanvasContainer" class="widget tagcloud">
+                <canvas width="250" height="250" id="resCanvas" style="width=100%">
+                    <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ansible/" rel="tag">Ansible</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Backup/" rel="tag">Backup</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Bond/" rel="tag">Bond</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CPU/" rel="tag">CPU</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ceph/" rel="tag">Ceph</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cobbler/" rel="tag">Cobbler</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Coffee/" rel="tag">Coffee</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Corosync/" rel="tag">Corosync</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cyclic-invariant/" rel="tag">Cyclic invariant</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Docker/" rel="tag">Docker</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Effectiveness/" rel="tag">Effectiveness</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Exhaustion/" rel="tag">Exhaustion</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Filesystem/" rel="tag">Filesystem</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HAProxy/" rel="tag">HAProxy</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hardware/" rel="tag">Hardware</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Https/" rel="tag">Https</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ICMP/" rel="tag">ICMP</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JDK/" rel="tag">JDK</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Jenkins/" rel="tag">Jenkins</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JunOS/" rel="tag">JunOS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/KEEPALIVED/" rel="tag">KEEPALIVED</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Keepalived/" rel="tag">Keepalived</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/" rel="tag">Linux</a><span class="tag-list-count">19</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Log/" rel="tag">Log</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Markdown/" rel="tag">Markdown</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Modular-Programming/" rel="tag">Modular Programming</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Monitoring/" rel="tag">Monitoring</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Netconf/" rel="tag">Netconf</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Network/" rel="tag">Network</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Networking/" rel="tag">Networking</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Nginx/" rel="tag">Nginx</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OS/" rel="tag">OS</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OpenStack/" rel="tag">OpenStack</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Package-Manager/" rel="tag">Package Manager</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Partition/" rel="tag">Partition</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Programming/" rel="tag">Programming</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Python/" rel="tag">Python</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RAM/" rel="tag">RAM</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RHCS/" rel="tag">RHCS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RPM/" rel="tag">RPM</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Recursion/" rel="tag">Recursion</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Recursive/" rel="tag">Recursive</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Redirect/" rel="tag">Redirect</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Route/" rel="tag">Route</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SSH/" rel="tag">SSH</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Storage/" rel="tag">Storage</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Storage-and-Filesystem/" rel="tag">Storage and Filesystem</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Swap/" rel="tag">Swap</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Sys/" rel="tag">Sys</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Systemd/" rel="tag">Systemd</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Terminal/" rel="tag">Terminal</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Terraform/" rel="tag">Terraform</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Tools/" rel="tag">Tools</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ubuntu/" rel="tag">Ubuntu</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Veeam/" rel="tag">Veeam</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vim/" rel="tag">Vim</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Virtualization/" rel="tag">Virtualization</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vmware/" rel="tag">Vmware</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vsphere/" rel="tag">Vsphere</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Windows/" rel="tag">Windows</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Yum/" rel="tag">Yum</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/apple/" rel="tag">apple</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/elasticsearch/" rel="tag">elasticsearch</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/iteration/" rel="tag">iteration</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/logs/" rel="tag">logs</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/oop/" rel="tag">oop</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tools/" rel="tag">tools</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%88%86%E6%B2%BB/" rel="tag">分治</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E5%8E%8B%E7%BC%A9/" rel="tag">数据压缩</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%84%99%E8%A7%86%E9%93%BE/" rel="tag">鄙视链</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%87%8D%E5%A4%8D%E6%95%B0%E6%8D%AE%E5%88%A0%E9%99%A4/" rel="tag">重复数据删除</a><span class="tag-list-count">1</span></li></ul>
+                </canvas>
+            </div>
+        </div>
+        
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Goooo</span>
+</div>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.7.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://www-sysctl-me-1.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "https://www.sysctl.me/2017/11/11/Virtualization/";
+    this.page.identifier = "2017/11/11/Virtualization/";
+    this.page.title = "KVM虚拟化基础";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://www-sysctl-me-1.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/koharu.model.json"},"display":{"position":"left","width":300,"height":600},"mobile":{"show":false},"react":{"opacity":0.7}});</script></body>
+</html>

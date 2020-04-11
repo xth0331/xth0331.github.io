@@ -1,0 +1,1468 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://www.sysctl.me').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","width":320,"display":"post","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="在操作系统运行时，通常需要添加，删除或重新调整存储设备的大小，而无需重新引导。本章概述在系统运行时可用于在Red Hat Enterprise Linux 7主机系统上重新配置存储设备的过程。它涵盖了iSCSI和光纤通道存储互连; 其他互连类型可能会在未来添加。 本章重点介绍如何添加，删除，修改和监视存储设备。它没有详细讨论光纤通道或iSCSI协议。有关这些协议的更多信息，请参阅其他文档。 本章引">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux网络存储管理">
+<meta property="og:url" content="https://www.sysctl.me/2018/01/24/Linux/storage/OnlineStorage/index.html">
+<meta property="og:site_name" content="Sysctl">
+<meta property="og:description" content="在操作系统运行时，通常需要添加，删除或重新调整存储设备的大小，而无需重新引导。本章概述在系统运行时可用于在Red Hat Enterprise Linux 7主机系统上重新配置存储设备的过程。它涵盖了iSCSI和光纤通道存储互连; 其他互连类型可能会在未来添加。 本章重点介绍如何添加，删除，修改和监视存储设备。它没有详细讨论光纤通道或iSCSI协议。有关这些协议的更多信息，请参阅其他文档。 本章引">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2018-01-24T15:00:19.000Z">
+<meta property="article:modified_time" content="2020-01-22T14:36:30.116Z">
+<meta property="article:author" content="Goooo">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="Storage">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://www.sysctl.me/2018/01/24/Linux/storage/OnlineStorage/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>Linux网络存储管理 | Sysctl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Sysctl" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Sysctl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">观察指南，博客</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="搜索..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/xth0331" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.sysctl.me/2018/01/24/Linux/storage/OnlineStorage/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/img.png">
+      <meta itemprop="name" content="Goooo">
+      <meta itemprop="description" content="一条啥也不会点废鱼">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Sysctl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux网络存储管理
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-01-24 23:00:19" itemprop="dateCreated datePublished" datetime="2018-01-24T23:00:19+08:00">2018-01-24</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-01-22 22:36:30" itemprop="dateModified" datetime="2020-01-22T22:36:30+08:00">2020-01-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2018/01/24/Linux/storage/OnlineStorage/#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2018/01/24/Linux/storage/OnlineStorage/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>在操作系统运行时，通常需要添加，删除或重新调整存储设备的大小，而无需重新引导。本章概述在系统运行时可用于在Red Hat Enterprise Linux 7主机系统上重新配置存储设备的过程。它涵盖了iSCSI和光纤通道存储互连; 其他互连类型可能会在未来添加。</p>
+<p>本章重点介绍如何添加，删除，修改和监视存储设备。它没有详细讨论光纤通道或iSCSI协议。有关这些协议的更多信息，请参阅其他文档。</p>
+<p>本章引用了各种<code>sysfs</code>对象。红帽建议<code>sysfs</code>对象名称和目录结构在主要的红帽企业Linux版本中可能会发生变化。这是因为上游Linux内核不提供稳定的内部API。有关如何以<code>sysfs</code>可移动方式引用对象的指导，请参阅内核源代码树中的文档以获取指导。<code>/usr/share/doc/kernel-doc-*version*/Documentation/sysfs-rules.txt</code></p>
+<p>在线存储重新配置必须小心。过程中的系统故障或中断可能会导致意外的结果。红帽建议您在更改操作期间尽可能减少系统负载。这将减少I / O错误，内存不足错误或在配置更改期间发生的类似错误的可能性。以下部分提供了更具体的指导方针。</p>
+<p>另外，Red Hat建议您在重新配置在线存储之前备份所有数据。<br><a id="more"></a></p>
+<h2 id="Target-设置"><a href="#Target-设置" class="headerlink" title="Target 设置"></a>Target 设置</h2><p>帽企业版Linux 7使用<code>targetcli</code> shell作为查看，编辑和保存Linux-IO目标配置的前端，而无需直接操作内核目标的配置文件。<code>targetcli</code>工具是一个命令行界面，允许管理员将由文件，卷，本地SCSI设备或RAM磁盘支持的本地存储资源导出到远程系统。<code>targetcli</code>工具具有基于树的布局，包含内置的选项卡完成，并提供完整的自动完成支持和内联文档。</p>
+<p> <code>targetcli</code>层次结构并不总是与内核接口完全匹配，因为<code>targetcli</code>在可能的情况下被简化了。</p>
+<p>要确保所做的更改<code>targetcli</code>是持久性的，请启动并启用目标服务：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># systemctl start target</span></span><br><span class="line"><span class="comment"># systemctl enable target</span></span><br></pre></td></tr></table></figure>
+<h3 id="安装和运行targetcli"><a href="#安装和运行targetcli" class="headerlink" title="安装和运行targetcli"></a>安装和运行targetcli</h3><p>要安装<code>targetcli</code>, 使用:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># yum install targetcli</span></span><br></pre></td></tr></table></figure>
+<p>启动 <code>target</code> 服务:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># systemctl start target</span></span><br></pre></td></tr></table></figure>
+<p>配置<code>target</code> 开机启动:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># systemctl enable target</span></span><br></pre></td></tr></table></figure>
+<p>使用<code>targetcli</code>命令，然后使用该<code>ls</code>命令进行树形界面的布局:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># targetcli</span></span><br><span class="line">:</span><br><span class="line">/&gt; ls</span><br><span class="line">o- /........................................[...]</span><br><span class="line">  o- backstores.............................[...]</span><br><span class="line">  | o- block.................[Storage Objects: 0]           </span><br><span class="line">  | o- fileio................[Storage Objects: 0]       </span><br><span class="line">  | o- pscsi.................[Storage Objects: 0]         </span><br><span class="line">  | o- ramdisk...............[Storage Ojbects: 0]          </span><br><span class="line">  o- iscsi...........................[Targets: 0]   </span><br><span class="line">  o- loopback........................[Targets: 0]</span><br></pre></td></tr></table></figure>
+<p>例如，在红帽企业版Linux 7.0中，使用<code>targetcli</code>Bash命令<code>targetcli iscsi/ create</code>不起作用，并且不会返回错误。从红帽企业版Linux 7.1开始，提供了一个错误状态代码来使用<code>targetcli</code>shell脚本更有用。</p>
+<h3 id="创建一个Backstore"><a href="#创建一个Backstore" class="headerlink" title="创建一个Backstore"></a>创建一个Backstore</h3><p>后台支持在本地机器上存储导出的LUN数据的不同方法。创建一个存储对象定义了backstore使用的资源。</p>
+<p>在红帽企业Linux 6中，术语’backing-store’用来指代创建的映射。然而，为了避免混淆“后端存储”的各种方式，在红帽企业版Linux 7中，术语“存储对象”是指创建的映射，“后端”用于描述不同类型的后备设备。</p>
+<p>LIO支持的后端设备是：</p>
+<ul>
+<li><p>FILEIO（Linux文件备份存储）</p>
+<p>FILEIO存储对象可以支持<code>write_back</code>或<code>write_thru</code>操作。在<code>write_back</code>使本地文件系统缓存。这样可以提高性能，但会增加数据丢失的风险。建议使用<code>write_back=false</code>禁用，<code>write_back</code>以支持<code>write_thru</code>。</p>
+</li>
+</ul>
+<p>  要创建文件夹存储对象，请运行该命令。例如： <code>/backstores/fileio create *file_name file_location file_size* write_back=false</code></p>
+<p>  例如:</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">/&gt; /backstores/fileio create file1 /tmp/disk1.img 200M write_back=<span class="literal">false</span></span><br><span class="line">Created fileio file1 with size 209715200</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p>BLOCK（Linux BLOCK设备）</p>
+<p>块驱动程序允许使用任何在<code>/sys/block</code>LIO中使用的块设备。这包括物理设备（例如，HDD，SSD，CD，DVD）和逻辑设备（例如软件或硬件RAID卷或LVM卷）。</p>
+</li>
+</ul>
+<p>  <strong>BLOCK后台通常提供最好的性能。</strong></p>
+<p>  要使用<code>/dev/sdb</code>块设备创建BLOCK backstore ，请使用以下命令：</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">/&gt; /backstores/block create name=block_backend dev=/dev/sdb</span><br><span class="line">Generating a wwn serial.</span><br><span class="line">Created block storage object block_backend using /dev/sdb.</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p>PSCSI（Linux直通SCSI设备）</p>
+<p>任何支持直接传递SCSI命令而无需SCSI模拟的存储对象，以及与lsscsi一起出现的基础SCSI设备<code>/proc/scsi/scsi</code>（如SAS硬盘驱动器）都可以配置为后端存储。此子系统支持SCSI-3及更高版本。</p>
+<p>PSCSI只能由高级用户使用。高级SCSI命令（如用于量测逻辑单元分配（ALUAs）或永久保留（例如VMware ESX和vSphere使用的那些））通常不会在设备固件中实现，并可能导致故障或崩溃。如有疑问，请使用BLOCK进行生产设置。</p>
+<p>要为物理SCSI设备创建PSCSI后端存储，在本例中使用的<code>TYPE_ROM</code>设备<code>/dev/sr0</code>使用：</p>
+</li>
+</ul>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">backstores/pscsi/ create name=pscsi_backend dev=/dev/sr0</span><br><span class="line">Generating a wwn serial.</span><br><span class="line">Created pscsi storage object pscsi_backend using /dev/sr0</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p>内存拷贝RAM磁盘（Linux RAMDISK_MCP）</p>
+<p>内存拷贝RAM磁盘（<code>ramdisk</code>）为RAM磁盘提供完整的SCSI模拟，并为启动器使用内存拷贝分离内存映射。这为多会话提供了能力，并且对于用于生产目的的快速，易变的大容量存储特别有用。</p>
+<p>要创建1GB RAM磁盘后端存储，请使用以下命令：</p>
+</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">/&gt; backstores/ramdisk/ create name=rd_backend size=1GB</span><br><span class="line">Generating a wwn serial.</span><br><span class="line">Created rd_mcp ramdisk rd_backend with size 1GB.</span><br></pre></td></tr></table></figure>
+<h3 id="创建-iSCSI-Target"><a href="#创建-iSCSI-Target" class="headerlink" title="创建 iSCSI Target"></a>创建 iSCSI Target</h3><p>要创建一个iSCSI目标：</p>
+<ol>
+<li><p>运行 <code>targetcli</code>.</p>
+</li>
+<li><p>进入iSCSI配置路径:</p>
+</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/&gt; iscsi/</span><br></pre></td></tr></table></figure>
+<p>   <strong>注意</strong></p>
+<p>   该<code>cd</code>命令也被接受来改变目录，以及简单地列出要移入的路径。</p>
+<ol>
+<li>使用默认目标名称创建一个iSCSI目标。</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">/iscsi&gt; create </span><br><span class="line">Created target </span><br><span class="line">iqn.2003-01.org.linux-iscsi.hostname.x8664:sn.78b473f296ff</span><br><span class="line">Created TPG1</span><br></pre></td></tr></table></figure>
+<p>   或者使用指定的名称创建一个iSCSI目标。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">/iscsi &gt; create iqn.2006-04.com.example:444</span><br><span class="line">Created target iqn.2006-04.com.example:444</span><br><span class="line">Created TPG1</span><br></pre></td></tr></table></figure>
+<ol>
+<li>验证 <code>ls</code> 在列出目标时新创建的目标是否可见</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">/iscsi &gt; ls</span><br><span class="line">o- iscsi.......................................[1 Target]</span><br><span class="line">    o- iqn.2006-04.com.example:444................[1 TPG] </span><br><span class="line">        o- tpg1...........................[enabled, auth]</span><br><span class="line">            o- acls...............................[0 ACL]</span><br><span class="line">            o- luns...............................[0 LUN]</span><br><span class="line">            o- portals.........................[0 Portal]</span><br></pre></td></tr></table></figure>
+<h3 id="配置-iSCSI-门户"><a href="#配置-iSCSI-门户" class="headerlink" title="配置 iSCSI 门户"></a>配置 iSCSI 门户</h3><p>要配置iSCSI门户，必须首先创建iSCSI目标并将其与TPG相关联。</p>
+<p><strong>Note</strong></p>
+<p>从Red Hat Enterprise Linux 7.1创建iSCSI目标时，也会创建一个默认门户。此门户设置为使用默认端口号（即0.0.0.0:3260）监听所有IP地址 。删除此项并只添加指定的门户，请使用  <code>/iscsi/*iqn-name*/tpg1/portals delete ip_address=0.0.0.0 ip_port=3260</code>创建一个新门户 .</p>
+<p><strong>创建一个iSCSI门户</strong></p>
+<ol>
+<li>进入TPG</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/iscsi&gt; iqn.2006-04.example:444/tpg1/</span><br></pre></td></tr></table></figure>
+<ol>
+<li><p>有两种方法可以创建一个门户网站：创建一个默认的门户网站，或创建一个门户网站来指定要监听的IP地址。</p>
+<p>创建默认门户使用默认的iSCSI端口3260，并允许目标侦听该端口上的所有IP地址。</p>
+</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">/iscsi/iqn.20...mple:444/tpg1&gt; portals/ create</span><br><span class="line">Using default IP port 3260</span><br><span class="line">Binding to INADDR_Any (0.0.0.0)</span><br><span class="line">Created network portal 0.0.0.0:3260</span><br></pre></td></tr></table></figure>
+<p>   要创建指定要侦听的IP地址的门户，请使用以下命令。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">/iscsi/iqn.20...mple:444/tpg1&gt; portals/ create 192.168.122.137</span><br><span class="line">Using default IP port 3260</span><br><span class="line">Created network portal 192.168.122.137:3260</span><br></pre></td></tr></table></figure>
+<ol>
+<li>使用<code>ls</code>命令验证新创建的门户是否可见。</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">/iscsi/iqn.20...mple:444/tpg1&gt; ls</span><br><span class="line">o- tpg.................................. [enambled, auth]  </span><br><span class="line">    o- acls ......................................[0 ACL]</span><br><span class="line">    o- luns ......................................[0 LUN]</span><br><span class="line">    o- portals ................................[1 Portal]</span><br><span class="line">        o- 192.168.122.137:3260......................[OK]</span><br></pre></td></tr></table></figure>
+<h3 id="配置LUN"><a href="#配置LUN" class="headerlink" title="配置LUN"></a>配置LUN</h3><p>要配置LUN，请先创建存储对象。</p>
+<p><strong>配置LUN</strong></p>
+<ol>
+<li>创建已经创建的存储对象的LUN。</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">/iscsi/iqn.20...mple:444/tpg1&gt; luns/ create /backstores/ramdisk/ramdisk1</span><br><span class="line">Created LUN 0.</span><br><span class="line"></span><br><span class="line">/iscsi/iqn.20...mple:444/tpg1&gt; luns/ create /backstores/block/block1</span><br><span class="line">Created LUN 1.</span><br><span class="line"></span><br><span class="line">/iscsi/iqn.20...mple:444/tpg1&gt; luns/ create /backstores/fileio/file1</span><br><span class="line">Created LUN 2.</span><br></pre></td></tr></table></figure>
+<ol>
+<li>显示更改.</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">/iscsi/iqn.20...mple:444/tpg1&gt; ls</span><br><span class="line">o- tpg.................................. [enambled, auth]</span><br><span class="line">    o- acls ......................................[0 ACL]</span><br><span class="line">    o- luns .....................................[3 LUNs]</span><br><span class="line">    |  o- lun0.........................[ramdisk/ramdisk1]</span><br><span class="line">    |  o- lun1.................[block/block1 (/dev/vdb1)]</span><br><span class="line">    |  o- lun2...................[fileio/file1 (/foo.img)]</span><br><span class="line">    o- portals ................................[1 Portal]</span><br><span class="line">        o- 192.168.122.137:3260......................[OK]</span><br></pre></td></tr></table></figure>
+<p>   请注意，与<code>tgtd</code>红帽企业版Linux 6中使用的情况相比，默认的LUN名称从0开始，而不是1 。</p>
+<p>默认情况下，创建具有读写权限的LUN。如果在创建ACL后添加了新的LUN，该LUN将自动映射到所有可用的ACL。这可能会导致安全风险。使用以下过程以只读方式创建LUN。</p>
+<p><strong>创建一个只读LUN</strong></p>
+<ol>
+<li>要创建具有只读权限的LUN，请首先使用以下命令：</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">/&gt; <span class="built_in">set</span> global auto_add_mapped_luns=<span class="literal">false</span></span><br><span class="line">Parameter auto_add_mapped_luns is now <span class="string">'false'</span>.</span><br></pre></td></tr></table></figure>
+<p>   这可以防止将LUN自动映射到现有的ACL，从而允许手动映射LUN。</p>
+<ol>
+<li>接下来，使用该命令手动创建LUN ，<code>iscsi/*target_iqn_name*/tpg1/acls/*initiator_iqn_name*/ create mapped_lun=*next_sequential_LUN_number* tpg_lun_or_backstore=*backstore*write_protect=1</code>.</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">/&gt; iscsi/iqn.2015-06.com.redhat:target/tpg1/acls/iqn.2015-06.com.redhat:initiator/ create mapped_lun=1 tpg_lun_or_backstore=/backstores/block/block2 write_protect=1</span><br><span class="line">Created LUN 1.</span><br><span class="line">Created Mapped LUN 1.</span><br><span class="line">/&gt; ls</span><br><span class="line">o- / ...................................................... [...]</span><br><span class="line">  o- backstores ........................................... [...]</span><br><span class="line">  &lt;snip&gt;</span><br><span class="line">  o- iscsi ......................................... [Targets: 1]</span><br><span class="line">  | o- iqn.2015-06.com.redhat:target .................. [TPGs: 1]</span><br><span class="line">  |   o- tpg1 ............................ [no-gen-acls, no-auth]</span><br><span class="line">  |     o- acls ....................................... [ACLs: 2]</span><br><span class="line">  |     | o- iqn.2015-06.com.redhat:initiator .. [Mapped LUNs: 2]</span><br><span class="line">  |     | | o- mapped_lun0 .............. [lun0 block/disk1 (rw)]</span><br><span class="line">  |     | | o- mapped_lun1 .............. [lun1 block/disk2 (ro)]</span><br><span class="line">  |     o- luns ....................................... [LUNs: 2]</span><br><span class="line">  |     | o- lun0 ...................... [block/disk1 (/dev/vdb)]</span><br><span class="line">  |     | o- lun1 ...................... [block/disk2 (/dev/vdc)]</span><br><span class="line">  &lt;snip&gt;</span><br></pre></td></tr></table></figure>
+<p>   mapped_lun1行现在在末尾有（ro）（与mapped_lun0（rw）不同），说明它是只读的。</p>
+<h3 id="配置ACL"><a href="#配置ACL" class="headerlink" title="配置ACL"></a>配置ACL</h3><p>为将要连接的每个启动器创建一个ACL。这会在启动器连接时强制进行身份验证，从而只允许向每个启动器公开LUN。通常每个启动器都可以独占访问LUN。目标和发起者都有唯一的识别名称。必须知道启动程序的唯一名称才能配置ACL。对于open-iscsi启动器，可以在 <code>/etc/iscsi/initiatorname.iscsi</code> 找到。</p>
+<p><strong>配置ACL</strong></p>
+<ol>
+<li>进入acls目录。</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/iscsi/iqn.20...mple:444/tpg1&gt; acls/</span><br></pre></td></tr></table></figure>
+<ol>
+<li>创建一个ACL。要么使用启动器中的启动器名称<code>/etc/iscsi/initiatorname.iscsi</code>，要么使用更容易记住的名称, 例如：</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">/iscsi/iqn.20...444/tpg1/acls&gt; create iqn.2006-04.com.example.foo:888</span><br><span class="line">Created Node ACL <span class="keyword">for</span> iqn.2006-04.com.example.foo:888</span><br><span class="line">Created mapped LUN 2.</span><br><span class="line">Created mapped LUN 1.</span><br><span class="line">Created mapped LUN 0.</span><br></pre></td></tr></table></figure>
+<p>   上面的例子的行为取决于使用的设置。在这种情况下，使用全局设置<code>auto_add_mapped_luns</code>。这会自动将LUN映射到任何创建的ACL。</p>
+<ol>
+<li>显示更改.</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">/iscsi/iqn.20...444/tpg1/acls&gt; ls</span><br><span class="line">o- acls .................................................[1 ACL]</span><br><span class="line">    o- iqn.2006-04.com.example.foo:888 ....[3 Mapped LUNs, auth]</span><br><span class="line">        o- mapped_lun0 .............[lun0 ramdisk/ramdisk1 (rw)]</span><br><span class="line">        o- mapped_lun1 .................[lun1 block/block1 (rw)]</span><br><span class="line">        o- mapped_lun2 .................[lun2 fileio/file1 (rw)]</span><br></pre></td></tr></table></figure>
+<h3 id="配置以太网光纤通道-FCoE-Target"><a href="#配置以太网光纤通道-FCoE-Target" class="headerlink" title="配置以太网光纤通道 (FCoE) Target"></a>配置以太网光纤通道 (FCoE) Target</h3><p>确认基本FCoE设置已完成，并<code>fcoeadm -i</code>显示配置的FCoE接口。</p>
+<p><strong>配置FCoE目标</strong></p>
+<ol>
+<li><p>设置FCoE目标需要安装<code>targetcli</code>包及其相关性。</p>
+</li>
+<li><p>在FCoE接口上创建FCoE目标实例。</p>
+</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/&gt; tcm_fc/ create 00:11:22:33:44:55:66:77</span><br></pre></td></tr></table></figure>
+<p>   如果系统上存在FCoE接口，则选项卡完成后将<code>create</code>列出可用接口。如果没有，请确保<code>fcoeadm -i</code>显示活动接口。</p>
+<ol>
+<li><p>将一个backstore映射到目标实例。</p>
+<p><strong>将Backstore映射到目标实例的示例</strong></p>
+</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/&gt; tcm_fc/00:11:22:33:44:55:66:77</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/&gt; luns/ create /backstores/fileio/example2</span><br></pre></td></tr></table></figure>
+<ol>
+<li>允许从FCoE启动器访问LUN。</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/&gt; acls/ create 00:99:88:77:66:55:44:33</span><br></pre></td></tr></table></figure>
+<p>   LUN现在应该可以被该启动器访问。</p>
+<ol>
+<li><p>要使更改在重新启动时保持不变，请在出现提示时使用<code>saveconfig</code>命令并键入<code>yes</code>。如果没有这样做，配置将在重启后丢失。</p>
+</li>
+<li><p>通过输入<code>exit</code>或输入 <strong>ctrl</strong>+<strong>D</strong> 退出<code>targetcli</code></p>
+</li>
+</ol>
+<h3 id="使用-targetcli-删除对象"><a href="#使用-targetcli-删除对象" class="headerlink" title="使用 targetcli 删除对象"></a>使用 <code>targetcli</code> 删除对象</h3><p>要删除一个backstore，请使用以下命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/&gt; /backstores/backstore-type/backstore-name</span><br></pre></td></tr></table></figure>
+<p>要删除iSCSI目标的某些部分（如ACL），请使用以下命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/&gt; /iscsi/iqn-name/tpg/acls/ delete iqn-name</span><br></pre></td></tr></table></figure>
+<p>要删除整个目标（包括所有ACL，LUN和门户），请使用以下命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/&gt; /iscsi delete iqn-name</span><br></pre></td></tr></table></figure>
+<h2 id="创建一个-ISCSI-INITIATOR"><a href="#创建一个-ISCSI-INITIATOR" class="headerlink" title="创建一个 ISCSI INITIATOR"></a>创建一个 ISCSI INITIATOR</h2><p>在红帽企业版Linux 7中，默认情况下，iSCSI服务是延迟启动的：运行<code>iscsiadm</code>命令后服务启动。</p>
+<p><strong>创建一个iSCSI启动器</strong></p>
+<ol>
+<li>安装 <code>iscsi-initiator-utils</code>:</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># yum install iscsi-initiator-utils</span></span><br></pre></td></tr></table></figure>
+<ol>
+<li>如果ACL 中给出了自定义名称，则相应地修改该<code>/etc/iscsi/initiatorname.iscsi</code>文件。例如：</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># cat /etc/iscsi/initiatorname.iscsi</span></span><br><span class="line">InitiatorName=iqn.2006-04.com.example.node1</span><br></pre></td></tr></table></figure>
+<ol>
+<li>发现 target:</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># iscsiadm -m discovery -t st -p target-ip-address </span></span><br><span class="line">10.64.24.179:3260,1 iqn.2006-04.com.example:3260</span><br></pre></td></tr></table></figure>
+<ol>
+<li>target 服务器上的TPG节点中设置用户创建的ACL：</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/iscsi/iqn.20...scsi:444/tpg1&gt; <span class="built_in">set</span> attribute generate_node_acls=1</span><br></pre></td></tr></table></figure>
+<pre><code>`exit` 退出
+</code></pre><ol>
+<li>使用在步骤3中发现的目标IQN登录到目标：</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># iscsiadm -m node -T iqn.2006-04.com.example:3260 -l </span></span><br><span class="line">Logging <span class="keyword">in</span> to [iface: default, target: iqn.2006-04.com.example:3260, portal: 10.64.24.179,3260] (multiple)</span><br><span class="line">Login to [iface: default, target: iqn.2006-04.com.example:3260, portal: 10.64.24.179,3260] successful.</span><br></pre></td></tr></table></figure>
+<h2 id="光纤通道"><a href="#光纤通道" class="headerlink" title="光纤通道"></a>光纤通道</h2><h3 id="Fibre-Channel-API"><a href="#Fibre-Channel-API" class="headerlink" title="Fibre Channel API"></a>Fibre Channel API</h3><p>以下是<code>/sys/class/</code>包含用于提供用户空间API的文件的目录列表。在每个项目中，主机号码由<code>*H*</code>总线号<code>*B*</code>，目标<code>*T*</code>，逻辑单元号（LUN）<code>*L*</code>和远程端口号指定<code>*R*</code>。</p>
+<p>Transport: <code>/sys/class/fc_transport/target</code><em><code>H</code></em>: : <em><code>B</code></em> : <em><code>T</code></em>/</p>
+<ul>
+<li><code>port_id</code> — 24位端口ID /地址</li>
+<li><code>node_name</code> —  64位节点名称</li>
+<li><code>port_name</code> — 64位端口名称</li>
+</ul>
+<p>Remote Port: <code>/sys/class/fc_remote_ports/rport-H:B-R</code></p>
+<ul>
+<li><p><code>port_id</code></p>
+</li>
+<li><p><code>node_name</code></p>
+</li>
+<li><p><code>port_name</code></p>
+</li>
+<li><p><code>dev_loss_tmo</code>: 控制scsi设备何时从系统中移除。之后<code>dev_loss_tmo</code> 触发器, scsi设备被删除.</p>
+<p> <code>multipath.conf</code>, 您可以设置 <code>dev_loss_tmo</code> 为<code>infinity</code>, 其值设置为 2,147,483,647 seconds, 或 68 years, 并且是 <code>dev_loss_tmo</code>最大值 .</p>
+<p>在红帽企业版Linux 7中，如果不设置该<code>fast_io_fail_tmo</code>选项，<code>dev_loss_tmo</code>则上限为600秒。默认情况下，<code>fast_io_fail_tmo</code>如果<code>multipathd</code>服务正在运行，在Red Hat Enterprise Linux 7中设置为5秒; 否则，设置为<code>off</code>。</p>
+</li>
+<li><p><code>fast_io_fail_tmo</code>：指定在将链接标记为“不良”之前等待的秒数。一旦链接被标记为坏，现有的正在运行的I / O或其相应路径上的任何新I / O都会失败。</p>
+<p>如果I / O处于阻塞队列中，则不会失败，直到<code>dev_loss_tmo</code>到期并且队列被解除阻塞。</p>
+<p>如果<code>fast_io_fail_tmo</code>设置为任何值<code>off</code>，<code>dev_loss_tmo</code>则不封顶。如果<code>fast_io_fail_tmo</code>设置为<code>off</code>，则在将设备从系统中移除之前，不会发生I / O故障。如果<code>fast_io_fail_tmo</code>设置为一个数字，则当<code>fast_io_fail_tmo</code>超时触发时，I / O将立即失败。</p>
+</li>
+</ul>
+<p>Host: <code>/sys/class/fc_host/host*H*/</code></p>
+<ul>
+<li><code>port_id</code></li>
+<li><code>issue_lip</code>: 指示驱动程序重新发现远程端口。</li>
+</ul>
+<h3 id="本地光纤通道驱动程序和功能"><a href="#本地光纤通道驱动程序和功能" class="headerlink" title="本地光纤通道驱动程序和功能"></a>本地光纤通道驱动程序和功能</h3><p>红帽企业Linux 7附带下列本地光纤通道驱动程序：</p>
+<ul>
+<li><code>lpfc</code></li>
+<li><code>qla2xxx</code></li>
+<li><code>zfcp</code></li>
+<li><code>bfa</code></li>
+</ul>
+<p> <strong>qla2xxx</strong>驱动程序启动器模式默认运行。要在Linux-IO上使用qla2xxx，请使用相应的<em>qlini_mode</em>模块参数启用光纤通道目标模式。</p>
+<p>首先，确保已安装qla设备的固件包，如ql2200-固件或类似软件。</p>
+<p>要启用目标模式，请将以下参数添加到<code>/usr/lib/modprobe.d/qla2xxx.conf</code></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">options qla2xxx qlini_mode=disabled</span><br></pre></td></tr></table></figure>
+<p>然后，使用该<code>dracut -f</code>命令重建初始ramdisk（<code>initrd</code>），然后重新引导系统以使更改生效。</p>
+<p><strong>光纤通道API功能</strong></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th></th>
+<th><code>lpfc</code></th>
+<th><code>qla2xxx</code></th>
+<th><code>zfcp</code></th>
+<th><code>bfa</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Transport <code>port_id</code></td>
+<td>X</td>
+<td>X</td>
+<td>X</td>
+<td>X</td>
+</tr>
+<tr>
+<td>Transport <code>node_name</code></td>
+<td>X</td>
+<td>X</td>
+<td>X</td>
+<td>X</td>
+</tr>
+<tr>
+<td>Transport <code>port_name</code></td>
+<td>X</td>
+<td>X</td>
+<td>X</td>
+<td>X</td>
+</tr>
+<tr>
+<td>Remote Port <code>dev_loss_tmo</code></td>
+<td>X</td>
+<td>X</td>
+<td>X</td>
+<td>X</td>
+</tr>
+<tr>
+<td>Remote Port <code>fast_io_fail_tmo</code></td>
+<td>X</td>
+<td>X</td>
+<td>X</td>
+<td>X</td>
+</tr>
+<tr>
+<td>Host <code>port_id</code></td>
+<td>X</td>
+<td>X</td>
+<td>X</td>
+<td>X</td>
+</tr>
+<tr>
+<td>Host <code>issue_lip</code></td>
+<td>X</td>
+<td>X</td>
+<td></td>
+<td>X</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="通过以太网接口配置光纤通道"><a href="#通过以太网接口配置光纤通道" class="headerlink" title="通过以太网接口配置光纤通道"></a>通过以太网接口配置光纤通道</h2><p>设置和部署以太网光纤通道（FCoE）接口需要两个包：</p>
+<ul>
+<li><code>fcoe-utils</code></li>
+<li><code>lldpad</code></li>
+</ul>
+<p>安装这些软件包后，请执行以下步骤以通过虚拟LAN（VLAN）启用FCoE：</p>
+<p><strong>配置以太网接口以使用FCoE</strong></p>
+<ol>
+<li>要配置新的VLAN，请复制现有的网络脚本,  <code>/etc/fcoe/cfg-eth0</code>, a并将名称更改为支持FCoE的以太网设备。</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># cp /etc/fcoe/cfg-ethx  /etc/fcoe/cfg-ethX</span></span><br></pre></td></tr></table></figure>
+<ol>
+<li><p>如果您希望设备在启动时自动加载，  在相应的文件中进行设置  <code>ONBOOT=yes</code>  </p>
+</li>
+<li><p>通过运行以下命令来 启动数据中心桥接守护进程 (<code>dcbd</code>) :</p>
+</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># systemctl start lldpad</span></span><br></pre></td></tr></table></figure>
+<ol>
+<li><p>对于实现硬件DCBX客户端的网络接口，请跳过此步骤。</p>
+<p>对于需要软件DCBX客户端的接口，通过运行以下命令在以太网接口上启用数据中心桥接：</p>
+</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># dcbtool sc ethX dcb on</span></span><br></pre></td></tr></table></figure>
+<p>   然后，运行以下命令在以太网接口上启用FCoE：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># dcbtool sc ethX app:fcoe e:1</span></span><br></pre></td></tr></table></figure>
+<p>   请注意，只有<code>dcbd</code>在以太网接口的设置没有改变的情况下，这些命令才有效。</p>
+<ol>
+<li>现在使用以下命令加载FCoE设备</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># ip link set dev ethX up</span></span><br></pre></td></tr></table></figure>
+<ol>
+<li>使用以下命令启动FCoE：</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># systemctl start fcoe</span></span><br></pre></td></tr></table></figure>
+<p>   如果Fabric上的所有其他设置都正确，则FCoE设备即将出现。要查看已配置的FCoE设备，请运行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># fcoeadm -i</span></span><br></pre></td></tr></table></figure>
+<p>在正确配置以太网接口以使用FCoE之后，Red Hat建议您设置FCoE并<code>lldpad</code>在启动时运行该服务。为此，请使用<strong>systemctl</strong>实用程序：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># systemctl enable lldpad</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># systemctl enable fcoe</span></span><br></pre></td></tr></table></figure>
+<p>运行该<code># systemctl stop fcoe</code>命令会停止守护程序，但不会重置FCoE接口的配置。为此，请运行该<code># systemctl -s SIGHUP kill fcoe</code>命令。</p>
+<p>从红帽企业版Linux 7开始，网络管理器可以查询和设置具有DCB功能的以太网接口的DCB设置。</p>
+<h2 id="配置FCOE接口以在引导时自动挂载"><a href="#配置FCOE接口以在引导时自动挂载" class="headerlink" title="配置FCOE接口以在引导时自动挂载"></a>配置FCOE接口以在引导时自动挂载</h2><p>您可以通过<code>udev</code>规则<code>autofs</code>，和其他类似的方法安装新发现的磁盘。然而，有时候，特定的服务可能需要在启动时挂载FCoE磁盘。在这种情况下，应在服务运行后<em>立即</em>安装FCoE磁盘，<code>fcoe</code>并<em>在</em>启动需要FCoE磁盘的任何服务<em>之前</em>安装。</p>
+<p>要将FCoE磁盘配置为在引导时自动挂载，请将适当的FCoE挂载代码添加到服务的启动脚本中<code>fcoe</code>。该<code>fcoe</code>启动脚本<code>/etc/init.d/fcoe</code>。</p>
+<p>无论您使用的是简单格式的FCoE磁盘，LVM还是多路径设备节点，FCoE安装代码对于每个系统配置都是不同的。</p>
+<p><strong>例25.2。FCoE安装代码</strong></p>
+<p>以下是通过通配符指定安装文件系统的FCoE安装代码示例<code>/etc/fstab</code>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">mount_fcoe_disks_from_fstab()</span><br><span class="line">	&#123;</span><br><span class="line">	    <span class="built_in">local</span> timeout=20</span><br><span class="line">	    <span class="built_in">local</span> <span class="keyword">done</span>=1</span><br><span class="line">	    <span class="built_in">local</span> fcoe_disks=($(egrep <span class="string">'by-path\/fc-.*_netdev'</span> /etc/fstab | cut -d <span class="string">' '</span> -f1))</span><br><span class="line"></span><br><span class="line">	    <span class="built_in">test</span> -z <span class="variable">$fcoe_disks</span> &amp;&amp; <span class="built_in">return</span> 0</span><br><span class="line"></span><br><span class="line">	    <span class="built_in">echo</span> -n <span class="string">"Waiting for fcoe disks . "</span></span><br><span class="line">	    <span class="keyword">while</span> [ <span class="variable">$timeout</span> -gt 0 ]; <span class="keyword">do</span></span><br><span class="line">		<span class="keyword">for</span> disk <span class="keyword">in</span> <span class="variable">$&#123;fcoe_disks[*]&#125;</span>; <span class="keyword">do</span></span><br><span class="line">			<span class="keyword">if</span> ! <span class="built_in">test</span> -b <span class="variable">$disk</span>; <span class="keyword">then</span></span><br><span class="line">				<span class="keyword">done</span>=0</span><br><span class="line">				<span class="built_in">break</span></span><br><span class="line">			<span class="keyword">fi</span></span><br><span class="line">		<span class="keyword">done</span></span><br><span class="line"></span><br><span class="line">		<span class="built_in">test</span> <span class="variable">$done</span> -eq 1 &amp;&amp; <span class="built_in">break</span>;</span><br><span class="line">		sleep 1</span><br><span class="line">		<span class="built_in">echo</span> -n <span class="string">". "</span></span><br><span class="line">		<span class="keyword">done</span>=1</span><br><span class="line">		<span class="built_in">let</span> timeout--</span><br><span class="line">	    <span class="keyword">done</span></span><br><span class="line"></span><br><span class="line">	    <span class="keyword">if</span> <span class="built_in">test</span> <span class="variable">$timeout</span> -eq 0; <span class="keyword">then</span></span><br><span class="line">		<span class="built_in">echo</span> <span class="string">"timeout!"</span></span><br><span class="line">	    <span class="keyword">else</span></span><br><span class="line">		<span class="built_in">echo</span> <span class="string">"done!"</span></span><br><span class="line">	    <span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line">	    <span class="comment"># mount any newly discovered disk</span></span><br><span class="line">	    mount -a 2&gt;/dev/null</span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure>
+<p>在服务脚本启动守护进程<em>之后</em>   <code>mount_fcoe_disks_from_fstab</code>函数应该被调用。  <code>fcoe</code> 脚本启动  <code>fcoemon</code> 守护进程之后. 这将挂载以下路径指定的FCoE磁盘 </p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">/dev/disk/by-path/<span class="built_in">fc</span>-0xXX:0xXX /mnt/fcoe-disk1 ext3  defaults,_netdev    0 0</span><br><span class="line">/dev/disk/by-path/<span class="built_in">fc</span>-0xYY:0xYY /mnt/fcoe-disk2 ext3  defaults,_netdev    0 0</span><br></pre></td></tr></table></figure>
+<p>与项<code>fc-</code>和<code>_netdev</code>子串启用<code>mount_fcoe_disks_from_fstab</code>功能，以确定FCoE的磁盘挂载项。</p>
+<h2 id="ISCSI"><a href="#ISCSI" class="headerlink" title="ISCSI"></a>ISCSI</h2><p>本节介绍iSCSI API和<code>iscsiadm</code>实用程序。在使用该<code>iscsiadm</code>实用程序之前，<code>iscsi-initiator-utils</code>先运行安装软件包<code>yum install iscsi-initiator-utils</code>。</p>
+<p>在红帽企业版Linux 7中，默认情况下iSCSI服务延迟启动。如果root不在iSCSI设备上，或者没有标有节点的节点，<code>node.startup = automatic</code>则在<code>iscsiadm</code>运行需要启动iscsid或iscsi内核模块的命令之前，iSCSI服务才会启动。例如，运行发现命令<code>iscsiadm -m discovery -t st -p ip:port</code>将导致iscsiadmin启动iSCSI服务。</p>
+<p>要强制运行iscsid守护程序并加载iSCSI内核模块，请运行<code>service iscsid force-start</code>。</p>
+<h3 id="iSCSI-API"><a href="#iSCSI-API" class="headerlink" title="iSCSI API"></a>iSCSI API</h3><p>要获取有关运行会话的信息，请运行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># iscsiadm -m session -P 3</span></span><br></pre></td></tr></table></figure>
+<p>此命令显示会话/设备状态，会话ID（sid），一些协商参数以及可通过会话访问的SCSI设备。</p>
+<p>对于较短的输出（例如，仅显示sid到节点的映射），请运行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># iscsiadm -m session -P 0</span></span><br></pre></td></tr></table></figure>
+<p>或者</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># iscsiadm -m session</span></span><br></pre></td></tr></table></figure>
+<p>这些命令以下列格式打印正在运行的会话列表：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">driver [sid] target_ip:port,target_portal_group_tag proper_target_name</span><br></pre></td></tr></table></figure>
+<p><strong>iscsisadm -m session命令的输出</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># iscsiadm -m session</span></span><br><span class="line"></span><br><span class="line">tcp [2] 10.15.84.19:3260,2 iqn.1992-08.com.netapp:sn.33615311</span><br><span class="line">tcp [3] 10.15.85.19:3260,3 iqn.1992-08.com.netapp:sn.33615311</span><br></pre></td></tr></table></figure>
+<h2 id="持久命名"><a href="#持久命名" class="headerlink" title="持久命名"></a>持久命名</h2><p>红帽企业Linux提供了许多方法来识别存储设备。使用正确的选项识别每个设备时很重要，以避免无意中访问错误的设备，特别是在安装或重新格式化驱动器时</p>
+<h3 id="主要和次要的存储设备"><a href="#主要和次要的存储设备" class="headerlink" title="主要和次要的存储设备"></a>主要和次要的存储设备</h3><p>由<code>sd</code>驱动程序管理的存储设备在内部由一系列主要设备编号及其相关次要编号进行标识。用于此目的的主要设备编号不在连续的范围内。每个存储设备都由一个主号码和一系列次号码来表示，这些号码用来标识设备中的整个设备或分区。分配给设备的主号码和次号码以及形式中的号码之间存在直接联系。只要驾驶员检测到新设备，就会分配可用的主号码和次号码范围。无论何时将设备从操作系统中移除，主要号码和次要号码范围都被释放以供以后再次使用。</p>
+<p>主要和次要号码范围和相关<code>sd</code>名称在检测到时分配给每个设备。这意味着，<code>sd</code>如果设备检测顺序发生变化，则主号码和次号码范围以及相关联的名称之间的关联可能会发生变化。尽管在某些硬件配置（例如，使用内部SCSI控制器和磁盘的SCSI目标ID由其机箱内的物理位置分配）的情况下，这种情况并不常见。发生这种情况的例子如下：</p>
+<ul>
+<li>磁盘可能无法启动或响应SCSI控制器。这将导致它不被正常的设备探测器检测到。系统将无法访问磁盘，并且后续设备将具有其主要和次要编号范围，包括关联的<code>sd</code>名称向下移动。例如，如果<code>sdb</code>没有检测到通常被称为的磁盘，则通常被称为的磁盘<code>sdc</code>会显示为<code>sdb</code>。</li>
+<li>SCSI控制器（主机总线适配器或HBA）可能无法初始化，导致连接到该HBA的所有磁盘不能被检测到。连接到随后探测到的HBA的任何磁盘将被分配不同的主号码范围和次号码范围，以及不同的关联<code>sd</code>名称。</li>
+<li>如果系统中存在不同类型的HBA，驱动程序初始化的顺序可能会改变。这将导致连接到这些HBA的磁盘以不同的顺序被检测到。如果HBA移动到系统上不同的PCI插槽，也会发生这种情况。</li>
+<li>例如，由于存储阵列或中断交换机断电，在探测存储设备时，通过光纤通道，iSCSI或FCoE适配器连接到系统的磁盘可能无法访问。当系统在电源故障后重新启动时，如果存储阵列比系统启动需要更长的时间才能联机，则可能会发生这种情况。虽然某些光纤通道驱动程序支持一种机制来指定永久SCSI目标ID到WWPN映射，但这不会导致主要和次要编号范围以及相关联的<code>sd</code>名称被保留，只会提供一致的SCSI目标ID编号。</li>
+</ul>
+<p>这些原因使得<code>sd</code>在引用诸如<code>/etc/fstab</code>文件中的设备时使用主要和次要号码范围或相关名称是不合需要的。可能会装入错误的设备并导致数据损坏。</p>
+<p>然而，有时<code>sd</code>甚至在使用另一种机制时（例如，当设备报告错误时）仍然需要引用这些名称。这是因为Linux内核<code>sd</code>在关于设备的内核消息中使用了名称（还有SCSI主机/通道/目标/ LUN元组）。</p>
+<h3 id="全球标识符（WWID）"><a href="#全球标识符（WWID）" class="headerlink" title="全球标识符（WWID）"></a>全球标识符（WWID）</h3><p>的<em>全球标识符</em>（WWID）可以可靠地识别设备中使用。这是一个持久的，与系统无关的ID，SCSI标准要求所有的SCSI设备。WWID标识符保证对于每个存储设备都是唯一的，并且独立于用于访问设备的路径。</p>
+<p>此标识符可以通过发出SCSI查询获取<em>设备标识重要产品数据</em>（页面<code>0x83</code>）或设备<em>序列号</em>（页面<code>0x80</code>）来获得。从这些WWID到当前<code>/dev/sd</code>名称的映射可以在<code>/dev/disk/by-id/</code>目录中维护的符号链接中看到。</p>
+<p>例如，具有页面<code>0x83</code>标识符的设备将具有：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">scsi-3600508b400105e210000900000490000 -&gt; ../../sda</span><br></pre></td></tr></table></figure>
+<p>或者，具有页面<code>0x80</code>标识符的设备将具有：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">scsi-SSEAGATE_ST373453LW_3HW1RHM6 -&gt; ../../sda</span><br></pre></td></tr></table></figure>
+<p>红帽企业版Linux会自动维护从该系统中基于WWID的设备名称到当前<code>/dev/sd</code>名称的正确映射。应用程序可以使用该<code>/dev/disk/by-id/</code>名称来引用磁盘上的数据，即使设备的路径发生更改，甚至在从不同系统访问设备时也是如此。</p>
+<p>如果从系统到设备有多条路径，则<strong>DM多路径</strong>使用WWID来检测此<strong>路径</strong>。<strong>DM多路径</strong>然后在<code>/dev/mapper/wwid</code>目录中呈现单个“伪装置” ，例如<code>/dev/mapper/3600508b400105df70000e00000ac0000</code>。</p>
+<p>命令<code>multipath -l</code>显示映射到非永久标识符：，名称和编号。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">3600508b400105df70000e00000ac0000 dm-2 vendor,product </span><br><span class="line">[size=20G][features=1 queue_if_no_path][hwhandler=0][rw] </span><br><span class="line">\_ round-robin 0 [prio=0][active] </span><br><span class="line"> \_ 5:0:1:1 sdc 8:32  [active][undef] </span><br><span class="line"> \_ 6:0:1:1 sdg 8:96  [active][undef]</span><br><span class="line">\_ round-robin 0 [prio=0][enabled] </span><br><span class="line"> \_ 5:0:0:1 sdb 8:16  [active][undef] </span><br><span class="line"> \_ 6:0:0:1 sdf 8:80  [active][undef]</span><br></pre></td></tr></table></figure>
+<p><strong>DM多路径会</strong>自动维护每个基于WWID的设备名称<code>/dev/sd</code>与系统上相应名称的正确映射。这些名称在路径更改中保持不变，并且在从不同系统访问设备时是一致的。</p>
+<p>使用<strong>DM Multipath</strong><code>user_friendly_names</code>特性时，WWID被映射到表单的名称。 默认情况下，该映射在文件 <code>/etc/multipath/bindings</code>中维护. 只要该文件被保留，这些名称就是持久的。</p>
+<p>除了系统提供的这些持久名称之外，您还可以使用<code>udev</code>规则来实现您自己的持久化名称，并将其映射到存储器的WWID。</p>
+<h3 id="设备名称管理由udev机制-dev-disk-by"><a href="#设备名称管理由udev机制-dev-disk-by" class="headerlink" title="设备名称管理由udev机制/dev/disk/by-*"></a>设备名称管理由<code>udev</code>机制<code>/dev/disk/by-*</code></h3><p>该<code>udev</code>机制由三个主要组成部分组成：</p>
+<ul>
+<li><p>The kernel</p>
+<p>生成添加，删除或更改设备时发送到用户空间的事件。</p>
+</li>
+<li><p>The <code>udevd</code> service</p>
+<p>接收事件。</p>
+</li>
+<li><p>The <code>udev</code> rules</p>
+<p>Specifies the action to take when the <code>udev</code> service receives the kernel events.指定<code>udev</code>服务收到内核事件时要执行的操作。</p>
+</li>
+</ul>
+<p>这种机制用于Linux中的所有类型的设备，而不仅仅用于存储设备。对于存储设备，红帽企业版Linux包含的<code>udev</code>规则可以在<code>/dev/disk/</code>目录中创建符号链接，允许存储设备的内容，唯一标识符，序列号或用于访问设备的硬件路径。</p>
+<ul>
+<li><p><code>/dev/disk/by-label/</code></p>
+<p>此目录中的条目提供了一个符号名称，该名称通过存储在设备上的内容（即数据）中的标签来引用存储设备。的<strong>BLKID</strong>实用程序用于从所述设备读取数据并确定一个名称（即，标记）的装置。例如：</p>
+</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/dev/disk/by-label/Boot</span><br></pre></td></tr></table></figure>
+<p>该标签还可以用于<code>/etc/fstab</code>使用以下语法引用设备：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">LABEL=Boot</span><br></pre></td></tr></table></figure>
+<p><code>/dev/disk/by-uuid/</code></p>
+<p>此目录中的条目提供了一个符号名称，该名称通过存储在设备上的内容（即数据）中的唯一标识符引用存储设备。的<strong>BLKID</strong>实用程序用于从设备读取数据，将获得的唯一标识符（即，UUID）的设备。例如：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">UUID=3e6be9de-8139-11d1-9106-a43f08d823a6</span><br></pre></td></tr></table></figure>
+<p><code>/dev/disk/by-id/</code></p>
+<p>此目录中的条目提供了一个符号名称，该名称通过唯一标识符引用存储设备（与所有其他存储设备不同）。标识符是设备的属性，但不存储在设备上的内容（即数据）中。例如：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/dev/disk/by-id/scsi-3600508e000000000ce506dc50ab0ad05</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/dev/disk/by-id/wwn-0x600508e000000000ce506dc50ab0ad05</span><br></pre></td></tr></table></figure>
+<p>该ID是从设备的全球ID或设备序列号获得的。这些<code>/dev/disk/by-id/</code>条目还可以包括分区号。例如：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">/dev/disk/by-id/scsi-3600508e000000000ce506dc50ab0ad05-part1</span><br><span class="line">/dev/disk/by-id/wwn-0x600508e000000000ce506dc50ab0ad05-part1</span><br></pre></td></tr></table></figure>
+<p><code>/dev/disk/by-path/</code></p>
+<p>此目录中的条目提供了一个符号名称，该名称通过用于访问设备的硬件路径引用存储设备，从对PCI层次结构中存储控制器的引用开始，包括SCSI主机，通道，目标和LUN号和可选的分区号码。虽然这些名字比使用主要和次要的数字更可取<code>sd</code>名称时，必须谨慎使用以确保目标号码在光纤通道SAN环境中不发生更改（例如，通过使用持久性绑定），并且如果主机适配器移到其他位置，则更新名称的使用PCI插槽。此外，如果HBA无法探测，驱动程序以不同的顺序加载，或者系统上安装了新的HBA，SCSI主机号码可能会发生变化。旁路列表的一个例子是</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/dev/disk/by-path/pci-0000:03:00.0-scsi-0:1:0:0</span><br></pre></td></tr></table></figure>
+<p>这些<code>/dev/disk/by-path/</code>条目还可以包括分区号，例如：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/dev/disk/by-path/pci-0000:03:00.0-scsi-0:1:0:0-part1</span><br></pre></td></tr></table></figure>
+<h4 id="udev设备命名约定的局限性"><a href="#udev设备命名约定的局限性" class="headerlink" title="udev设备命名约定的局限性"></a><code>udev</code>设备命名约定的局限性</h4><p>以下是<code>udev</code>命名约定的一些限制。</p>
+<ul>
+<li>在执行查询时设备可能不可访问，因为该<code>udev</code>机制可能依赖于在<code>udev</code>处理<code>udev</code>事件的规则时查询存储设备的能力。当设备不在服务器机箱中时，这很可能发生在光纤通道，iSCSI或FCoE存储设备上。</li>
+<li>内核也可能<code>udev</code>随时发送事件，导致规则被处理，<code>/dev/disk/by-*/</code>如果设备不可访问，可能导致链接被删除。</li>
+<li>在<code>udev</code>事件发生时和处理时间之间可能存在一定的延迟，例如当检测到大量设备，并且用户空间<code>udevd</code>服务需要一些时间来处理每个设备的规则时。这可能会导致内核检测到设备和<code>/dev/disk/by-*/</code>名称可用之间的延迟。</li>
+<li>诸如由规则调用的<strong>blkid之类的</strong>外部程序可能会在短时间内打开设备，使设备无法进入其他用途。</li>
+</ul>
+<h4 id="修改持久命名属性"><a href="#修改持久命名属性" class="headerlink" title="修改持久命名属性"></a>修改持久命名属性</h4><p>尽管<code>udev</code>命名属性是持久的，但是在系统重启时它们不会自行更改，有些也是可配置的。您可以为以下持久命名属性设置自定义值：</p>
+<ul>
+<li><code>UUID</code>：文件系统UUID</li>
+<li><code>LABEL</code>：文件系统标签</li>
+</ul>
+<p>由于<code>UUID</code>和<code>LABEL</code>属性与文件系统有关，所以需要使用的工具取决于该分区上的文件系统。</p>
+<ul>
+<li>要更改<code>UUID</code>或<code>LABEL</code>XFS文件系统的属性，卸载文件系统，然后使用<strong>xfs_admin</strong>实用程序来更改属性：</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># umount /dev/device</span></span><br><span class="line"><span class="comment"># xfs_admin [-U new_uuid] [-L new_label] /dev/device</span></span><br><span class="line"><span class="comment"># udevadm settle</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>要改变<code>UUID</code>或<code>LABEL</code>一个EXT4，ext3或ext2文件系统的属性，可以使用<strong>tune2fs</strong>实用程序：</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># tune2fs [-U new_uuid] [-L new_label] /dev/device</span></span><br><span class="line"><span class="comment"># udevadm settle</span></span><br></pre></td></tr></table></figure>
+<p>将<em>new_uuid</em>替换为您要设置的UUID; 例如<code>1cdfbc07-1c90-4984-b5ec-f61943f5ea50</code>。用标签替换<em>new_label</em> ; 例如<code>backup_data</code>。</p>
+<p>更改<code>udev</code>属性发生在后台，可能需要很长时间。该<code>udevadm settle</code>命令将等待更改完全注册，这将确保您的下一个命令能够正确使用新的属性。</p>
+<p>在创建新设备之后，您还应该使用该命令; 例如，在使用<strong>分开的</strong>工具创建具有自定义<code>PARTUUID</code>或<code>PARTLABEL</code>属性的分区之后，或者在创建新的文件系统之后。</p>
+<h2 id="卸下存储设备"><a href="#卸下存储设备" class="headerlink" title="卸下存储设备"></a>卸下存储设备</h2><p>在删除对存储设备本身的访问之前，建议先从设备备份数据。之后，刷新I / O并删除所有操作系统对设备的引用。如果设备使用多路径，则对多路径“伪设备”和代表设备路径的每个标识符都执行此操作。如果只删除多路径设备的路径，其他路径将保留，则过程更简单，</p>
+<p>当系统处于内存压力下时，不建议取出存储设备，因为I / O刷新将添加到负载。要确定内存压力的级别，运行命令<code>vmstat 1 100</code>; 如果出现以下情况，建议不要拆除设备</p>
+<ul>
+<li>空闲内存少于每100个10个以上采样总数的5％（该命令<code>free</code>也可用于显示总内存）。</li>
+<li>交换处于活动状态（非零<code>si</code>和输出中的<code>so</code>列<code>vmstat</code>）。</li>
+</ul>
+<p>删除对设备的所有访问的一般过程如下所示：</p>
+<ol>
+<li><p>根据需要关闭设备的所有用户和备份设备数据。</p>
+</li>
+<li><p>使用<code>umount</code>卸载该安装的设备的文件系统。</p>
+</li>
+<li><p>使用<code>md</code>从任何LVM卷中移除设备。如果设备是LVM卷组的成员，则可能需要使用<code>pvmove</code>命令将数据从设备移出，然后使用<code>vgreduce</code>命令移除物理卷，<code>pvremove</code>从磁盘移除LVM元数据。</p>
+</li>
+<li><p>如果设备使用多路径，请运行<code>multipath -l</code>并记下设备的所有路径。之后，使用<code>multipath -f device</code>删除多路径设备。</p>
+</li>
+<li><p>运行 <code>blockdev --flushbufs device</code> 刷新任何未完成的I / O到设备的所有路径。 这对于原始设备来说尤为重要。</p>
+</li>
+<li><p>删除任何引用到设备的基于路径的名字一样<code>/dev/sd</code>，<code>/dev/disk/by-path</code>或者<code>major:minor</code> number,在应用程序，脚本，或在系统上的实用程序。这对确保未来添加的不同设备不会被误认为当前设备非常重要。</p>
+</li>
+<li><p>最后，从SCSI子系统中删除设备的每个路径。要做到这一点，使用命令在那里可能，例如。 <code>echo 1 &gt; /sys/block/device-name/device/delete</code> </p>
+<p>此操作的另一个变体是：HBA号在哪里是HBA 上的通道，是SCSI目标ID，是LUN。</p>
+<p><code>echo 1 &gt; /sys/class/scsi_device/h:c:t:l/device/delete</code>, .</p>
+<p><strong>Note</strong></p>
+<p>这些命令的旧形式, <code>echo &quot;scsi remove-single-device 0 0 0 0&quot; &gt; /proc/scsi/scsi</code>已被弃用。</p>
+</li>
+</ol>
+<p>可以判断<code>device-name</code>，HBA数目，HBA信道，SCSI目标ID和LUN从各种命令，诸如设备 <code>lsscsi</code>, <code>scsi_id</code>, <code>multipath -l</code>, and <code>ls -l /dev/disk/by-</code>.</p>
+<p>可以将设备从运行的系统中安全地移出。这样做不需要停止对其他设备的I/O。</p>
+<p>其他过程，如物理移除设备，然后重新扫描SCSI总线，以使操作系统状态更新以反映更改。这会由于I / O超时而导致延迟，并且可能会意外删除设备。如果需要执行互连的重新扫描，则必须在I / O暂停时完成。</p>
+<h2 id="删除存储设备的路径"><a href="#删除存储设备的路径" class="headerlink" title="删除存储设备的路径"></a>删除存储设备的路径</h2><p>如果要删除使用多路径的设备的路径（不影响设备的其他路径），则一般过程如下所示：</p>
+<p><strong>删除存储设备的路径</strong></p>
+<ol>
+<li><p>删除该设备的基于路径名的任何引用，如<code>/dev/sd</code>或<code>/dev/disk/by-path</code>或<code>major:minor</code>数量，在应用程序，脚本，或在系统上的实用程序。这对确保未来添加的不同设备不会被误认为当前设备非常重要。</p>
+</li>
+<li><p>使用离线路径<code>echo offline &gt; /sys/block/sda/device/state</code>。</p>
+<p>这将导致发送到此路径上的设备的任何后续I / O立即失败。<strong>设备映射器多路径</strong>将继续使用设备的剩余路径。</p>
+</li>
+<li><p>从SCSI子系统中删除路径。为了这样做，使用命令，其中可以是，例如。 <code>echo 1 &gt; /sys/block/*device-name*/device/delete``*device-name*``sde</code></p>
+</li>
+</ol>
+<p>可以安全地从正在运行的系统中删除该路径。在此过程中不必停止I / O，因为<strong>设备映射器多路径</strong>将根据配置的路径分组和故障转移策略将I / O重新路由到其余路径。</p>
+<p>其他程序，例如物理移除电缆，然后重新扫描SCSI总线以使操作系统状态更新以反映更改，不建议使用。这会由于I / O超时而导致延迟，并且可能会意外删除设备。如果需要执行互连的重新扫描，则必须在I / O暂停时完成。</p>
+<h2 id="添加存储设备或路径"><a href="#添加存储设备或路径" class="headerlink" title="添加存储设备或路径"></a>添加存储设备或路径</h2><p>添加设备时，请注意，系统分配给新设备的基于路径的设备名称（例如，<code>/dev/sd</code>名称，<code>major:minor</code>编号和<code>/dev/disk/by-path</code>名称）可能以前已被移除的设备使用。因此，请确保已删除对基于路径的设备名称的所有旧引用。否则，新设备可能会被误认为旧设备。</p>
+<p><strong>添加存储设备或路径</strong></p>
+<ol>
+<li><p>添加存储设备或路径的第一步是在物理上启用对新存储设备的访问或对现有设备的新路径。这是通过在光纤通道或iSCSI存储服务器上使用特定于供应商的命令完成的。这样做时，请注意将显示给主机的新存储的LUN值。如果存储服务器是光纤通道，请注意存储服务器的<em>全球通用节点名称</em>（WWNN），并确定存储服务器上的所有端口是否存在单个WWNN。如果不是这种情况，请记下将用于访问新LUN的每个端口的<em>全球端口名称</em>（WWPN）。</p>
+</li>
+<li><p>接下来，让操作系统知道新的存储设备或现有设备的路径。建议使用的命令是：</p>
+</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">echo</span> <span class="string">"c t l"</span> &gt;  /sys/class/scsi_host/hosth/scan</span><br></pre></td></tr></table></figure>
+<p>   在前面的命令中，<em><code>h</code></em>是HBA号，<em><code>c</code></em>是HBA 上的通道，<em><code>t</code></em>是SCSI目标ID，<em><code>l</code></em>是LUN。</p>
+<p>   此命令的较早形式<code>echo &quot;scsi add-single-device 0 0 0 0&quot; &gt; /proc/scsi/scsi</code>已被弃用。</p>
+<pre><code>  1. 在某些光纤通道硬件中，在执行*循环初始化协议*（LIP）操作之前，RAID阵列上新创建的LUN可能对操作系统不可见。
+
+
+
+  如果需要LIP，则需要在执行此操作时停止I / O。
+
+  2. 如果在RAID阵列上添加了新的LUN，但仍未被操作系统配置，请使用`sg_luns`命令（sg3_utils包的一部分）确认阵列正在导出的LUN的列表。这将向`SCSI REPORT LUNS`RAID阵列发出命令并返回存在的LUN列表。
+</code></pre><p>   对于实现单个WWNN对所有端口光纤通道存储服务器，您可以确定正确的<em><code>h</code></em>,<em><code>c</code></em>,和<em><code>t</code></em> 值 (即HBA数量，HBA通道和SCSI目标ID)，在<code>sysfs</code>中搜索WWNN .</p>
+<p>   例如，如果存储服务器的WWNN是<code>0x5006016090203181</code>，请使用：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ grep 5006016090203181 /sys/class/fc_transport/*/node_name</span><br></pre></td></tr></table></figure>
+<p>   这应该显示类似于以下内容的输出：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">/sys/class/fc_transport/target5:0:2/node_name:0x5006016090203181 </span><br><span class="line">/sys/class/fc_transport/target5:0:3/node_name:0x5006016090203181 </span><br><span class="line">/sys/class/fc_transport/target6:0:2/node_name:0x5006016090203181 </span><br><span class="line">/sys/class/fc_transport/target6:0:3/node_name:0x5006016090203181</span><br></pre></td></tr></table></figure>
+<p>   这表示到此目标有四条光纤通道路由（两条单通道HBA，每条通向两个存储端口）。假设有一个LUN值<code>56</code>，那么下面的命令将配置第一个路径：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">echo</span> <span class="string">"0 2 56"</span> &gt;  /sys/class/scsi_host/host5/scan</span><br></pre></td></tr></table></figure>
+<p>   这必须为新设备的每个路径完成。</p>
+<p>   对于没有为所有端口实施单个WWNN的光纤通道存储服务器，可以通过搜索其中的每个WWPN来确定正确的HBA编号，HBA通道和SCSI目标ID.</p>
+<p>   确定HBA号码，HBA通道和SCSI目标ID的另一种方法是引用已经在新设备的相同路径上配置的另一个设备。这可以通过各种命令，比如要做<code>lsscsi</code>，<code>scsi_id</code>，<code>multipath -l</code>，和<code>ls -l /dev/disk/by-</code>。如上所示，可以使用此信息以及新设备的LUN编号来探测和配置到新设备的路径。</p>
+<ol>
+<li>将所有SCSI路径添加到设备后，执行该<code>multipath</code>命令，并检查设备是否已正确配置。此时，可以将设备添加到<code>md</code>LVM <code>mkfs</code>，或者<code>mount</code>，例如。</li>
+</ol>
+<p>如果遵循上述步骤，则可以将设备安全地添加到正在运行的系统中。完成这个任务后，不需要停止对其他设备的I / O操作。当存储I / O正在进行时，不推荐其他涉及SCSI总线重新扫描（或重置）的过程，这会导致操作系统更新其状态以反映当前的设备连接。</p>
+<h2 id="扫描存储互连"><a href="#扫描存储互连" class="headerlink" title="扫描存储互连"></a>扫描存储互连</h2><p>某些命令允许您重置，扫描或同时重置和扫描一个或多个互连，这可能会在一次操作中添加和删除多个设备。这种类型的扫描可能会造成干扰，因为在I / O操作超时的同时会造成延迟，并意外移除设备。红帽建议<em>仅在必要时</em>使用互连扫描。扫描存储互连时，请遵守以下限制：</p>
+<ul>
+<li>在执行该过程之前，受影响的互连上的所有I/O必须暂停并刷新，并在I/O恢复之前检查扫描结果。</li>
+<li>与拆除设备一样，当系统处于内存压力下时，不建议进行互连扫描。要确定内存压力的级别，请运行该<code>vmstat 1 100</code>命令。如果空闲内存小于每100个10个以上采样的总内存的5％，则不建议进行互连扫描。另外，如果交换处于活动状态（非零<code>si</code>和输出中的<code>so</code>列），则不建议进行互连扫描<code>vmstat</code>。<code>free</code>命令还可以显示总内存。</li>
+</ul>
+<p>以下命令可用于扫描存储互连：</p>
+<ul>
+<li><p><code>echo &quot;1&quot; &gt; /sys/class/fc_host/host/issue_lip</code></p>
+<p>此操作执行<em>循环初始化协议</em>（<em>LIP</em>），扫描互连，并使SCSI层更新以反映总线上当前的设备。从本质上讲，LIP是一个总线复位，并导致设备添加和删除。此过程对于在光纤通道互连上配置新的SCSI目标是必需的。</p>
+<p>请注意，这<code>issue_lip</code>是一个异步操作。该命令可以在整个扫描完成之前完成。你必须监视，<code>/var/log/messages</code>以确定何时<code>issue_lip</code>完成。</p>
+<p>的<code>lpfc</code>，<code>qla2xxx</code>和<code>bnx2fc</code>驱动程序的支持<code>issue_lip</code>。有关红帽企业版Linux中每个驱动程序支持的API功能的更多信息</p>
+</li>
+<li><p><code>/usr/bin/rescan-scsi-bus.sh</code></p>
+<p>该<code>/usr/bin/rescan-scsi-bus.sh</code>脚本是在红帽企业Linux 5.4中引入的。默认情况下，此脚本扫描系统上的所有SCSI总线，并更新SCSI层以反映总线上的新设备。该脚本提供了额外的选项来允许设备移除和发行LIP。</p>
+</li>
+<li><p><code>echo &quot;- - -&quot; &gt; /sys/class/scsi_host/hosth/scan</code></p>
+<p>在这种情况下，通道号，SCSI目标ID和LUN值将被通配符替换。标识符和通配符的任何组合都是允许的，所以您可以根据需要将命令设置为特定或广泛的。此过程添加LUN，但不删除它们。</p>
+</li>
+<li><p><code>modprobe --remove driver-name</code>, <code>modprobe driver-name</code></p>
+<p>运行<code>modprobe --remove driver-name</code> 命令，然后执行命令<code>modprobe driver-name</code> 完全重新初始化驱动程序控制的所有互连的状态。尽管比较极端，但在某些情况下使用描述的命令可能是合适的。例如，可以使用这些命令以不同的模块参数值重新启动驱动程序。 </p>
+</li>
+</ul>
+<h2 id="ISCSI发现配置"><a href="#ISCSI发现配置" class="headerlink" title="ISCSI发现配置"></a>ISCSI发现配置</h2><p>默认的iSCSI配置文件是<code>/etc/iscsi/iscsid.conf</code>。该文件包含<code>iscsid</code>和使用的iSCSI设置<code>iscsiadm</code>。</p>
+<p>在发现目标期间，该<code>iscsiadm</code>工具使用其中的设置<code>/etc/iscsi/iscsid.conf</code>来创建两种类型的记录：</p>
+<ul>
+<li><p>节点记录 <code>/var/lib/iscsi/nodes</code></p>
+<p>登录到目标时，<code>iscsiadm</code>使用此文件中的设置。</p>
+</li>
+<li><p>发现记录在 <code>/var/lib/iscsi/*discovery_type*</code></p>
+<p>在对同一目的地执行发现时，<code>iscsiadm</code>使用此文件中的设置。</p>
+</li>
+</ul>
+<p>在使用不同的发现设置之前，先删除当前的发现记录（即）。为此，请使用以下命令 </p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># iscsiadm -m discovery -t discovery_type -p target_IP:port -o delete</span></span><br></pre></td></tr></table></figure>
+<p>在这里，<em>discovery_type</em>可以是<code>sendtargets</code>，<code>isns</code>或<code>fw</code>。</p>
+<p>有两种方法可以重新配置发现记录设置：</p>
+<ul>
+<li>编辑 <code>/etc/iscsi/iscsid.conf</code> 在执行发现之前直接. 发现设置使用前缀<code>discovery</code>; 要查看它们，请运行：</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># iscsiadm -m discovery -t discovery_type -p target_IP:port</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>或者，<code>iscsiadm</code>也可以用来直接更改发现记录设置，如下所示：</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># iscsiadm -m discovery -t discovery_type -p target_IP:port -o update -n setting -v %value</span></span><br></pre></td></tr></table></figure>
+<h2 id="配置ISCSI卸载和接口绑定"><a href="#配置ISCSI卸载和接口绑定" class="headerlink" title="配置ISCSI卸载和接口绑定"></a>配置ISCSI卸载和接口绑定</h2><p>本章介绍如何设置iSCSI接口，以便在使用软件iSCSI时将会话绑定到NIC端口。还介绍如何设置支持卸载的网络设备的接口。</p>
+<p>网络子系统可以配置为确定iSCSI接口应该用于绑定的路径/ NIC。例如，如果门户网站和网卡设置在不同的子网上，则不需要手动配置iSCSI接口进行绑定。</p>
+<p>在尝试配置iSCSI接口进行绑定之前，请先运行以下命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ ping -I eth X  target_IP</span><br></pre></td></tr></table></figure>
+<p>如果<code>ping</code>失败，那么您将无法将会话绑定到NIC。如果是这种情况，请首先检查网络设置。</p>
+<h3 id="查看可用的iface配置"><a href="#查看可用的iface配置" class="headerlink" title="查看可用的iface配置"></a>查看可用的iface配置</h3><p>以下iSCSI启动器实施支持iSCSI卸载和接口绑定：</p>
+<ul>
+<li><p>软件iSCSI</p>
+<p>此堆栈为<code>scsi_host</code>每个会话分配一个iSCSI主机实例（即），每个会话只有一个连接。作为结果，<code>/sys/class_scsi_host</code>、<code>/proc/scsi</code>会报告<code>scsi_host</code>你登录到每个连接/会话。 </p>
+</li>
+<li><p>卸载iSCSI</p>
+<p>这个堆栈<code>scsi_host</code>为每个PCI设备分配一个。因此，主机总线适配器上的每个端口将显示为不同的PCI设备，<code>scsi_host</code>每个HBA端口都有不同的端口。</p>
+</li>
+</ul>
+<p>要管理这两种类型的启动器实现，请<code>iscsiadm</code>使用该<code>iface</code>结构。使用此结构，<code>iface</code>必须为用于绑定会话的<code>/var/lib/iscsi/ifaces</code>每个HBA端口，软件iSCSI或网络设备（<code>ethX</code>）输入配置。 </p>
+<p>要查看可用<code>iface</code>配置，请运行<code>iscsiadm -m iface</code>。这将显示<code>iface</code>以下格式的信息：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iface_name  transport_name，hardware_address，ip_address，net_ifacename，initiator_name</span><br></pre></td></tr></table></figure>
+<p>请参阅下表，</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>设置</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>iface_name</code></td>
+<td><code>iface</code> 配置名称。</td>
+</tr>
+<tr>
+<td><code>transport_name</code></td>
+<td>设备名称</td>
+</tr>
+<tr>
+<td><code>hardware_address</code></td>
+<td>MAC 地址</td>
+</tr>
+<tr>
+<td><code>ip_address</code></td>
+<td>用于此端口的IP地址</td>
+</tr>
+<tr>
+<td><code>net_iface_name</code></td>
+<td>名称用于<code>vlan</code>软件iSCSI会话的别名绑定。对于iSCSI卸载，<code>net_iface_name</code>将是<code>&lt;empty&gt;</code>因为这个值在重新启动时不是持久的。</td>
+</tr>
+<tr>
+<td><code>initiator_name</code></td>
+<td>此设置用于覆盖<code>/etc/iscsi/initiatorname.iscsi</code>中定义的启动器的默认名称</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>iscsiadm -m iface命令的输出示例</strong></p>
+<p>以下是<code>iscsiadm -m iface</code>命令的输出示例：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">iface0 qla4xxx,00:c0:dd:08:63:e8,20.15.0.7,default,iqn.2005-06.com.redhat:madmax</span><br><span class="line">iface1 qla4xxx,00:c0:dd:08:63:ea,20.15.0.9,default,iqn.2005-06.com.redhat:madmax</span><br></pre></td></tr></table></figure>
+<p>对于软件iSCSI，每个<code>iface</code>配置必须具有唯一的名称（少于65个字符）。该<code>iface_name</code>网络设备支持卸载出现在格式。</p>
+<p><strong>iscsiadm -m iface使用Chelsio网卡输出</strong></p>
+<p>例如，<code>iscsiadm -m iface</code>使用Chelsio网卡的系统上的示例输出可能显示为：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">default tcp,&lt;empty&gt;,&lt;empty&gt;,&lt;empty&gt;,&lt;empty&gt;</span><br><span class="line">iser iser,&lt;empty&gt;,&lt;empty&gt;,&lt;empty&gt;,&lt;empty&gt;</span><br><span class="line">cxgb3i.00:07:43:05:97:07 cxgb3i,00:07:43:05:97:07,&lt;empty&gt;,&lt;empty&gt;,&lt;empty&gt;</span><br></pre></td></tr></table></figure>
+<p>也可以以<code>iface</code>更友好的方式显示特定配置的设置。为此，请使用该选项。这将以以下格式显示设置</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iface.setting = value</span><br></pre></td></tr></table></figure>
+<p><strong>使用ifaceChelsio融合网络适配器的设置</strong></p>
+<p>使用前面的示例，<code>iface</code>相同的Chelsio融合网络适配器（即<code>iscsiadm -m iface -I cxgb3i.00:07:43:05:97:07</code>）的设置将显示为：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># BEGIN RECORD 2.0-871</span></span><br><span class="line">iface.iscsi_ifacename = cxgb3i.00:07:43:05:97:07</span><br><span class="line">iface.net_ifacename = &lt;empty&gt;</span><br><span class="line">iface.ipaddress = &lt;empty&gt;</span><br><span class="line">iface.hwaddress = 00:07:43:05:97:07</span><br><span class="line">iface.transport_name = cxgb3i</span><br><span class="line">iface.initiatorname = &lt;empty&gt;</span><br><span class="line"><span class="comment"># END RECORD</span></span><br></pre></td></tr></table></figure>
+<h3 id="为软件iSCSI配置iface"><a href="#为软件iSCSI配置iface" class="headerlink" title="为软件iSCSI配置iface"></a>为软件iSCSI配置iface</h3><p>如前所述，<code>iface</code>每个将用于绑定会话的网络对象都需要配置。</p>
+<p>之前</p>
+<p>要<code>iface</code>为软件iSCSI 创建配置，请运行以下命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># iscsiadm -m iface -I iface_name --op=new</span></span><br></pre></td></tr></table></figure>
+<p>这将创建一个具有指定的新的<em>空</em> <code>iface</code>配置<code>*iface_name*</code>。如果现有<code>iface</code>配置已经有相同的<code>*iface_name*</code>，那么它将被一个新的空的覆盖。</p>
+<p>要配置特定的<code>iface</code>配置设置，请使用以下命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># iscsiadm -m iface -I iface_name --op=update -n iface.setting -v hw_address</span></span><br></pre></td></tr></table></figure>
+<p><strong>设置MAC地址iface0</strong></p>
+<p>例如，要设置的MAC地址（<code>hardware_address</code>的）<code>iface0</code>到<code>00:0F:1F:92:6B:BF</code>，运行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># iscsiadm -m iface -I iface0 --op=update -n iface.hwaddress -v 00:0F:1F:92:6B:BF</span></span><br></pre></td></tr></table></figure>
+<p>不要使用<code>default</code>或<code>iser</code>作为<code>iface</code>名称。这两个字符串都是<code>iscsiadm</code>为了向后兼容而使用的特殊值。任何手动创建的<code>iface</code>配置命名<code>default</code>或<code>iser</code>将禁用向后兼容性。</p>
+<h3 id="为iSCSI卸载配置iface"><a href="#为iSCSI卸载配置iface" class="headerlink" title="为iSCSI卸载配置iface"></a>为iSCSI卸载配置iface</h3><p>默认情况下<code>iscsiadm</code>会<code>iface</code>为每个端口创建一个配置。要查看可用的<code>iface</code>配置，请在软件iSCSI中使用相同的命令，即<code>iscsiadm -m iface</code>。</p>
+<p>在使用<code>iface</code>网卡进行iSCSI卸载之前，首先设置设备应使用的IP地址。对于使用<code>be2iscsi</code>驱动程序的设备，在BIOS设置屏幕中配置IP地址。对于所有其他设备，要配置使用的IP地址<code>iface</code>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># iscsiadm -m iface -I iface_name -o update -n iface.ipaddress -v target_IP</span></span><br></pre></td></tr></table></figure>
+<p><strong>设置ifaceChelsio卡的IP地址</strong></p>
+<p>例如，要将<code>iface</code>IP地址设置为<code>20.15.0.66</code>使用iface名称为cxgb3i.00:07:43:05:97:07的卡时，请使用：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># iscsiadm -m iface -I cxgb3i.00:07:43:05:97:07 -o update -n iface.ipaddress -v 20.15.0.66</span></span><br></pre></td></tr></table></figure>
+<h3 id="将iface绑定-解除绑定到Portal"><a href="#将iface绑定-解除绑定到Portal" class="headerlink" title="将iface绑定/解除绑定到Portal"></a>将iface绑定/解除绑定到Portal</h3><p>每当<code>iscsiadm</code>用于扫描互连时，都会首先检查<code>iface.transport</code>每个<code>iface</code>配置的设置<code>/var/lib/iscsi/ifaces</code>。在<code>iscsiadm</code>随后实用程序将绑定发现的门户网站的任何<code>iface</code> 其<code>iface.transport</code>是<code>tcp</code>。</p>
+<p>出于兼容性的原因，此行为已实施。要覆盖这个，使用指定哪个入口绑定到一个，如下所示：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># iscsiadm -m discovery -t st -p target_IP:port -I iface_name -P 1</span></span><br></pre></td></tr></table></figure>
+<p>默认情况下，该<code>iscsiadm</code>实用程序不会自动将任何入口绑定到<code>iface</code>使用卸载的配置。这是因为这样的<code>iface</code>配置不会被<code>iface.transport</code>设置为<code>tcp</code>。因此，这些<code>iface</code>配置需要手动绑定到发现的门户。</p>
+<p>也可以防止门户绑定到任何现有的<code>iface</code>。要做到这一点，使用<code>default</code>的<code>iface_name</code>，如：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># iscsiadm -m discovery -t st -p IP:port -I default -P 1</span></span><br></pre></td></tr></table></figure>
+<p>要删除目标之间的绑定<code>iface</code>，请使用：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># iscsiadm -m node -targetname proper_target_name -I iface0 --op=delete</span></span><br></pre></td></tr></table></figure>
+<p>要删除特定的所有绑定<code>iface</code>，请使用：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># iscsiadm -m node -I iface_name --op=delete</span></span><br></pre></td></tr></table></figure>
+<p>要删除特定门户的绑定（例如，对于Equalogic目标），请使用：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># iscsiadm -m node -p IP:port -I iface_name --op=delete</span></span><br></pre></td></tr></table></figure>
+<p>如果没有<code>iface</code>定义任何配置<code>/var/lib/iscsi/iface</code>并且该<code>-I</code>选项未被使用，<code>iscsiadm</code>将允许网络子系统决定特定门户应该使用哪个设备。</p>
+<h2 id="扫描ISCSI互连"><a href="#扫描ISCSI互连" class="headerlink" title="扫描ISCSI互连"></a>扫描ISCSI互连</h2><p>对于iSCSI，如果目标发送指示添加新存储的iSCSI异步事件，则扫描将自动完成。</p>
+<p>但是，如果目标不发送iSCSI异步事件，则需要使用该<code>iscsiadm</code>实用程序手动扫描它们。然而，在这样做之前，您需要先检索正确<code>--targetname</code>的<code>--portal</code>值。如果您的设备型号仅支持每个目标的单个逻辑单元和门户，请使用<code>iscsiadm</code>向<code>sendtargets</code>主机发出命令，如下所示：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># iscsiadm -m discovery -t sendtargets -p target_IP:port</span></span><br></pre></td></tr></table></figure>
+<p>输出将以以下格式显示：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">target_IP:port,target_portal_group_tag proper_target_name</span><br></pre></td></tr></table></figure>
+<p><strong>使用iscsiadm发出一个sendtargets命令</strong></p>
+<p>例如，在具有<code>proper_target_name</code>of <code>iqn.1992-08.com.netapp:sn.33615311</code>和<code>target_IP:port</code>of 的目标上<code>10.15.85.19:3260</code>，输出可能显示为：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">10.15.84.19:3260,2 iqn.1992-08.com.netapp:sn.33615311</span><br><span class="line">10.15.85.19:3260,3 iqn.1992-08.com.netapp:sn.33615311</span><br></pre></td></tr></table></figure>
+<p>In this example, the target has two portals, each using <code>*target_ip:port*</code>s of <code>10.15.84.19:3260</code> and <code>10.15.85.19:3260</code>.</p>
+<p>要查看哪个<code>iface</code>配置将用于每个会话，请添加该<code>-P 1</code>选项。此选项将以树格式打印会话信息，如下所示：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Target: proper_target_name</span><br><span class="line">    Portal: target_IP:port,target_portal_group_tag</span><br><span class="line">       Iface Name: iface_name</span><br></pre></td></tr></table></figure>
+<p><strong>查看iface配置</strong></p>
+<p>例如，与<code>iscsiadm -m discovery -t sendtargets -p 10.15.85.19:3260 -P 1</code>，输出可能会显示为：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Target: iqn.1992-08.com.netapp:sn.33615311</span><br><span class="line">    Portal: 10.15.84.19:3260,2</span><br><span class="line">       Iface Name: iface2</span><br><span class="line">    Portal: 10.15.85.19:3260,3</span><br><span class="line">       Iface Name: iface2</span><br></pre></td></tr></table></figure>
+<p>这意味着目标<code>iqn.1992-08.com.netapp:sn.33615311</code>将<code>iface2</code>用作其<code>iface</code>配置。</p>
+<p>对于某些设备模型，一个目标可能有多个逻辑单元和门户。在这种情况下，<code>sendtargets</code>首先向主机发出命令以在目标上找到新的门户。然后，使用以下命令重新扫描现有会话：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># iscsiadm -m session --rescan</span></span><br></pre></td></tr></table></figure>
+<p>您还可以通过指定会话的<code>SID</code>值重新扫描特定会话，如下所示：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># iscsiadm -m session -r SID --rescan</span></span><br></pre></td></tr></table></figure>
+<p>如果您的设备支持多个目标，则需要向<code>sendtargets</code>主机发出命令，以便为<em>每个</em>目标找到新的入口。重新扫描现有会话以使用该<code>--rescan</code>选项在现有会话上发现新的逻辑单元。</p>
+<p><code>sendtargets</code>用于检索<code>--targetname</code>和<code>--portal</code>值 的命令会覆盖<code>/var/lib/iscsi/nodes</code>数据库的内容。然后使用中的设置重新填充此数据库<code>/etc/iscsi/iscsid.conf</code>。但是，如果会话当前已登录并正在使用，则不会发生这种情况。</p>
+<p>要安全地添加新的目标/门户或删除旧的，分别使用<code>-o new</code>或<code>-o delete</code>选项。例如，要添加新的目标/门户而不覆盖<code>/var/lib/iscsi/nodes</code>，请使用以下命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iscsiadm -m discovery -t st -p target_IP -o new</span><br></pre></td></tr></table></figure>
+<p>要删除<code>/var/lib/iscsi/nodes</code>目标在发现过程中未显示的条目，请使用：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iscsiadm -m discovery -t st -p target_IP -o delete</span><br></pre></td></tr></table></figure>
+<p>您也可以同时执行这两个任务，如下所示：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iscsiadm -m discovery -t st -p target_IP -o delete -o new</span><br></pre></td></tr></table></figure>
+<p>该<code>sendtargets</code>命令将产生以下输出：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ip:port,target_portal_group_tag proper_target_name</span><br></pre></td></tr></table></figure>
+<p><strong>sendtargets命令的输出</strong></p>
+<p>例如，给定一个具有单个目标，逻辑单元和门户<code>equallogic-iscsi1</code>的设备<code>*target_name*</code>，其输出应与以下内容类似：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">10.16.41.155:3260,0 iqn.2001-05.com.equallogic:6-8a0900-ac3fe0101-63aff113e344a4a2-dl585-03-1</span><br></pre></td></tr></table></figure>
+<p>此时，您现在拥有手动扫描iSCSI设备所需的正确值<code>--targetname</code>和<code>--portal</code>值。为此，请运行以下命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># iscsiadm --mode node --targetname proper_target_name --portal ip:port,target_portal_group_tag \ --login</span></span><br></pre></td></tr></table></figure>
+<p><strong>完整的iscsiadm命令</strong></p>
+<p>使用我们前面的例子（<code>*proper_target_name*</code>是<code>equallogic-iscsi1</code>），完整的命令是：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># iscsiadm --mode node --targetname  \ iqn.2001-05.com.equallogic:6-8a0900-ac3fe0101-63aff113e344a4a2-dl585-03-1 	\ --portal 10.16.41.155:3260,0 --login[8]</span></span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="登录到ISCSI目标"><a href="#登录到ISCSI目标" class="headerlink" title="登录到ISCSI目标"></a>登录到ISCSI目标</h2><p>必须运行iSCSI服务才能发现或登录目标。要启动iSCSI服务，请运行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># systemctl start iscsi</span></span><br></pre></td></tr></table></figure>
+<p>执行此命令后，iSCSI <code>init</code>脚本将自动登录到<code>node.startup</code>设置配置为的目标<code>automatic</code>。这是<code>node.startup</code>所有目标的默认值。</p>
+<p>要防止自动登录到目标，请设置<code>node.startup</code>为<code>manual</code>。为此，请运行以下命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># iscsiadm -m node --targetname proper_target_name -p target_IP:port -o update -n node.startup -v manual</span></span><br></pre></td></tr></table></figure>
+<p>删除整个记录也会阻止自动登录。要做到这一点，运行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># iscsiadm -m node --targetname proper_target_name -p target_IP:port -o delete</span></span><br></pre></td></tr></table></figure>
+<p>要从网络上的iSCSI设备自动安装文件系统，请<code>/etc/fstab</code>使用该<code>_netdev</code>选项为安装添加分区条目。例如，为了自动iSCSI设备安装<code>sdb</code>到<code>/mount/iscsi</code>启动过程中，下面的行添加到<code>/etc/fstab</code>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/dev/sdb /mnt/iscsi ext3 _netdev 0 0</span><br></pre></td></tr></table></figure>
+<p>要手动登录到iSCSI目标，请使用以下命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># iscsiadm -m node --targetname proper_target_name -p target_IP:port -l</span></span><br></pre></td></tr></table></figure>
+<p>该<code>proper_target_name</code>和<code>target_IP:port</code>指全名和目标的IP地址/端口组合。</p>
+<h2 id="RESIZING-调整在线逻辑单元的大小"><a href="#RESIZING-调整在线逻辑单元的大小" class="headerlink" title="RESIZING 调整在线逻辑单元的大小"></a>RESIZING 调整在线逻辑单元的大小</h2><p>在大多数情况下，完全调整在线<em>逻辑单元的</em>大小涉及两件事情：调整逻辑单元本身的大小，并在相应的多路径设备（如果在系统上启用多路径）中反映大小更改。</p>
+<p>要调整联机逻辑单元的大小，请首先通过存储设备的阵列管理界面修改逻辑单元大小。这个过程与每个数组不同，因此，请查阅您的存储阵列供应商文档以获取更多信息。</p>
+<p><strong>Note</strong></p>
+<p>为了调整在线文件系统的大小，文件系统不能驻留在分区设备上。</p>
+<h3 id="调整光纤通道逻辑单元的大小"><a href="#调整光纤通道逻辑单元的大小" class="headerlink" title="调整光纤通道逻辑单元的大小"></a>调整光纤通道逻辑单元的大小</h3><p>修改在线逻辑单元大小后，重新扫描逻辑单元以确保系统检测到更新的大小。要为光纤通道逻辑单元执行此操作，请使用以下命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">echo</span> 1 &gt; /sys/block/sdX/device/rescan</span><br></pre></td></tr></table></figure>
+<p>要在使用多路径的系统上重新扫描光纤通道逻辑单元，请为表示多路径逻辑单元的路径的每个sd设备（即<code>sd1</code>，<code>sd2</code>等等）执行上述命令。要确定哪些设备是多路径逻辑单元的路径，请使用<code>multipath -ll</code>; 然后找到匹配被调整大小的逻辑单元的条目。建议您参考每个条目的WWID，以便更容易地找到哪个匹配被调整大小的逻辑单元。</p>
+<h3 id="调整iSCSI逻辑单元的大小"><a href="#调整iSCSI逻辑单元的大小" class="headerlink" title="调整iSCSI逻辑单元的大小"></a>调整iSCSI逻辑单元的大小</h3><p>修改在线逻辑单元大小后，重新扫描逻辑单元以确保系统检测到更新的大小。要为iSCSI设备执行此操作，请使用以下命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># iscsiadm -m node --targetname target_name -R</span></span><br></pre></td></tr></table></figure>
+<p>替换<code>*target_name*</code>为设备所在的目标的名称。</p>
+<p>您也可以使用以下命令重新扫描iSCSI逻辑单元：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># iscsiadm -m node -R -I interface</span></span><br></pre></td></tr></table></figure>
+<p>替换<code>interface</code>为调整大小的逻辑单元的相应接口名称（例如<code>iface0</code>）。该命令执行两个操作：</p>
+<ul>
+<li><p>它以与命令相同的方式扫描新设备 </p>
+<p><code>echo &quot;- - -&quot; &gt; /sys/class/scsi_host/*host*/scan</code> </p>
+</li>
+<li><p>它以与命令相同的方式重新扫描新的/修改的逻辑单元  <code>echo 1 &gt; /sys/block/sdX/device/rescan</code> 请注意，该命令与用于重新扫描光纤通道逻辑单元的命令相同。</p>
+</li>
+</ul>
+<h3 id="更新多路径设备的大小"><a href="#更新多路径设备的大小" class="headerlink" title="更新多路径设备的大小"></a>更新多路径设备的大小</h3><p>如果系统启用了多路径，则还需要将逻辑单元大小的变化反映到逻辑单元的相应多路径设备（<em>在</em>调整逻辑单元大小<em>之后</em>）。这可以通过<code>multipathd</code>。为此，首先确保<code>multipathd</code>正在运行使用<code>service multipathd status</code>。一旦您验证了<code>multipathd</code>可操作性，请运行以下命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># multipathd -k "resize map multipath_device"</span></span><br></pre></td></tr></table></figure>
+<p>该<code>multipath_device</code>变量是您的设备在相应的多路径条目<code>/dev/mapper</code>。根据系统上多路径的设置，<code>*multipath_device*</code>可以是以下两种格式之一：</p>
+<ul>
+<li><code>mpathX</code>，<code>X</code>您的设备的相应条目在哪里（例如<code>mpath0</code>）</li>
+<li>WWID; 例如，<code>3600508b400105e210000900000490000</code></li>
+</ul>
+<p>要确定哪个多路径条目对应于您调整大小的逻辑单元，请运行<code>multipath -ll</code>。这将显示系统中所有现有多路径条目的列表，以及相应设备的主要和次要编号。</p>
+<h3 id="改变在线逻辑单元的读-写状态"><a href="#改变在线逻辑单元的读-写状态" class="headerlink" title="改变在线逻辑单元的读/写状态"></a>改变在线逻辑单元的读/写状态</h3><p>某些存储设备为用户提供了将设备状态从读/写（R / W）更改为只读（RO）以及从RO更改为R / W的功能。这通常通过存储设备上的管理界面完成。进行更改时，操作系统不会自动更新设备状态视图。按照本章介绍的步骤使操作系统知道更改。</p>
+<p>运行以下命令，将XYZ替换为所需的设备指示符，以确定操作系统当前的设备R / W状态视图：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># blockdev --getro /dev/sdXYZ</span></span><br></pre></td></tr></table></figure>
+<p>以下命令也可用于红帽企业版Linux 7：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># cat /sys/block/sdXYZ/ro 1 = read-only 0 = read-write</span></span><br></pre></td></tr></table></figure>
+<p>使用多路径时，请参阅命令输出的第二行中的<em>ro</em>或<em>rw</em>字段<code>multipath -ll</code>。例如：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">36001438005deb4710000500000640000 dm-8 GZ,GZ500</span><br><span class="line">[size=20G][features=0][hwhandler=0][ro]</span><br><span class="line">\_ round-robin 0 [prio=200][active]</span><br><span class="line"> \_ 6:0:4:1  sdax 67:16  [active][ready]</span><br><span class="line"> \_ 6:0:5:1  sday 67:32  [active][ready]</span><br><span class="line">\_ round-robin 0 [prio=40][enabled]</span><br><span class="line"> \_ 6:0:6:1  sdaz 67:48  [active][ready]</span><br><span class="line"> \_ 6:0:7:1  sdba 67:64  [active][ready]</span><br></pre></td></tr></table></figure>
+<p>要更改R/W状态，请使用以下步骤：</p>
+<p><strong>改变R/W状态</strong></p>
+<ol>
+<li><p>要将设备从RO移到R / W，请参阅步骤2。</p>
+<p>要将器件从R / W移至RO，确保不会再发出写操作。通过停止应用程序或通过使用适当的特定于应用程序的操作来执行此操作。</p>
+<p>使用以下命令确保所有未完成的写入I / O完成：</p>
+</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># blockdev --flushbufs /dev/device</span></span><br></pre></td></tr></table></figure>
+<p>   用所需的代号替换<em>设备</em> ; 对于设备映射器多路径，这是您设备的条目<code>dev/mapper</code>。例如。 <code>/dev/mapper/mpath3</code></p>
+<ol>
+<li><p>使用存储设备的管理接口将逻辑单元的状态从R / W更改为RO，或将RO更改为R/W。这个过程对每个数组都不相同。查阅适用的存储阵列供应商文档以获取更多信</p>
+</li>
+<li><p>执行设备的重新扫描以更新设备的R / W状态的操作系统的视图。如果使用设备映射器多路径，请在发出告知多路径重新加载其设备映射的命令之前，对设备的每条路径执行此重新扫描。</p>
+</li>
+</ol>
+<h4 id="重新扫描逻辑单元"><a href="#重新扫描逻辑单元" class="headerlink" title="重新扫描逻辑单元"></a>重新扫描逻辑单元</h4><p>在线逻辑单元的读/写状态”所述，修改了在线逻辑单元读/写状态之后，重新扫描逻辑单元以确保系统检测到更新状态命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># echo 1 &gt; /sys/block/sdX/device/rescan</span></span><br></pre></td></tr></table></figure>
+<p>要在使用多路径的系统上重新扫描逻辑单元，请为表示多路径逻辑单元的路径的每个sd设备执行上述命令。例如，在sd1，sd2和所有其他sd设备上运行命令。要确定哪些设备是多路径单元的路径，请使用<code>multipath -11</code>，然后查找与要更改的逻辑单元相匹配的条目。</p>
+<p><strong>使用multipath -11命令</strong></p>
+<p>例如，<code>multipath -11</code>以上显示了WWID为36001438005deb4710000500000640000的LUN的路径。在这种情况下，输入：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># echo 1 &gt; /sys/block/sdax/device/rescan</span></span><br><span class="line"><span class="comment"># echo 1 &gt; /sys/block/sday/device/rescan</span></span><br><span class="line"><span class="comment"># echo 1 &gt; /sys/block/sdaz/device/rescan</span></span><br><span class="line"><span class="comment"># echo 1 &gt; /sys/block/sdba/device/rescan</span></span><br></pre></td></tr></table></figure>
+<h4 id="更新多路径设备的R-W状态"><a href="#更新多路径设备的R-W状态" class="headerlink" title="更新多路径设备的R/W状态"></a>更新多路径设备的R/W状态</h4><p>如果启用了多路径，则在重新扫描逻辑单元之后，其状态变化将需要反映在逻辑单元的相应多路径驱动器中。通过使用以下命令重新载入多路径设备映射来执行此操作：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># multipath -r</span></span><br></pre></td></tr></table></figure>
+<p>该<code>multipath -11</code>命令可以用来确认更改。</p>
+<h2 id="通过RESCAN-SCSI-BUS-SH添加-删除逻辑单元"><a href="#通过RESCAN-SCSI-BUS-SH添加-删除逻辑单元" class="headerlink" title="通过RESCAN-SCSI-BUS.SH添加/删除逻辑单元"></a>通过RESCAN-SCSI-BUS.SH添加/删除逻辑单元</h2><p>该<code>sg3_utils</code>软件包提供了<code>rescan-scsi-bus.sh</code>脚本，可以根据需要自动更新主机的逻辑单元配置（在设备添加到系统后）。该<code>rescan-scsi-bus.sh</code>脚本还可以<code>issue_lip</code>在支持的设备上执行。有关如何使用此脚本的更多信息，请参阅<code>rescan-scsi-bus.sh --help</code>。</p>
+<p>要安装该<code>sg3_utils</code>软件包，请运行<code>yum install sg3_utils</code>。</p>
+<h3 id="已知问题与rescan-scsi-bus-sh"><a href="#已知问题与rescan-scsi-bus-sh" class="headerlink" title="已知问题与rescan-scsi-bus.sh"></a>已知问题与rescan-scsi-bus.sh</h3><p>使用<code>rescan-scsi-bus.sh</code>脚本时，请注意以下已知问题：</p>
+<ul>
+<li>为了<code>rescan-scsi-bus.sh</code>正常工作，<code>LUN0</code>必须是第一个映射的逻辑单元。的<code>rescan-scsi-bus.sh</code>，如果它是仅可以检测第一映射逻辑单元<code>LUN0</code>。该<code>rescan-scsi-bus.sh</code>不会是能够扫描任何其他逻辑单元，除非它检测到，即使你使用的第一映射逻辑单元<code>--nooptscan</code>选项。</li>
+<li><code>rescan-scsi-bus.sh</code>如果逻辑单元是第一次映射的， 竞态条件要求运行两次。在第一次扫描期间，<code>rescan-scsi-bus.sh</code>只增加<code>LUN0</code>; 在第二次扫描中添加所有其他逻辑单元。</li>
+<li><code>rescan-scsi-bus.sh</code>当使用该<code>--remove</code>选项时 ，脚本中的错误错误地执行识别逻辑单元大小变化的功能。</li>
+<li>该<code>rescan-scsi-bus.sh</code>脚本不识别ISCSI逻辑单元删除。</li>
+</ul>
+<h2 id="修改链路丢失行为"><a href="#修改链路丢失行为" class="headerlink" title="修改链路丢失行为"></a>修改链路丢失行为</h2><p>This section describes how to modify the link loss behavior of devices that use either Fibre Channel or iSCSI protocols.</p>
+<h3 id="光纤通道-1"><a href="#光纤通道-1" class="headerlink" title="光纤通道"></a>光纤通道</h3><p>如果驱动程序实现传输<code>dev_loss_tmo</code>回调，则在检测到传输问题时，通过链接访问设备的尝试将被阻止。要验证设备是否被阻止，请运行以下命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ cat /sys/block/device/device/state</span><br></pre></td></tr></table></figure>
+<p><code>blocked</code>如果设备被阻塞， 该命令将返回。如果设备运行正常，该命令将返回<code>running</code>。</p>
+<p><strong>确定远程端口的状态</strong></p>
+<ol>
+<li>要确定远程端口的状态，请运行以下命令：</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ cat</span><br><span class="line">/sys/class/fc_remote_port/rport-H:B:R/port_state</span><br></pre></td></tr></table></figure>
+<ol>
+<li><p><code>Blocked</code>当远程端口（以及通过它访问的设备）被阻塞时， 该命令将返回。如果远程端口正常运行，命令将返回<code>Online</code>。</p>
+</li>
+<li><p>如果问题在<code>dev_loss_tmo</code>几秒内不能解决，则rport和设备将被解除阻塞，并且该设备上运行的所有I/O（以及任何发送到该设备的新I/O）都将失败。</p>
+</li>
+</ol>
+<p><strong>更改dev_loss_tmo</strong></p>
+<ul>
+<li>要更改该<code>dev_loss_tmo</code>值，<code>echo</code>请将所需的值更改为该文件。例如，要设置<code>dev_loss_tmo</code>为30秒，请运行：</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">echo</span> 30 &gt;</span><br><span class="line">/sys/class/fc_remote_port/rport-H:B:R/dev_loss_tmo</span><br></pre></td></tr></table></figure>
+<h3 id="iSCSI设置dm-multipath"><a href="#iSCSI设置dm-multipath" class="headerlink" title="iSCSI设置dm-multipath"></a>iSCSI设置<code>dm-multipath</code></h3><p>如果<code>dm-multipath</code>已实施，则建议将iSCSI定时器设置为立即将命令延迟到多路径层。要配置它，请将以下行嵌套<code>device</code>在<code>/etc/multipath.conf</code>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">features		<span class="string">"1 queue_if_no_path"</span></span><br></pre></td></tr></table></figure>
+<p>这确保了如果<code>dm-multipath</code>图层中的所有路径都失败，I / O错误将重试并排队。</p>
+<p>您可能需要进一步调整iSCSI定时器，以更好地监控SAN的问题。您可以配置可用的iSCSI计时器是<em>NOP超时间隔/超时</em>和<code>replacement_timeout</code>，这在下面的章节中讨论。</p>
+<h4 id="NOP输出间隔-超时"><a href="#NOP输出间隔-超时" class="headerlink" title="NOP输出间隔/超时"></a>NOP输出间隔/超时</h4><p>为了帮助监控SAN的问题，iSCSI层向每个目标发送一个NOP-Out请求。如果NOP-Out请求超时，则iSCSI层响应失败的任何运行命令，并指示SCSI层在可能的情况下重新执行这些命令。</p>
+<p>在<code>dm-multipath</code>使用时，SCSI层将会使那些正在运行的命令失效，并将它们推迟到多路径层。多路径层然后在另一条路径上重试这些命令。如果<code>dm-multipath</code>是<em>没有</em>被使用，这些命令是完全失败之前重试五次。</p>
+<p>NOP-Out请求之间的间隔默认为10秒。要调整它，请打开<code>/etc/iscsi/iscsid.conf</code>并编辑以下行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">node.conn[0].timeo.noop_out_interval = [interval value]</span><br></pre></td></tr></table></figure>
+<p>一旦设置，iSCSI层将每<em>[间隔值]</em>秒发送一个NOP-Out请求给每个目标。</p>
+<p>默认情况下，NOP-Out请求在10秒内超时要调整它，请打开<code>/etc/iscsi/iscsid.conf</code>并编辑以下行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">node.conn[0].timeo.noop_out_timeout = [timeout value]</span><br></pre></td></tr></table></figure>
+<p>这会将iSCSI层设置为在<em>[超时值]</em>秒后超时一个NOP-Out请求。</p>
+<h5 id="SCSI错误处理程序"><a href="#SCSI错误处理程序" class="headerlink" title="SCSI错误处理程序"></a>SCSI错误处理程序</h5><p>如果SCSI错误处理程序正在运行，当路径上的NOP-Out请求超时时，在路径上运行命令将不会立即失败。相反，这些命令将<em>在</em> <code>replacement_timeout</code>几秒钟<em>后</em>失败。</p>
+<p>要验证SCSI错误处理程序是否正在运行，请运行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">＃iscsiadm -m session -P 3</span><br></pre></td></tr></table></figure>
+<h4 id="replacement-timeout"><a href="#replacement-timeout" class="headerlink" title="replacement_timeout"></a><code>replacement_timeout</code></h4><p><code>replacement_timeout</code>控制iSCSI层在发生任何命令失败之前应该等待超时路径/会话重新建立自己的时间。默认<code>replacement_timeout</code>值是120秒。</p>
+<p>要进行调整<code>replacement_timeout</code>，请打开<code>/etc/iscsi/iscsid.conf</code>并编辑以下行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">node.session.timeo.replacement_timeout = [replacement_timeout]</span><br></pre></td></tr></table></figure>
+<p>通过配置较低的<code>replacement_timeout</code>I / O，当iSCSI层尝试重新建立失败的路径/会话时，I / O被快速发送到新的路径并执行（在NOP-Out超时的情况下）。如果所有路径都超时，那么多路径和设备映射器将根据设置在内部排队I / O <code>/etc/multipath.conf</code>而不是<code>/etc/iscsi/iscsid.conf</code>。</p>
+<p><strong>重要</strong></p>
+<p>无论您考虑的是故障转移速度还是安全性，建议的值<code>replacement_timeout</code>将取决于其他因素。这些因素包括网络，目标和系统工作负载。因此，建议您<code>replacements_timeout</code>在将其应用于任务关键型系统之前彻底测试任何新的配置。</p>
+<h3 id="iSCSI根"><a href="#iSCSI根" class="headerlink" title="iSCSI根"></a>iSCSI根</h3><p>当直接通过iSCSI磁盘访问根分区时，应设置iSCSI定时器，以便iSCSI层尝试重新建立路径/会话有几次机会。另外，命令不应该快速重新排队到SCSI层。这与<code>dm-multipath</code>实施时应该做的是相反的。</p>
+<p>首先，应禁用NOP输出。您可以通过将NOP-Out时间间隔和超时设置为零来完成此操作。要设置这个，打开<code>/etc/iscsi/iscsid.conf</code>并编辑如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">node.conn [0] .timeo.noop_out_interval = 0</span><br><span class="line">node.conn [0] .timeo.noop_out_timeout = 0</span><br></pre></td></tr></table></figure>
+<p>为此，<code>replacement_timeout</code>应该设置一个很高的数字。这将指示系统等待很长时间来重新建立路径/会话。要进行调整<code>replacement_timeout</code>，请打开<code>/etc/iscsi/iscsid.conf</code>并编辑以下行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">node.session.timeo.replacement_timeout = replacement_timeout</span><br></pre></td></tr></table></figure>
+<p>配置完成后<code>/etc/iscsi/iscsid.conf</code>，您必须重新发现受影响的存储。这将允许系统加载和使用任何新的值<code>/etc/iscsi/iscsid.conf</code>。</p>
+<h4 id="配置特定会话超时"><a href="#配置特定会话超时" class="headerlink" title="配置特定会话超时"></a>配置特定会话超时</h4><p>您还可以为特定会话配置超时，并使其非持久（而不是使用<code>/etc/iscsi/iscsid.conf</code>）。为此，请运行以下命令（相应地替换变量）：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">＃iscsiadm -m node -T target_name -p target_IP：port -o update -n node.session.timeo.replacement_timeout -v $ timeout_value</span><br></pre></td></tr></table></figure>
+<h2 id="控制SCSI命令计时器和设备状态"><a href="#控制SCSI命令计时器和设备状态" class="headerlink" title="控制SCSI命令计时器和设备状态"></a>控制SCSI命令计时器和设备状态</h2><p>Linux SCSI层在每个命令上设置一个定时器。当此计时器到期时，SCSI层将使<em>主机总线适配器</em>（HBA）停顿并等待所有未完成的命令超时或完成。之后，SCSI层将激活驱动程序的错误处理程序。</p>
+<p>当错误处理程序被触发时，它将按顺序尝试以下操作（直到成功执行）：</p>
+<ol>
+<li>中止命令。</li>
+<li>重置设备。</li>
+<li>重置总线。</li>
+<li>重置主机。</li>
+</ol>
+<p>如果所有这些操作失败，设备将被设置为<code>offline</code>状态。发生这种情况时，该设备的所有I / O都将失败，直到问题得到纠正，并且用户将设备设置为<code>running</code>。</p>
+<p>但是，如果设备使用光纤通道协议并且<code>rport</code>被阻止，则该过程是不同的。在这种情况下，驱动程序<code>rport</code>在激活错误处理程序之前等待几秒钟才能再次联机。这可以防止由于临时传输问题导致设备脱机。</p>
+<h3 id="设备状态"><a href="#设备状态" class="headerlink" title="设备状态"></a>设备状态</h3><p>要显示设备的状态，请使用：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ cat /sys/block/device-name/device/state</span><br></pre></td></tr></table></figure>
+<p>要将设备设置为该<code>running</code>状态，请使用：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">＃<span class="built_in">echo</span> running&gt; /sys/block/device-name/device/state</span><br></pre></td></tr></table></figure>
+<h3 id="命令计时器"><a href="#命令计时器" class="headerlink" title="命令计时器"></a>命令计时器</h3><p>要控制命令计时器，请修改文件： <code>/sys/block/device-name/device/timeout</code></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">＃<span class="built_in">echo</span> value &gt; /sys/block/device-name/device/timeout</span><br></pre></td></tr></table></figure>
+<p><code>value</code>在命令中用您想要实现的超时值（以秒为单位） 替换。</p>
+<h2 id="在线存储配置故障排除"><a href="#在线存储配置故障排除" class="headerlink" title="在线存储配置故障排除"></a>在线存储配置故障排除</h2><p>逻辑单元删除状态不会反映在主机上。</p>
+<p>在配置的文件管理器上删除逻辑单元时，更改不会反映在主机上。在这种情况下，<code>lvm</code>命令将在<code>dm-multipath</code>使用时无限期挂起，因为逻辑单元现在已经<em>过时</em>。</p>
+<p>要解决此问题，请执行以下步骤：</p>
+<p><strong>在陈旧的逻辑单位工作</strong></p>
+<ol>
+<li><p>确定哪些<code>mpath</code>链接条目<code>/etc/lvm/cache/.cache</code>特定于陈旧的逻辑单元。为此，请运行以下命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ ls -l / dev / mpath | grep stale-logical-unit</span><br></pre></td></tr></table></figure>
+<p><strong>确定特定的mpath链接条目</strong></p>
+<p>例如，如果<code>stale-logical-unit</code>是3600d0230003414f30000203a7bc41a00，则可能会出现以下结果：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">lrwxrwxrwx 1 root root 7 Aug 2 10:33 / 3600d0230003414f30000203a7bc41a00  - &gt; ../dm-4 lrwxrwxrwx </span><br><span class="line">1 root root 7 Aug 2 10:33 / 3600d0230003414f30000203a7bc41a00p1  - &gt; ../dm-5</span><br></pre></td></tr></table></figure>
+<p>这意味着3600d0230003414f30000203a7bc41a00被映射到两个<code>mpath</code>链接：<code>dm-4</code>和<code>dm-5</code>。</p>
+</li>
+<li><p>接下来，打开<code>/etc/lvm/cache/.cache</code>。删除包含的所有行<code>*stale-logical-unit</code>和映射到的<code>mpath</code>链接<code>stale-logical-unit</code>。</p>
+</li>
+</ol>
+<p><strong>删除相关的行</strong></p>
+<p>使用上一步中的相同示例，需要删除的行是：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">/ dev / dm-4</span><br><span class="line">/ dev / dm-5</span><br><span class="line">/ dev / mapper / 3600d0230003414f30000203a7bc41a00</span><br><span class="line">/ dev / mapper / 3600d0230003414f30000203a7bc41a00p1</span><br><span class="line">/ dev / mpath / 3600d0230003414f30000203a7bc41a00</span><br><span class="line">/ dev / mpath / 3600d0230003414f30000203a7bc41a00p1</span><br></pre></td></tr></table></figure>
+<h2 id="使用EH-DEADLINE配置错误恢复的最长时间"><a href="#使用EH-DEADLINE配置错误恢复的最长时间" class="headerlink" title="使用EH_DEADLINE配置错误恢复的最长时间"></a>使用EH_DEADLINE配置错误恢复的最长时间</h2><p>在大多数情况下，您不需要启用<em>eh_deadline</em>参数。<em>eh_deadline</em>例如，如果光纤通道交换机和目标端口之间发生链路丢失，并且主机总线适配器（HBA）没有收到注册状态更改通知（RSCN），则在某些特定情况下使用该参数可能很有用。在这种情况下，I / O请求和错误恢复命令全部超时而不是遇到错误。<em>eh_deadline</em>在这个环境中设置恢复时间的上限，这使得可以通过多路径在另一条可用路径上重试失败的I / O。</p>
+<p>但是，如果启用了RSCN，则HBA不会注册链路变为不可用，或者两者兼而有之<em>eh_deadline</em>，因为I / O和错误恢复命令立即失败，因此该功能不会提供额外的好处，从而允许多路径重试。</p>
+<p>SCSI主机对象<em>eh_deadline</em>参数使您能够配置SCSI错误处理机制在停止和重置整个HBA之前尝试执行错误恢复的最长时间。</p>
+<p>该值<em>eh_deadline</em>以秒为单位指定。默认设置是<code>off</code>禁用时间限制，并允许所有的错误恢复。除使用外<code>sysfs</code>，还可以使用<em>scsi_mod.eh_deadline</em>内核参数为所有SCSI HBA设置默认值。</p>
+<p>请注意，<em>eh_deadline</em>到期时，HBA将重置，从而影响该HBA上的所有目标路径，而不仅仅是失败的路径。因此，如果某些冗余路径由于其他原因而不可用，则可能会发生I / O错误。<em>eh_deadline</em>仅当您在所有目标上具有完全冗余的多路径配置时才启用。</p>
+<h2 id="设备映射器多路径和虚拟存储"><a href="#设备映射器多路径和虚拟存储" class="headerlink" title="设备映射器多路径和虚拟存储"></a>设备映射器多路径和虚拟存储</h2><h3 id="虚拟存储"><a href="#虚拟存储" class="headerlink" title="虚拟存储"></a>虚拟存储</h3><p>红帽企业版Linux 7支持以下用于虚拟存储的文件系统/在线存储方法：</p>
+<ul>
+<li>光纤通道</li>
+<li>iSCSI的</li>
+<li>NFS</li>
+<li>GFS2</li>
+</ul>
+<p>红帽企业版Linux 7中的虚拟化<code>libvirt</code>用于管理虚拟实例。该<code>libvirt</code>实用程序使用<em>存储池</em>的概念来管理虚拟客户的存储。存储池是可以分成更小卷或直接分配给来宾的存储。存储池的卷可以分配给虚拟客户端。有两类存储池可用：</p>
+<p>本地存储池</p>
+<p>本地存储涵盖直接连接到主机的存储设备，文件或目录。本地存储包括本地目录，直接连接的磁盘和LVM卷组。</p>
+<p>联网（共享）存储池</p>
+<p>网络存储涵盖了使用标准协议通过网络共享的存储设备。它包括使用光纤通道，iSCSI，NFS，GFS2和SCSI RDMA协议的共享存储设备，并且需要在主机之间迁移访客虚拟化来宾。</p>
+<h3 id="DM-多路径"><a href="#DM-多路径" class="headerlink" title="DM-多路径"></a>DM-多路径</h3><p>设备映射器多路径（DM-Multipath）功能可让您将服务器节点和存储阵列之间的多个I / O路径配置到一个设备中。这些I / O路径是物理SAN连接，可以包含单独的电缆，交换机和控制器。多路径聚合I / O路径，创建一个由聚合路径组成的新设备。</p>
+<p>DM-Multipath主要用于以下原因：</p>
+<ul>
+<li><p>冗余</p>
+<p>DM-Multipath可以在主动/被动配置中提供故障转移。在主动/被动配置中，只有一半的路径在任何时候用于I / O。如果I / O路径的任何元素（电缆，交换机或控制器）发生故障，DM-Multipath将切换到备用路径。</p>
+</li>
+<li><p>改进的性能</p>
+<p>可以在主动/主动模式下配置DM-Multipath，其中I / O以循环方式分布在路径上。在一些配置中，DM-Multipath可以检测I / O路径上的负载并动态地重新平衡负载。</p>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>Goooo
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.sysctl.me/2018/01/24/Linux/storage/OnlineStorage/" title="Linux网络存储管理">https://www.sysctl.me/2018/01/24/Linux/storage/OnlineStorage/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/en" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Linux/" rel="tag"># Linux</a>
+              <a href="/tags/Storage/" rel="tag"># Storage</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2017/12/30/Linux/storage/LocalStorage/" rel="prev" title="Linux存储管理">
+      <i class="fa fa-chevron-left"></i> Linux存储管理
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/04/01/Program-design/Cyclic-structure-invariant/" rel="next" title="循环不变式">
+      循环不变式 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Target-设置"><span class="nav-number">1.</span> <span class="nav-text">Target 设置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#安装和运行targetcli"><span class="nav-number">1.1.</span> <span class="nav-text">安装和运行targetcli</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#创建一个Backstore"><span class="nav-number">1.2.</span> <span class="nav-text">创建一个Backstore</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#创建-iSCSI-Target"><span class="nav-number">1.3.</span> <span class="nav-text">创建 iSCSI Target</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#配置-iSCSI-门户"><span class="nav-number">1.4.</span> <span class="nav-text">配置 iSCSI 门户</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#配置LUN"><span class="nav-number">1.5.</span> <span class="nav-text">配置LUN</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#配置ACL"><span class="nav-number">1.6.</span> <span class="nav-text">配置ACL</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#配置以太网光纤通道-FCoE-Target"><span class="nav-number">1.7.</span> <span class="nav-text">配置以太网光纤通道 (FCoE) Target</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#使用-targetcli-删除对象"><span class="nav-number">1.8.</span> <span class="nav-text">使用 targetcli 删除对象</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#创建一个-ISCSI-INITIATOR"><span class="nav-number">2.</span> <span class="nav-text">创建一个 ISCSI INITIATOR</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#光纤通道"><span class="nav-number">3.</span> <span class="nav-text">光纤通道</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Fibre-Channel-API"><span class="nav-number">3.1.</span> <span class="nav-text">Fibre Channel API</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#本地光纤通道驱动程序和功能"><span class="nav-number">3.2.</span> <span class="nav-text">本地光纤通道驱动程序和功能</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#通过以太网接口配置光纤通道"><span class="nav-number">4.</span> <span class="nav-text">通过以太网接口配置光纤通道</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#配置FCOE接口以在引导时自动挂载"><span class="nav-number">5.</span> <span class="nav-text">配置FCOE接口以在引导时自动挂载</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ISCSI"><span class="nav-number">6.</span> <span class="nav-text">ISCSI</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#iSCSI-API"><span class="nav-number">6.1.</span> <span class="nav-text">iSCSI API</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#持久命名"><span class="nav-number">7.</span> <span class="nav-text">持久命名</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#主要和次要的存储设备"><span class="nav-number">7.1.</span> <span class="nav-text">主要和次要的存储设备</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#全球标识符（WWID）"><span class="nav-number">7.2.</span> <span class="nav-text">全球标识符（WWID）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#设备名称管理由udev机制-dev-disk-by"><span class="nav-number">7.3.</span> <span class="nav-text">设备名称管理由udev机制&#x2F;dev&#x2F;disk&#x2F;by-*</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#udev设备命名约定的局限性"><span class="nav-number">7.3.1.</span> <span class="nav-text">udev设备命名约定的局限性</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#修改持久命名属性"><span class="nav-number">7.3.2.</span> <span class="nav-text">修改持久命名属性</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#卸下存储设备"><span class="nav-number">8.</span> <span class="nav-text">卸下存储设备</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#删除存储设备的路径"><span class="nav-number">9.</span> <span class="nav-text">删除存储设备的路径</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#添加存储设备或路径"><span class="nav-number">10.</span> <span class="nav-text">添加存储设备或路径</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#扫描存储互连"><span class="nav-number">11.</span> <span class="nav-text">扫描存储互连</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ISCSI发现配置"><span class="nav-number">12.</span> <span class="nav-text">ISCSI发现配置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#配置ISCSI卸载和接口绑定"><span class="nav-number">13.</span> <span class="nav-text">配置ISCSI卸载和接口绑定</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#查看可用的iface配置"><span class="nav-number">13.1.</span> <span class="nav-text">查看可用的iface配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为软件iSCSI配置iface"><span class="nav-number">13.2.</span> <span class="nav-text">为软件iSCSI配置iface</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为iSCSI卸载配置iface"><span class="nav-number">13.3.</span> <span class="nav-text">为iSCSI卸载配置iface</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#将iface绑定-解除绑定到Portal"><span class="nav-number">13.4.</span> <span class="nav-text">将iface绑定&#x2F;解除绑定到Portal</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#扫描ISCSI互连"><span class="nav-number">14.</span> <span class="nav-text">扫描ISCSI互连</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#登录到ISCSI目标"><span class="nav-number">15.</span> <span class="nav-text">登录到ISCSI目标</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#RESIZING-调整在线逻辑单元的大小"><span class="nav-number">16.</span> <span class="nav-text">RESIZING 调整在线逻辑单元的大小</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#调整光纤通道逻辑单元的大小"><span class="nav-number">16.1.</span> <span class="nav-text">调整光纤通道逻辑单元的大小</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#调整iSCSI逻辑单元的大小"><span class="nav-number">16.2.</span> <span class="nav-text">调整iSCSI逻辑单元的大小</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#更新多路径设备的大小"><span class="nav-number">16.3.</span> <span class="nav-text">更新多路径设备的大小</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#改变在线逻辑单元的读-写状态"><span class="nav-number">16.4.</span> <span class="nav-text">改变在线逻辑单元的读&#x2F;写状态</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#重新扫描逻辑单元"><span class="nav-number">16.4.1.</span> <span class="nav-text">重新扫描逻辑单元</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#更新多路径设备的R-W状态"><span class="nav-number">16.4.2.</span> <span class="nav-text">更新多路径设备的R&#x2F;W状态</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#通过RESCAN-SCSI-BUS-SH添加-删除逻辑单元"><span class="nav-number">17.</span> <span class="nav-text">通过RESCAN-SCSI-BUS.SH添加&#x2F;删除逻辑单元</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#已知问题与rescan-scsi-bus-sh"><span class="nav-number">17.1.</span> <span class="nav-text">已知问题与rescan-scsi-bus.sh</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#修改链路丢失行为"><span class="nav-number">18.</span> <span class="nav-text">修改链路丢失行为</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#光纤通道-1"><span class="nav-number">18.1.</span> <span class="nav-text">光纤通道</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#iSCSI设置dm-multipath"><span class="nav-number">18.2.</span> <span class="nav-text">iSCSI设置dm-multipath</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#NOP输出间隔-超时"><span class="nav-number">18.2.1.</span> <span class="nav-text">NOP输出间隔&#x2F;超时</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#SCSI错误处理程序"><span class="nav-number">18.2.1.1.</span> <span class="nav-text">SCSI错误处理程序</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#replacement-timeout"><span class="nav-number">18.2.2.</span> <span class="nav-text">replacement_timeout</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#iSCSI根"><span class="nav-number">18.3.</span> <span class="nav-text">iSCSI根</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#配置特定会话超时"><span class="nav-number">18.3.1.</span> <span class="nav-text">配置特定会话超时</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#控制SCSI命令计时器和设备状态"><span class="nav-number">19.</span> <span class="nav-text">控制SCSI命令计时器和设备状态</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#设备状态"><span class="nav-number">19.1.</span> <span class="nav-text">设备状态</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#命令计时器"><span class="nav-number">19.2.</span> <span class="nav-text">命令计时器</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#在线存储配置故障排除"><span class="nav-number">20.</span> <span class="nav-text">在线存储配置故障排除</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#使用EH-DEADLINE配置错误恢复的最长时间"><span class="nav-number">21.</span> <span class="nav-text">使用EH_DEADLINE配置错误恢复的最长时间</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#设备映射器多路径和虚拟存储"><span class="nav-number">22.</span> <span class="nav-text">设备映射器多路径和虚拟存储</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#虚拟存储"><span class="nav-number">22.1.</span> <span class="nav-text">虚拟存储</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DM-多路径"><span class="nav-number">22.2.</span> <span class="nav-text">DM-多路径</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Goooo"
+      src="/images/img.png">
+  <p class="site-author-name" itemprop="name">Goooo</p>
+  <div class="site-description" itemprop="description">一条啥也不会点废鱼</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">109</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">22</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">71</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/xth0331" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;xth0331" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:xietianhao0331@gmail.com" title="E-Mail → mailto:xietianhao0331@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/en" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+        
+        <script type="text/javascript" charset="utf-8" src="/js/tagcloud.js"></script>
+        <script type="text/javascript" charset="utf-8" src="/js/tagcanvas.js"></script>
+        <div class="widget-wrap">
+            <h3 class="widget-title">标签们</h3>
+            <div id="myCanvasContainer" class="widget tagcloud">
+                <canvas width="250" height="250" id="resCanvas" style="width=100%">
+                    <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ansible/" rel="tag">Ansible</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Backup/" rel="tag">Backup</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Bond/" rel="tag">Bond</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CPU/" rel="tag">CPU</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ceph/" rel="tag">Ceph</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cobbler/" rel="tag">Cobbler</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Coffee/" rel="tag">Coffee</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Corosync/" rel="tag">Corosync</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cyclic-invariant/" rel="tag">Cyclic invariant</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Docker/" rel="tag">Docker</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Effectiveness/" rel="tag">Effectiveness</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Exhaustion/" rel="tag">Exhaustion</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Filesystem/" rel="tag">Filesystem</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HAProxy/" rel="tag">HAProxy</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hardware/" rel="tag">Hardware</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Https/" rel="tag">Https</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ICMP/" rel="tag">ICMP</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JDK/" rel="tag">JDK</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Jenkins/" rel="tag">Jenkins</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JunOS/" rel="tag">JunOS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/KEEPALIVED/" rel="tag">KEEPALIVED</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Keepalived/" rel="tag">Keepalived</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/" rel="tag">Linux</a><span class="tag-list-count">19</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Log/" rel="tag">Log</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Markdown/" rel="tag">Markdown</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Modular-Programming/" rel="tag">Modular Programming</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Monitoring/" rel="tag">Monitoring</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Netconf/" rel="tag">Netconf</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Network/" rel="tag">Network</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Networking/" rel="tag">Networking</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Nginx/" rel="tag">Nginx</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OS/" rel="tag">OS</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OpenStack/" rel="tag">OpenStack</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Package-Manager/" rel="tag">Package Manager</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Partition/" rel="tag">Partition</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Programming/" rel="tag">Programming</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Python/" rel="tag">Python</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RAM/" rel="tag">RAM</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RHCS/" rel="tag">RHCS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RPM/" rel="tag">RPM</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Recursion/" rel="tag">Recursion</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Recursive/" rel="tag">Recursive</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Redirect/" rel="tag">Redirect</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Route/" rel="tag">Route</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SSH/" rel="tag">SSH</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Storage/" rel="tag">Storage</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Storage-and-Filesystem/" rel="tag">Storage and Filesystem</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Swap/" rel="tag">Swap</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Sys/" rel="tag">Sys</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Systemd/" rel="tag">Systemd</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Terminal/" rel="tag">Terminal</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Terraform/" rel="tag">Terraform</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Tools/" rel="tag">Tools</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ubuntu/" rel="tag">Ubuntu</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Veeam/" rel="tag">Veeam</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vim/" rel="tag">Vim</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Virtualization/" rel="tag">Virtualization</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vmware/" rel="tag">Vmware</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vsphere/" rel="tag">Vsphere</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Windows/" rel="tag">Windows</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Yum/" rel="tag">Yum</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/apple/" rel="tag">apple</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/elasticsearch/" rel="tag">elasticsearch</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/iteration/" rel="tag">iteration</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/logs/" rel="tag">logs</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/oop/" rel="tag">oop</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tools/" rel="tag">tools</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%88%86%E6%B2%BB/" rel="tag">分治</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E5%8E%8B%E7%BC%A9/" rel="tag">数据压缩</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%84%99%E8%A7%86%E9%93%BE/" rel="tag">鄙视链</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%87%8D%E5%A4%8D%E6%95%B0%E6%8D%AE%E5%88%A0%E9%99%A4/" rel="tag">重复数据删除</a><span class="tag-list-count">1</span></li></ul>
+                </canvas>
+            </div>
+        </div>
+        
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Goooo</span>
+</div>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.7.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://www-sysctl-me-1.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "https://www.sysctl.me/2018/01/24/Linux/storage/OnlineStorage/";
+    this.page.identifier = "2018/01/24/Linux/storage/OnlineStorage/";
+    this.page.title = "Linux网络存储管理";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://www-sysctl-me-1.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/koharu.model.json"},"display":{"position":"left","width":300,"height":600},"mobile":{"show":false},"react":{"opacity":0.7}});</script></body>
+</html>

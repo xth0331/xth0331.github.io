@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://www.sysctl.me').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","width":320,"display":"post","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="启动新的备份向导要启动新的备份作业向导，请执行以下操作之一：  在主页选项卡上，单击备份作业并选择VMware 。 打开主页视图。在清单窗格中，右键单击作业，然后选择Backup&gt; VMware vSphere 。  打开库存视图。在工作区中选择虚拟机，在功能区上单击添加到备份，然后选择新建作业或右键单击虚拟机并选择添加到备份作业&gt; 新建作业。Veeam Backup＆Replicat">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Veeam B&amp;R 创建备份任务">
+<meta property="og:url" content="https://www.sysctl.me/2018/06/11/Veeambk1/index.html">
+<meta property="og:site_name" content="Sysctl">
+<meta property="og:description" content="启动新的备份向导要启动新的备份作业向导，请执行以下操作之一：  在主页选项卡上，单击备份作业并选择VMware 。 打开主页视图。在清单窗格中，右键单击作业，然后选择Backup&gt; VMware vSphere 。  打开库存视图。在工作区中选择虚拟机，在功能区上单击添加到备份，然后选择新建作业或右键单击虚拟机并选择添加到备份作业&gt; 新建作业。Veeam Backup＆Replicat">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/48150464.jpg">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/28520668.jpg">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/95965037.jpg">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/57659522.jpg">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/14185964.jpg">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/12187527.jpg">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/14248379.jpg">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/10154707.jpg">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/63715678.jpg">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/44174927.jpg">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/45196622.jpg">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/46431142.jpg">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/55658159.jpg">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/265190.jpg">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/92494324.jpg">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/3729457.jpg">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/67179067.jpg">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/57822207.jpg">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/6621298.jpg">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/10554663.jpg">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/52557217.jpg">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/23943774.jpg">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/80437536.jpg">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/92744193.jpg">
+<meta property="article:published_time" content="2018-06-11T03:01:10.000Z">
+<meta property="article:modified_time" content="2020-01-22T14:39:58.053Z">
+<meta property="article:author" content="Goooo">
+<meta property="article:tag" content="Backup">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog-image.nos-eastchina1.126.net/48150464.jpg">
+
+<link rel="canonical" href="https://www.sysctl.me/2018/06/11/Veeambk1/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>Veeam B&R 创建备份任务 | Sysctl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Sysctl" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Sysctl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">观察指南，博客</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="搜索..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/xth0331" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.sysctl.me/2018/06/11/Veeambk1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/img.png">
+      <meta itemprop="name" content="Goooo">
+      <meta itemprop="description" content="一条啥也不会点废鱼">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Sysctl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Veeam B&R 创建备份任务
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-06-11 11:01:10" itemprop="dateCreated datePublished" datetime="2018-06-11T11:01:10+08:00">2018-06-11</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-01-22 22:39:58" itemprop="dateModified" datetime="2020-01-22T22:39:58+08:00">2020-01-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Veeam/" itemprop="url" rel="index">
+                    <span itemprop="name">Veeam</span>
+                  </a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2018/06/11/Veeambk1/#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2018/06/11/Veeambk1/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="启动新的备份向导"><a href="#启动新的备份向导" class="headerlink" title="启动新的备份向导"></a>启动新的备份向导</h1><p>要启动新的备份作业向导，请执行以下操作之一：</p>
+<ul>
+<li>在主页选项卡上，单击备份作业并选择VMware 。</li>
+<li><p>打开主页视图。在清单窗格中，右键单击作业，然后选择Backup&gt; VMware vSphere 。</p>
+</li>
+<li><p>打开库存视图。在工作区中选择虚拟机，在功能区上单击添加到备份，然后选择新建作业或右键单击虚拟机并选择添加到备份作业&gt; 新建作业。Veeam Backup＆Replication 将启动“ 新建备份作业” 向导并将VM添加到此作业中。稍后您可以将其他虚拟机添加到该作业，当您通过向导步骤时。</p>
+</li>
+<li>您可以快速将虚拟机添加到现有的作业中。为此，请打开清单视图，在工作区中选择虚拟机，然后单击功能区上作业的名称或添加到备份&gt; 右键单击该虚拟机并选择添加到备份作业&gt; 名称这份工作。</li>
+</ul>
+<p><img src="https://blog-image.nos-eastchina1.126.net/48150464.jpg" alt=""></p>
+<h2 id="指定作业名称和说明"><a href="#指定作业名称和说明" class="headerlink" title="指定作业名称和说明"></a>指定作业名称和说明</h2><p>在向导的名称步骤中，指定备份作业的名称和说明。</p>
+<ol>
+<li>在名称字段中，输入备份作业的名称。</li>
+<li>在描述字段中，提供一个描述以备将来参考。默认说明包含有关创建作业的用户以及作业创建日期和时间的信息。</li>
+</ol>
+<a id="more"></a>
+<p><img src="https://blog-image.nos-eastchina1.126.net/28520668.jpg" alt=""></p>
+<h2 id="选择要备份的虚拟机"><a href="#选择要备份的虚拟机" class="headerlink" title="选择要备份的虚拟机"></a>选择要备份的虚拟机</h2><p>在向导的虚拟机步骤中，选择要备份的虚拟机和VM容器。</p>
+<p>具有VM容器的作业本质上是动态的。如果在创建备份作业后将新虚拟机添加到虚拟基础架构的容器中，Veeam Backup＆Replication 将自动更新作业设置以包含添加的虚拟机。</p>
+<p>向作业添加虚拟机：</p>
+<ol>
+<li>点击添加。</li>
+<li>使用窗口右上角的工具栏在视图之间切换：主机和群集，虚拟机和模板，数据存储和虚拟机以及标签。根据您选择的视图，某些对象可能不可用。例如，如果切换到“ VM和模板” 视图，则树中不会显示资源池，主机或群集。</li>
+<li>在列表中选择VM或VM容器，然后单击添加。</li>
+</ol>
+<p>要快速找到必要的对象，请使用添加对象窗口底部的搜索字段。</p>
+<ol>
+<li>单击搜索字段左侧的按钮，然后选择要搜索的对象类型：一切，文件夹，群集，主机，资源池，VirtualApp 或虚拟机。</li>
+<li>在搜索字段中输入对象名称或其中的一部分。</li>
+<li>点击右侧的开始搜索按钮或按[ENTER] 。</li>
+</ol>
+<p>添加到备份作业的VM和VM容器的初始大小显示在列表的“ 大小” 列中。对象的总大小显示在总大小字段中。将新对象添加到作业后，使用“ 重新计算” 按钮可以刷新总大小值。</p>
+<p><img src="https://blog-image.nos-eastchina1.126.net/95965037.jpg" alt=""></p>
+<h2 id="从备份作业中排除对象"><a href="#从备份作业中排除对象" class="headerlink" title="从备份作业中排除对象"></a>从备份作业中排除对象</h2><p>将VM和VM容器添加到作业后，可以指定要从备份中排除哪些对象。您可以排除以下类型的对象：</p>
+<ul>
+<li>来自VM容器的VM</li>
+<li>特定的VM磁盘</li>
+<li>VM模板</li>
+</ul>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>注意：</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Veeam Backup＆Replication 自动从备份中排除虚拟机日志文件，以加快备份速度并减小备份文件的大小。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>从VM容器中排除VM：</p>
+<ol>
+<li>在向导的虚拟机步骤中，单击排除。</li>
+<li>点击虚拟机标签。</li>
+<li>点击添加。</li>
+<li>使用窗口右上角的工具栏在视图之间切换：主机和群集，虚拟机和模板，数据存储和虚拟机以及标签。根据您选择的视图，某些对象可能不可用。例如，如果选择“ VM和模板” 视图，则树中不会显示资源池，主机或群集。</li>
+<li>在显示的树中，选择必要的对象并单击添加。使用Show full hierarchy 复选框显示添加到备份基础架构的所有VMware Server的层次结构。</li>
+<li>点击确定。</li>
+</ol>
+<p><img src="https://blog-image.nos-eastchina1.126.net/57659522.jpg" alt="第4步。从备份作业中排除对象"> </p>
+<p>排除VM磁盘：</p>
+<ol>
+<li>在向导的虚拟机步骤中，单击排除。</li>
+<li>点击磁盘选项卡。</li>
+<li>选择列表中的虚拟机，然后单击编辑。如果要排除作为容器一部分添加的虚拟机的磁盘，请单击添加将虚拟机作为独立对象包含在列表中。</li>
+<li>选择要备份的磁盘。您可以选择处理所有磁盘，0:0磁盘（通常是系统磁盘），或者添加到列表中的自定义IDE，SCSI或SATA磁盘。</li>
+<li>选择从VM配置中移除排除的磁盘复选框。Veeam Backup＆Replication 将修改备份VM的VMX文件，以从VM配置中移除排除的磁盘。如果将此虚拟机从备份文件还原到排除磁盘无法用原始路径访问的位置，则无需手动编辑VM配置文件即可启动虚拟机。</li>
+</ol>
+<p><img src="https://blog-image.nos-eastchina1.126.net/14185964.jpg" alt="第4步。从备份作业中排除对象"> </p>
+<p>排除VM模板：</p>
+<ol>
+<li>在该向导的“ 虚拟机” 步骤中，选择一个VM容器并单击“ 排除” 。</li>
+<li>点击模板标签。</li>
+<li>清除备份虚拟机模板复选框。</li>
+<li>如果只想将虚拟机模板包含到完整备份中，请选中“ 备份虚拟机模板” 复选框，然后选中“ 从增量备份中排除模板” 复选框。</li>
+</ol>
+<p><img src="https://blog-image.nos-eastchina1.126.net/12187527.jpg" alt="第4步。从备份作业中排除对象"> </p>
+<h2 id="定义VM备份顺序"><a href="#定义VM备份顺序" class="headerlink" title="定义VM备份顺序"></a>定义VM备份顺序</h2><p>您可以定义备份作业必须处理VM的顺序。例如，如果您将一些关键任务虚拟机添加到作业中并希望作业首先处理它们，则设置VM顺序会很有帮助。您可以首先在列表中设置这些虚拟机，以确保其处理适合备份窗口。</p>
+<p>VM容器内的VM随机处理。为确保虚拟机按照定义的顺序进行处理，您必须将它们添加为独立的虚拟机，而不是作为虚拟机容器的一部分。</p>
+<p>要定义VM备份顺序：</p>
+<ol>
+<li>在向导的“ 虚拟机” 步骤中，选择一个VM或VM容器。</li>
+<li>使用右侧的向上和向下按钮在列表中向上或向下移动VM或VM容器。</li>
+</ol>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>注意：</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>如果您在Veeam Backup＆Replication 的全局设置中启用并行数据处理，则可能会按不同的顺序处理VM。例如，如果优先级列表中位置较高的虚拟机的备份基础架构资源不可用，并且列表中位置较低的虚拟机的资源可用，则Veeam Backup＆Replication 将开始处理列表中较低的虚拟机第一。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><img src="https://blog-image.nos-eastchina1.126.net/14248379.jpg" alt="第5步。定义VM备份顺序"> </p>
+<h2 id="指定备份存储设置"><a href="#指定备份存储设置" class="headerlink" title="指定备份存储设置"></a>指定备份存储设置</h2><p>在向导的存储步骤中，为作业备份代理和备份存储库选择备份基础架构组件，并指定备份存储设置。</p>
+<ol>
+<li><p>点击选择旁边的备份代理字段选择一个备份代理。</p>
+<ul>
+<li><p>如果选择自动选择，Veeam Backup＆Replication 将检测可访问源数据存储的备份代理，并自动分配最佳备份代理以处理作业中的虚拟机。</p>
+<p>Veeam Backup＆Replication 将备份代理逐个分配给备份作业中包含的虚拟机。在VM列表中处理新VM之前，Veeam Backup＆Replication会检查可用的备份代理。如果有多个备份代理可用，Veeam Backup＆Replication 分析备份代理可用于检索VM数据的传输模式以及备份代理上的当前工作负载，以便为VM处理选择最合适的备份代理。</p>
+</li>
+<li><p>如果选择使用下面指定的选定备份代理服务器，则可以显式选择该作业必须使用的备份代理。建议您至少选择两个备份代理，以确保备份作业在其中一个代理发生故障或失去与源数据存储的连接时启动。</p>
+</li>
+</ul>
+</li>
+<li><p>从备份存储库列表中选择一个备份存储库，其中必须存储已创建的备份文件。当您选择备份存储库时，Veeam Backup＆Replication会自动检查备份存储库上有多少可用空间。</p>
+</li>
+<li><p>您可以将作业映射到存储在备份存储库中的特定备份。如果您已将备份文件移动到新的备份存储库并希望将作业指向此新的备份存储库上的现有备份，则备份作业映射会很有帮助。如果配置数据库损坏并且您需要重新配置备份作业，则还可以使用备份作业映射。</p>
+<p>要将作业映射到备份，请单击映射备份链接，然后选择备份存储库上的备份。备份可以通过作业名称轻松识别。要查找备份，您还可以使用窗口底部的搜索字段。</p>
+</li>
+<li><p>在“ 保留策略” 部分中，指定要在备份存储库上存储的还原点数。超过此数字时，最早的还原点将从备份链中删除。还原点的数量不对应于存储还原点的天数。</p>
+</li>
+<li><p>如果要将使用备份作业创建的备份文件存档到辅助目标（备份存储库或磁带），请选中为此作业配置辅助目标复选框。启用此选项后，“ 新建备份作业” 向导将包含一个附加步骤 - 次要目标。在向导的“ 辅助目标” 步骤中，可以将备份作业链接到备份副本作业或备份到磁带备份作业。</p>
+<p>只有在备份服务器上已经配置了备份复制作业或备份到磁带作业时，才能启用此选项。</p>
+</li>
+</ol>
+<p><img src="https://blog-image.nos-eastchina1.126.net/10154707.jpg" alt="步骤6.指定备份存储设置"></p>
+<h2 id="指定高级备份设置"><a href="#指定高级备份设置" class="headerlink" title="指定高级备份设置"></a>指定高级备份设置</h2><p>在向导的存储步骤中，指定备份作业的高级设置：</p>
+<ul>
+<li>备份设置</li>
+<li>维护设置</li>
+<li>存储设置</li>
+<li>通知设置</li>
+<li>vSphere设置</li>
+<li>集成设置</li>
+<li>脚本设置</li>
+</ul>
+<p>在为备份作业指定必要的设置后，可以将它们保存为默认设置。为此，请单击“ 高级设置” 窗口左下角的“ 另存为默认值” 。当您创建新的备份作业时，Veeam Backup＆Replication 将自动将默认设置应用于新作业。</p>
+<h3 id="备份设置"><a href="#备份设置" class="headerlink" title="备份设置"></a>备份设置</h3><p>要指定使用备份作业创建的备份链的设置：</p>
+<ol>
+<li>在向导的存储步骤中，单击高级。</li>
+<li><p>在“ 备份” 选项卡上，选择要用于在备份存储库上创建备份链的备份方法：</p>
+<ul>
+<li><p>要创建反向增量备份链，请选择反向增量。</p>
+<p>Dell EMC Data Domain和HPE StoreOnce不支持反向增量备份方法。不要为针对这些类型的备份存储库的备份作业选择此选项。</p>
+</li>
+<li><p>要创建增量备份链，请选择增量并启用合成完整备份和/或活动完整备份.</p>
+</li>
+<li><p>要创建永久转发增量备份链，请选择增量备份，并且不要启用合成完整备份和/或活动完整备份.</p>
+</li>
+</ul>
+</li>
+<li><p>如果选择增量备份方法，则可以选择定期创建合成完整备份和/或活动完整备份。</p>
+<ul>
+<li><p>要创建合成完整备份，请选中“ 定期创建合成完全备份” 复选框，然后单击“ 天” 以在必要的工作日内安排合成完整备份。</p>
+<p>  您还可以选择将以前的完整备份链转换为反向增量备份链。为此，请选中将以前的完整备份链转换为回滚复选框。</p>
+</li>
+<li><p>要定期创建完整备份，请选中定期创建活动完整备份复选框。使用“ 每月” 或“每周选定日期” 选项定义日程安排设置。</p>
+<p>在调度定期完整备份之前，您必须确保备份存储库上有足够的可用空间。作为替代，您可以在需要时手动创建活动完整备份。</p>
+</li>
+</ul>
+</li>
+</ol>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>注意：</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>如果在同一天安排有或无转换任务的活动完整备份和合成完整备份，Veeam Backup＆Replication 将仅执行活动完全备份。合成完整备份和转换任务将被跳过。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><img src="https://blog-image.nos-eastchina1.126.net/63715678.jpg" alt="备份设置"> </p>
+<h3 id="维护设置"><a href="#维护设置" class="headerlink" title="维护设置"></a>维护设置</h3><p>您可以指示Veeam Backup＆Replication 定期执行维护操作 - 服务操作，这有助于确保备份链保持有效且一致。</p>
+<p>指定备份作业的维护设置：</p>
+<ol>
+<li>在向导的存储步骤中，单击高级。</li>
+<li>点击维护标签。</li>
+<li><p>定期执行的备份链最新的还原点进行健康检查，在该存储级别的腐败后卫节选择执行备份文件健康检查复选框，并指定时间表的健康检查。</p>
+<p> 自动运行状况检查可帮助您避免在还原点损坏时导致所有相关还原点损坏的情况。如果在运行状况检查期间，Veeam Backup＆Replication检测到备份链中最新还原点中的损坏数据块（或者，如果是永久转发增量链和转发增量链，最新还原点之前还原点位于最新还原点之前），它将启动运行状况检查重试并将有效数据块从源数据存储区传输到备份存储库。根据数据损坏情况，传输的数据块将存储到备份链中的新备份文件或最新的备份文件中。</p>
+</li>
+<li><p>选中“ 删除后删除的虚拟机数据” 复选框，然后指定要为删除的虚拟机保留备份数据的天数。如果虚拟机不再可用（例如，它已被删除或从作业中排除），则Veeam Backup＆Replication 将在指定的时间段内将其数据保留在备份存储库中。这段时间结束后，删除的虚拟机的数据将从备份存储库中删除。</p>
+<p>如果将作业配置为创建活动完全备份或通过后续转换创建合成完全备份，并且希望确保完全备份不包含冗余数据，则删除的VM的保留期很有用。</p>
+<p>默认情况下，删除的VM保留期限为14天。不要将已删除的VM保留期限设置为1天或类似的较短时间间隔。在相反的情况下，备份作业可能不按预期工作，并删除您仍需要的虚拟机数据。</p>
+</li>
+<li><p>要定期压缩完整备份，请选择“ 碎片整理和压缩完整备份文件” 复选框并指定压缩操作的计划。</p>
+<p>在紧凑型操作过程中，Veeam Backup＆Replication 创建一个新的空文件并从完整备份文件复制到它的数据块。因此，完整备份文件会进行碎片整理，并且从备份文件读取和写入文件的速度也会增加。</p>
+<p>如果完整备份文件包含已删除虚拟机的数据块，Veeam Backup＆Replication 将删除这些数据块。如果完整备份文件包含仅具有一个还原点的虚拟机的数据，且该还原点早于7天，则Veeam Backup＆Replication 将执行取出操作。</p>
+</li>
+</ol>
+<p><img src="https://blog-image.nos-eastchina1.126.net/44174927.jpg" alt="维护设置"></p>
+<h3 id="存储设置"><a href="#存储设置" class="headerlink" title="存储设置"></a>存储设置</h3><p>为备份作业指定存储设置：</p>
+<ol>
+<li>在向导的存储步骤中，单击高级。</li>
+<li>点击存储标签。</li>
+<li>默认情况下，Veeam Backup＆Replication会在将虚拟机数据存储到备份存储库之前对其进行重复数据删除。重复数据删除提供了较小的备份文件大小，但可能会降低备份作业的性能。要禁用重复数据删除，请清除“ 启用嵌入式重复数据删除” 复选框。</li>
+</ol>
+<p>如果您禁用此选项，则还会更改增量备份的工作流程。如果为作业启用了更改块跟踪，则Veeam Backup＆Replication 会将所有标记为CBT的数据块保存为目标存储的新数据块，而无需执行额外的检查或使用Veeam的过滤机制。这将导致更快的增量备份。</p>
+<ol>
+<li>默认情况下，Veeam Backup＆Replication 使用Microsoft Windows操作系统检查虚拟机上的NTFS MFT文件，以识别hiberfil.sys 文件（用于休眠模式的文件）和pagefile.sys 文件（交换文件）的数据块，并排除这些数据处理块。交换文件本质上是动态的，并在备份作业会话之间密集变化，即使虚拟机本身变化不大。处理服务文件会降低作业性能并增加增量备份文件的大小。</li>
+<li>如果您要包括的数据块中的的hiberfil.sys 文件pagefile.sys的文件备份，清除排除交换文件块复选框。</li>
+<li>默认情况下，Veeam Backup＆Replication 不会将已删除的文件块（VM guest虚拟机操作系统上的“脏”块）复制到目标位置。该选项可以减小备份文件的大小并提高作业性能。如果要将脏数据块包含到备份中，请清除“排除已删除的文件块”复选框。</li>
+<li>从压缩级别列表中选择备份的压缩级别：无，重复数据删除，最佳，高或极端。</li>
+<li>在存储优化部分中，选择您计划使用的备份目标类型：本地目标（16 TB +备份文件），本地目标，LAN目标或WAN目标。根据所选的存储类型，Veeam Backup＆Replication 将使用不同大小的数据块来优化备份文件的大小和作业性能。</li>
+<li>要加密备份文件的内容，请选中启用备份文件加密复选框。在密码字段中，选择您想要用于加密的密码。如果您尚未事先创建密码，请单击添加或使用管理密码链接指定新密码。</li>
+</ol>
+<p>如果备份服务器未连接到Veeam Backup企业管理器，则在丢失密码的情况下，您将无法从加密备份还原数据。Veeam Backup＆Replication 将显示关于它的警告。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>注意：</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>如果您为现有备份作业启用加密，则在下一个作业会话期间，Veeam Backup＆Replication 将创建完整备份文件。创建的完整备份文件和备份链中的后续增量备份文件将使用指定的密码进行加密。加密不具有追溯性。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><img src="https://blog-image.nos-eastchina1.126.net/45196622.jpg" alt="存储设置"></p>
+<h3 id="通知设置"><a href="#通知设置" class="headerlink" title="通知设置"></a>通知设置</h3><p>指定备份作业的通知设置：</p>
+<ol>
+<li><p>在向导的存储步骤中，单击高级。</p>
+</li>
+<li><p>点击通知标签。</p>
+</li>
+<li><p>选择此作业发送SNMP通知，如果你想要的工作成功完成时收到SNMP陷阱复选框。</p>
+<p>如果您在Veeam Backup＆Replication中指定全局SNMP设置并在接收方机器上配置接收SNMP陷阱的软件，则SNMP陷阱将被发送。</p>
+</li>
+<li><p>选择发送电子邮件通知到下列收件人复选框，如果你希望收到有关电子邮件任务完成状态的通知。在下面的字段中，指定收件人的电子邮件地址。您可以输入以分号分隔的多个地址。</p>
+<p>如果您在Veeam Backup＆Replication中配置全局电子邮件通知设置，将会发送电子邮件通知。</p>
+</li>
+<li><p>您可以选择使用全局通知设置或指定自定义通知设置。</p>
+<p>要接收该作业的典型通知，请选择使用全局通知设置。在这种情况下，Veeam Backup＆Replication 将应用于为备份服务器指定的作业全局电子邮件通知设置。</p>
+<p>要为作业配置自定义通知，请选中使用下面指定的自定义通知设置复选框。您可以指定以下通知设置</p>
+</li>
+</ol>
+<ul>
+<li>在主题字段中，指定通知主题。您可以在主题中使用以下变量：％Time％（完成时间），％JobName％，％JobResult％，％VmCount％（作业中的虚拟机数量）和％Issues％（作业中具有的虚拟机数量完成警告或失败状态）。</li>
+<li>选择成功时通知，通知警告和/或通知错误复选框，以在作业成功完成，失败或完成时显示警告并接收电子邮件通知。</li>
+<li>选择取消通知直到最后一次重试复选框才能接收有关最终作业状态的通知。如果您不启用此选项，Veeam Backup＆Replication 将在每次作业重试时发送一个通知。</li>
+</ul>
+<ol>
+<li><p>选中“ 将成功的备份详细信息设置到该VM属性” 复选框，将有关成功执行的备份和备份结果（备份日期和时间，备份服务器名称和备份文件路径）的信息写入VM属性。在下面的字段中输入属性的名称。如果指定的属性不存在，Veeam Backup＆Replication 将创建它。</p>
+</li>
+<li><p>选中附加到现有属性的值复选框可将关于成功执行备份的信息附加到属性的现有值。在这种情况下，Veeam Backup＆Replication 将保留用户在属性中添加的值，并仅覆盖备份作业添加的值。如果您不选择此选项，则Veeam Backup＆Replication 将覆盖现有的属性值（由用户和备份作业完成）。</p>
+</li>
+</ol>
+<p><img src="https://blog-image.nos-eastchina1.126.net/46431142.jpg" alt="通知设置"> </p>
+<h3 id="vSphere设置"><a href="#vSphere设置" class="headerlink" title="vSphere设置"></a>vSphere设置</h3><p>为备份作业指定VMware vSphere设置：</p>
+<ol>
+<li>在向导的存储步骤中，单击高级。</li>
+<li>点击vSphere 标签。</li>
+<li>选中“ 启用VMware工具静止” 复选框可在备份期间冻结已处理虚拟机的文件系统。根据VM版本的不同，Veeam Backup＆Replication 将使用VMware Tools中的VMware FileSystem Sync Driver（vmsync）驱动程序或VMware VSS组件来创建VM快照。这些工具负责静默虚拟机文件系统，并使虚拟机处于适合备份的一致状态。</li>
+<li>在更改块跟踪部分中，指定是否必须将VMware vSphere CBT用于VM备份。默认情况下，此选项已启用。如果即使在ESX（i）主机级别禁用了CBT，也要强制使用CBT，请选中“ 为所有处理的VM自动启用CBT” 复选框。</li>
+</ol>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>重要！</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>您可以将CBT用于具有虚拟硬件版本7或更高版本的VM。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><img src="https://blog-image.nos-eastchina1.126.net/55658159.jpg" alt="vSphere设置"></p>
+<h3 id="集成设置"><a href="#集成设置" class="headerlink" title="集成设置"></a>集成设置</h3><p>在“ 集成” 选项卡上，您可以定义是否要使用“从存储快照备份”技术创建备份。通过Storage Snapshots备份，您可以利用存储快照进行VM数据处理。该技术可改进RPO并降低备份活动对生产环境的影响。</p>
+<p>为备份作业指定存储集成设置：</p>
+<ol>
+<li>在向导的存储步骤中，单击高级。</li>
+<li>点击集成标签。</li>
+<li>默认情况下，启用“从存储快照启用备份” 选项。如果您不想使用“从存储快照中备份”，请清除此复选框。</li>
+<li><p>如果向作业添加许多其磁盘位于同一个卷或LUN上的虚拟机，请选中将每个存储快照限制处理的虚拟机数量限制为<N> 复选框，并指定必须为其创建一个存储快照的虚拟机数。Veeam Backup＆Replication 将VM划分为几个组，并为每个VM组触发一个单独的存储快照。结果，工作表现会增加。</p>
+</li>
+<li><p>如果Veeam Backup＆Replication 无法创建存储快照，其磁盘位于存储系统的虚拟机将不会被作业处理。要故障转移到常规VM处理模式并以常规处理模式备份或复制此类虚拟机，请选中故障转移到标准备份复选框。</p>
+</li>
+<li>[对于辅助NetApp存储系统]如果Veeam Backup＆Replication 无法在NetApp SnapMirror或SnapVault上创建存储快照，则作业将不备份其磁盘位于存储系统的虚拟机。要故障转移到生产存储上的从存储快照进行备份，请选中故障转移到主存储快照复选框。如果Veeam Backup＆Replication 无法在NetApp SnapMirror或SnapVault上创建存储快照，它将触发主NetApp存储上的存储快照，并将其用作备份源。不过，请注意，主NetApp存储上的“从存储快照进行备份”将会在生产环境中增加额外的负载。</li>
+</ol>
+<p><img src="https://blog-image.nos-eastchina1.126.net/265190.jpg" alt="集成设置"></p>
+<h3 id="脚本设置"><a href="#脚本设置" class="headerlink" title="脚本设置"></a>脚本设置</h3><p>为备份作业指定脚本设置：</p>
+<ol>
+<li><p>在向导的存储步骤中，单击高级。</p>
+</li>
+<li><p>点击脚本标签。</p>
+</li>
+<li><p>如果你想之前执行自定义脚本和/或备份作业后，选择作业之前运行以下脚本并运行后，作业以下脚本复选框，然后单击浏览选择从本地文件夹中的可执行文件（S）备份服务器。脚本在备份服务器上执行。</p>
+<p>您可以选择在多个备份会话后或特定的一周后执行备份前和备份后的操作。</p>
+</li>
+</ol>
+<ul>
+<li>如果您选择每个<N>备份会话选项运行脚本，则指定必须执行脚本之后的备份作业会话数。</li>
+<li>如果您选择仅在选定日期运行脚本选项，请单击天数并指定必须在其中执行脚本的周日。</li>
+</ul>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>注意：</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>您在高级作业设置中定义的自定义脚本与备份作业本身相关，而不是虚拟机静默过程。要为VM映像静默添加预冻结和解冻后脚本，请使用向导的“ 来宾处理” 步骤。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>![脚本设置](脚本设置</p>
+<p>为备份作业指定脚本设置：</p>
+<ol>
+<li>在向导的存储步骤中，单击高级。</li>
+<li>点击脚本标签。</li>
+<li>如果你想之前执行自定义脚本和/或备份作业后，选择作业之前运行以下脚本并运行后，作业以下脚本复选框，然后单击浏览选择从本地文件夹中的可执行文件（S）备份服务器。脚本在备份服务器上执行。</li>
+</ol>
+<p>您可以选择在多个备份会话后或特定的一周后执行备份前和备份后的操作。</p>
+<ul>
+<li>如果您选择每个<N>备份会话选项运行脚本，则指定必须执行脚本之后的备份作业会话数。</li>
+<li>如果您选择仅在选定日期运行脚本选项，请单击天数并指定必须在其中执行脚本的周日。</li>
+</ul>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>注意：</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>您在高级作业设置中定义的自定义脚本与备份作业本身相关，而不是虚拟机静默过程。要为VM映像静默添加预冻结和解冻后脚本，请使用向导的“ 来宾处理” 步骤。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><img src="https://blog-image.nos-eastchina1.126.net/92494324.jpg" alt="脚本设置">)</p>
+<h2 id="指定次要目标"><a href="#指定次要目标" class="headerlink" title="指定次要目标"></a>指定次要目标</h2><p>如果在向导的“ 存储” 步骤中启用了“为此作业配置辅助目标” 选项，则该向导的“ 辅助目标” 步骤可用。</p>
+<p>在向导的“ 次要目标” 步骤中，可以将备份作业链接到磁带或备份复制作业的备份。因此，备份作业将作为备份源添加到磁带或备份复制作业。根据辅助作业计划，使用备份作业创建的备份文件将归档到磁带或复制到辅助备份存储库。</p>
+<p>必须事先配置到磁带作业或备份副本作业的备份。您可以使用空白来源创建这些作业。当您将备份作业链接到这些作业时，Veeam Backup＆Replication 将自动更新链接作业，以将备份作业定义为这些作业的来源。</p>
+<p>链接作业：</p>
+<ol>
+<li>点击添加。</li>
+<li>从作业列表中，选择必须链接到备份作业的备份到磁带或备份复制作业。您可以将多个作业链接到备份作业，例如，一个备份到磁带作业和一个备份作业。要快速找到作业，请使用向导底部的搜索栏。</li>
+</ol>
+<p><img src="https://blog-image.nos-eastchina1.126.net/3729457.jpg" alt="步骤8.指定次要目标"> </p>
+<h2 id="指定访客处理设置"><a href="#指定访客处理设置" class="headerlink" title="指定访客处理设置"></a>指定访客处理设置</h2><p>在向导的客户处理步骤中，可以为VM客户机操作系统处理启用以下设置：</p>
+<ul>
+<li>应用程序感知处理</li>
+<li>Microsoft SQL VM的事务日志处理</li>
+<li>Oracle VM的归档日志处理</li>
+<li>VM guest操作系统文件排除</li>
+<li>使用预冻结和解冻后脚本</li>
+<li>VM guest操作系统文件索引</li>
+</ul>
+<p>为了协调guest 虚拟机处理活动，Veeam Backup＆Replication 在VM guest虚拟机操作系统上部署运行时进程。该过程仅在来宾处理过程中运行，并在处理完成后立即停止（取决于所选的选项，在备份作业会话期间或备份作业完成后）。</p>
+<p>您必须指定将用于连接VM guest虚拟机操作系统并部署运行时进程的用户帐户：</p>
+<ol>
+<li>从Guest OS凭据列表中，选择具有VM guest虚拟机操作系统上的本地管理员权限的用户帐户。如果您没有设置凭据事前，点击管理账户链接，或单击添加到添加凭证的权利。</li>
+<li>默认情况下，Veeam Backup＆Replication 为作业中的所有虚拟机使用相同的凭据。如果某个虚拟机需要不同的用户帐户，请单击“ 凭证” 并输入虚拟机的自定义凭据。</li>
+<li>如果您已将Microsoft Windows VM添加到作业中，请指定哪个guest虚拟机交互代理Veeam Backup＆Replication 可用于在VM guest虚拟机操作系统上部署运行时进程。在来宾互动代理字段的右侧，点击选择。</li>
+</ol>
+<ul>
+<li><ul>
+<li>保留自动选择以让Veeam Backup＆Replication 自动选择来宾交互代理。</li>
+<li>选择“仅使用选定的来宾交互代理服务器” 可明确定义哪些服务器将执行来宾交互代理角色。服务器列表包含添加到备份基础架构的Microsoft Windows服务器。</li>
+</ul>
+</li>
+</ul>
+<p>要检查Veeam Backup＆Replication是否可以与添加到作业中的虚拟机进行通信，并在其客户操作系统上部署运行时进程，请单击立即测试。Veeam Backup＆Replication 将使用指定的凭证连接到列表中的所有虚拟机。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>注意：</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>来宾交互代理功能可在Veeam Backup＆Replication 的企业版和企业增强版中找到。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><img src="https://blog-image.nos-eastchina1.126.net/67179067.jpg" alt="步骤9.指定访客处理设置"> </p>
+<h3 id="应用程序感知处理"><a href="#应用程序感知处理" class="headerlink" title="应用程序感知处理"></a>应用程序感知处理</h3><p>如果添加到运行支持VSS的应用程序的备份作业VM，则可以启用应用程序感知处理以创建事务一致性备份。事务一致的备份保证在虚拟机上正确恢复应用程序而不会丢失数据。</p>
+<p>要启用应用程序感知处理：</p>
+<ol>
+<li><p>在该向导的访客处理步骤中，选中启用应用程序感知处理复选框。</p>
+</li>
+<li><p>点击应用。</p>
+</li>
+<li><p>在显示的列表中，选择虚拟机并单击编辑。</p>
+<p>要为作为VM容器一部分添加的VM定义自定义设置，必须将该VM作为独立对象包含在列表中。为此，请单击添加，然后选择要自定义其设置的虚拟机。然后选择列表中的虚拟机并定义必要的设置。</p>
+</li>
+<li><p>在“ 常规” 选项卡的“ 应用程序” 部分中，指定应用程序感知处理的行为场景：</p>
+<ul>
+<li>如果您希望Veeam Backup＆Replication 在应用程序感知处理期间发生任何错误时停止备份过程，请选择“ 需要成功处理”。</li>
+<li>选择尝试应用程序处理，但如果要继续备份过程，即使在应用程序感知处理期间发生错误，也可以忽略故障。该选项保证备份作业的完成。但是，由此产生的备份不会在事务上保持一致，但会导致崩溃一致。</li>
+<li>如果您不想为VM启用应用程序感知处理，请选择禁用应用程序处理。</li>
+</ul>
+</li>
+<li><p>[对于Microsoft Exchange，Microsoft SQL和Oracle VM]在事务日志部分，指定Veeam Backup＆Replication是否必须处理事务日志或仅创建仅限备份的备份。</p>
+</li>
+<li><p>如果您希望Veeam Backup＆Replication 处理事务日志，请选择使用此作业处理事务日志。</p>
+<p>​    [对于Microsoft Exchange VM]选中此选项后，在VM guest OS上运行的运行时进程将等待备份成功完成，然后触发事务日志的截断。如果备份作业失败，日志将保持不变，直到下次启动运行时进程。</p>
+<p>​    [对于Microsoft SQL Server VM和Oracle VM]必须在“ VM处理设置” 窗口的SQL 和Oracle 选项卡上指定事务日志处理的设置。</p>
+</li>
+<li><p>仅当您使用其他备份工具执行VM guest虚拟机级备份时才选择执行复制，并且此工具保持数据库状态的一致性。Veeam Backup＆Replication 将为选定的VM创建一个仅复制备份。仅复制备份保留了虚拟机上的完整/差异备份文件和事务日志链。</p>
+</li>
+</ol>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>重要！</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>如果Microsoft SQL Server和Oracle Server都安装在一个虚拟机上，并且该虚拟机由启用了两个应用程序日志备份的作业处理，则  Veeam Backup＆Replication  将仅备份Oracle事务日志。Microsoft SQL Server事务日志将不会被处理。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><img src="https://blog-image.nos-eastchina1.126.net/57822207.jpg" alt="应用程序感知处理"></p>
+<h3 id="事务日志设置：Microsoft-SQL-Server"><a href="#事务日志设置：Microsoft-SQL-Server" class="headerlink" title="事务日志设置：Microsoft SQL Server"></a>事务日志设置：Microsoft SQL Server</h3><p>如果备份Microsoft SQL VM，则可以指定Veeam Backup＆Replication 如何处理此VM上的事务日志：</p>
+<ol>
+<li>在该向导的访客处理步骤中，选中启用应用程序感知处理复选框。</li>
+<li>点击应用。</li>
+<li>在显示的列表中，选择Microsoft SQL Server VM并单击编辑。</li>
+<li>在“ 事务日志” 部分中，选择“ 使用此作业处理事务日志” 。</li>
+<li>在“ VM处理设置” 窗口中，单击“ SQL” 选项卡。</li>
+<li><p>指定如何处理事务日志。您可以选择以下选项之一：</p>
+<ul>
+<li><p>选择截断日志以在成功备份后截断事务日志。在VM guest OS上运行的运行时进程将等待备份成功完成，然后截断事务日志。如果作业无法备份Microsoft SQL Server VM，则在VM guest虚拟机操作系统上的日志将保持不变，直到运行时进程的下一次启动。</p>
+</li>
+<li><p>选择不截断日志以保留事务日志。备份作业完成后，Veeam Backup＆Replication 不会截断Microsoft SQL Server VM上的事务日志。</p>
+<p>建议您为使用简单恢复模型的数据库启用此选项。如果为使用完整或大容量日志记录恢复模式的数据库启用此选项，则VM guest虚拟机操作系统上的事务日志可能会变大，并占用所有磁盘空间。在这种情况下，数据库管理员必须自己处理事务日志。</p>
+</li>
+<li><p>选择备份日志定期牛逼Ø备份事务日志与Veeam备份复制。Veeam Backup＆Replication 将定期将事务日志复制到备份存储库，并将它们与Microsoft SQL Server VM的映像级备份一起存储。在备份作业会话期间，VM guest虚拟机操作系统上的事务日志将被截断。</p>
+</li>
+</ul>
+</li>
+</ol>
+<p>如果您选择使用Veeam Backup＆Replication备份事务日志，则必须指定事务日志备份的设置：</p>
+<ol>
+<li>在每隔<N>分钟的备份日志字段中，指定事务日志备份的频率。默认情况下，事务日志每15分钟备份一次。最大日志备份间隔为480分钟。</li>
+<li><p>在“ 保留日志备份” 部分中，为存储在备份存储库上的事务日志指定保留策略。</p>
+<ul>
+<li>选择直到删除相应的映像级别备份，才能为映像级别的备份和事务日志备份应用相同的保留策略。</li>
+<li>选择仅保留最后一天<N>日志备份可将事务日志保留特定天数。默认情况下，事务日志保存15天。如果选择此选项，则必须确保事务日志的保留时间不超过映像级备份的保留时间。</li>
+</ul>
+</li>
+<li><p>在日志传送服务器部分中，单击选择以选择要用于传输事务日志的日志传送服务器：</p>
+<ul>
+<li>如果您想让Veeam Backup＆Replication 自动选择最佳日志传送服务器，请选择自动选择。如果最佳运输服务器处于繁忙状态，Veeam Backup＆Replication 会将数据流导向另一台运输服务器，以避免丢失数据并遵守RPO。交易日志出货过程不需要专用服务器—Veeam Backup＆Replication 可以使用任何添加到备份基础设施的Microsoft Windows服务器。</li>
+<li>要明确定义日志传送服务器，请选择仅使用指定的服务器，然后选中要用作日志传送服务器的服务器旁边的复选框。服务器列表包括添加到备份基础架构的所有Microsoft Windows服务器。</li>
+</ul>
+</li>
+</ol>
+<p>确保您选择了一个不参与其他资源消耗任务的服务器。例如，您可能不希望将执行WAN加速器角色的服务器用作日志传送服务器。为了实现负载平衡和高可用性目的，建议您至少选择2个日志传送服务器。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>重要！</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>如果在不使用SQL Server AlwaysOn可用性组的情况下托管数据库，Veeam Backup＆Replication会在备份期间自动从配置数据库中排除应用程序感知处理。不备份配置数据库的事务日志。如果使用SQL Server AlwaysOn可用性组托管Veeam Backup＆Replication 配置数据库，则应在备份期间手动从应用程序感知处理中排除此数据库。否则，作业处理将失败并出现以下错误：无法通过网络冻结来宾，请等待超时。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><img src="https://blog-image.nos-eastchina1.126.net/6621298.jpg" alt="事务日志设置：Microsoft SQL Server"></p>
+<h3 id="存档日志设置：Oracle"><a href="#存档日志设置：Oracle" class="headerlink" title="存档日志设置：Oracle"></a>存档日志设置：Oracle</h3><p>如果备份Oracle VM，则可以指定Veeam Backup＆Replication 如何在此VM上处理归档日志：</p>
+<ol>
+<li><p>在该向导的访客处理步骤中，选中启用应用程序感知处理复选框。</p>
+</li>
+<li><p>点击应用。</p>
+</li>
+<li><p>在显示的列表中，选择一个Oracle VM并单击编辑。</p>
+</li>
+<li><p>在“ 事务日志” 部分中，选择“ 使用此作业处理事务日志” 。</p>
+</li>
+<li><p>在“ VM处理设置” 窗口中，单击Oracle 选项卡。</p>
+</li>
+<li><p>在指定具有SYSDBA权限的Oracle帐户部分中，指定Veeam Backup＆Replication 将用于连接到Oracle数据库的用户帐户。该帐户必须具有Oracle数据库的SYSDBA权限。</p>
+<p>您可以在用户帐户列表中选择使用访客凭证。在这种情况下，Veeam Backup＆Replication 将使用在向导的Guest处理步骤中指定的帐户来访问VM guest虚拟机操作系统并连接到Oracle数据库。</p>
+</li>
+<li><p>在“ 存档日志” 部分中，指定Veeam Backup＆Replication 必须如何处理Oracle VM上的存档日志：</p>
+<ul>
+<li><p>如果希望Veeam Backup＆Replication 保留VM guest虚拟机操作系统上的归档日志，请选择不要删除归档日志。备份作业完成时，运行时进程不会删除存档日志。</p>
+<p> 建议您为ARCHIVELOG模式关闭的数据库选择此选项。如果打开ARCHIVELOG模式，VM guest虚拟机操作系统上的归档日志可能会变大并占用所有磁盘空间。在这种情况下，数据库管理员必须自己处理归档日志。</p>
+</li>
+<li><p>如果希望Veeam Backup＆Replication 删除早于<N>小时或大于<N> GB的归档日志，请选择删除<N>小时之前的日志或删除<N> GB之外的日志。日志大小阈值不是指所有数据库的所有日志的总大小，而是指所选Oracle服务器上每个数据库的日志大小。</p>
+</li>
+</ul>
+<p>当父备份作业（创建映像级备份的作业）运行时，Veeam Backup＆Replication 将等待备份成功完成，然后通过Oracle调用接口（OCI）触发Oracle VM上的归档日志删除。如果主要作业无法备份Oracle VM，则在VM guest OS上的日志将保持不变，直到运行时进程的下一次启动。</p>
+</li>
+<li><p>要使用Veeam Backup＆Replication备份Oracle归档日志，请选中每隔<N>分钟备份日志复选框并指定归档日志备份的频率。默认情况下，存档日志每15分钟备份一次。最大日志备份间隔为480分钟。</p>
+</li>
+<li><p>在“ 保留日志备份” 部分中，为存储在备份存储库上的存档日志指定保留策略：</p>
+<ul>
+<li>选择直到删除相应的映像级别备份，才能为映像级别备份和归档日志备份应用相同的保留策略。</li>
+<li>选择仅保留最后<n>天可将归档日志保留特定天数。默认情况下，存档日志将保留15天。如果选择此选项，则必须确保归档日志的保留时间不超过映像级备份的保留时间。</li>
+</ul>
+</li>
+<li><p>在“ 日志传送服务器” 部分中，单击“选择” 以选择要用于传输存档日志的日志传送服务器：</p>
+<ul>
+<li>如果您希望Veeam Backup＆Replication 自动选择最佳日志传送服务器，请选择自动选择。归档日志装运过程不需要专用服务器—Veeam Backup＆Replication 可以使用任何添加到备份基础架构的Microsoft Windows或Linux服务器。</li>
+<li>选择仅使用指定的服务器来明确定义日志传送服务器。在“ 日志传送服务器” 窗口中，选择要用作日志传送服务器的服务器旁边的复选框。服务器列表包括添加到备份基础架构的所有Microsoft Windows服务器。</li>
+</ul>
+<p>确保您选择了一个不参与其他资源消耗任务的服务器。例如，您可能不希望将执行WAN加速器角色的服务器用作日志传送服务器。为了实现负载平衡和高可用性目的，建议您至少选择2个日志传送服务器。</p>
+</li>
+</ol>
+<p><img src="https://blog-image.nos-eastchina1.126.net/10554663.jpg" alt="存档日志设置：Oracle"></p>
+<h3 id="VM-Guest-OS文件排除"><a href="#VM-Guest-OS文件排除" class="headerlink" title="VM Guest OS文件排除"></a>VM Guest OS文件排除</h3><p>如果您不想备份VM guest OS上的特定文件和文件夹，则可以将它们从备份中排除。</p>
+<p>要定义必须排除的文件和文件夹：</p>
+<ol>
+<li>在该向导的访客处理步骤中，选中启用应用程序感知处理复选框。</li>
+<li>点击应用。</li>
+<li><p>在显示的列表中，选择虚拟机并单击编辑。</p>
+<p> 要为作为VM容器一部分添加的VM定义自定义设置，必须将该VM作为独立对象包含在列表中。为此，请单击添加，然后选择要设置其自定义设置的虚拟机。然后选择列表中的虚拟机并定义必要的设置。</p>
+</li>
+<li><p>单击文件排除选项卡，并指定必须从备份中排除哪些文件：</p>
+<ul>
+<li>选择排除以下文件和文件夹以从备份中删除单个文件和文件夹。</li>
+<li>选择仅包含以下文件和文件夹以仅保留备份中的指定文件和文件夹。</li>
+</ul>
+</li>
+<li><p>单击添加并指定要包含或排除的文件和文件夹。要形成排除或包含列表，可以使用带星号（*）和问号（？）字符的文件和文件夹，环境变量和文件掩码的完整路径。</p>
+</li>
+<li>点击确定。</li>
+<li>对要排除或包含的每个文件或文件夹重复步骤5-6。</li>
+</ol>
+<p><img src="https://blog-image.nos-eastchina1.126.net/52557217.jpg" alt="VM Guest OS文件排除"></p>
+<h3 id="预冻结和解冻后脚本"><a href="#预冻结和解冻后脚本" class="headerlink" title="预冻结和解冻后脚本"></a>预冻结和解冻后脚本</h3><p>如果您计划备份运行不支持VSS的应用程序的虚拟机，则可以指定Veeam Backup＆Replication 必须使用哪些脚本来停止虚拟机。在Veeam Backup＆Replication 触发VM快照之前，预冻结脚本使VM文件系统和应用程序数据静默以使VM处于一致状态。创建VM快照后，解冻后脚本会将VM和应用程序恢复到其初始状态。</p>
+<p>要指定作业的预冻结和解冻后脚本，请执行以下操作：</p>
+<ol>
+<li>在客户处理步骤中，单击应用程序。</li>
+<li>在显示的列表中，选择虚拟机并单击编辑。</li>
+<li>点击脚本标签。</li>
+<li><p>在“ 脚本处理模式” 部分中，指定脚本执行的场景：</p>
+<ul>
+<li>如果您希望Veeam Backup＆Replication 在脚本失败时停止备份过程，请选择“ 需要成功执行脚本”。</li>
+<li>如果要继续执行备份过程，即使脚本错误发生，请选择忽略脚本执行失败。</li>
+<li>如果您不想为VM运行脚本，请选择禁用脚本执行。</li>
+</ul>
+</li>
+<li><p>在Windows脚本部分中，为Microsoft Windows VM指定预冻结和解冻后脚本的路径。Veeam Backup＆Replication 支持EXE，BAT和CMD格式的脚本。</p>
+</li>
+<li><p>在Linux脚本部分中，指定用于Linux VM的预冻结和/或解冻后脚本的路径。Veeam Backup＆Replication 支持SH文件类型的脚本。</p>
+<p>如果您已将具有Microsoft Windows和Linux VM的VM容器添加到作业中，则可以选择为VM容器执行Microsoft Windows和Linux脚本。作业开始时，Veeam Backup＆Replication 将自动确定VM上安装的操作系统类型，并使用相应的脚本来暂停此VM。</p>
+</li>
+</ol>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>TIP</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>除了VM静止的预冻结和解冻后脚本外，您还可以指示Veeam Backup＆Replication 在作业开始之前和作业完成之后运行自定义脚本。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><img src="https://blog-image.nos-eastchina1.126.net/23943774.jpg" alt="预冻结和解冻后脚本"></p>
+<h3 id="VM-Guest-OS文件索引"><a href="#VM-Guest-OS文件索引" class="headerlink" title="VM Guest OS文件索引"></a>VM Guest OS文件索引</h3><p>为VM指定VM guest虚拟机操作系统索引选项：</p>
+<ol>
+<li>在向导的客户处理步骤中，单击索引。</li>
+<li>在列表中选择一个虚拟机，然后单击编辑&gt; Windows索引或Linux索引。</li>
+<li><p>指定索引范围：</p>
+<ul>
+<li>如果您不想索引虚拟机的guest虚拟机操作系统文件，请选择禁用索引。</li>
+<li>如果要索引所有VM guest OS文件，请选择Index index。</li>
+<li><p>除索引除列表中定义的所有VM guest操作系统文件外，请选择索引。默认情况下，系统文件夹从索引中排除。您可以使用右侧的添加和删除按钮添加或删除文件夹。您还可以使用系统环境变量来形成列表，例如：％windir％，％ProgramFiles％和％Temp％。</p>
+<p>要将文件夹列表重置为其初始状态，请单击“ 默认” 。</p>
+</li>
+<li><p>选择仅索引下一个文件夹以定义要索引的文件夹。您可以使用右侧的添加和删除按钮来添加或删除要索引的文件夹。您还可以使用系统环境变量来形成列表，例如：％windir％，％ProgramFiles％和％Temp％。</p>
+</li>
+</ul>
+</li>
+</ol>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>注意：</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>对于Linux系统索引，Veeam Backup＆Replication 需要在Linux VM上安装几个实用程序：openssh，mlocate，gzip和tar。如果未找到这些实用程序，Veeam Backup＆Replication 将提示您将它们部署在VM guest虚拟机操作系统上。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><img src="https://blog-image.nos-eastchina1.126.net/80437536.jpg" alt="VM Guest OS文件索引"></p>
+<h2 id="定义作业时间表"><a href="#定义作业时间表" class="headerlink" title="定义作业时间表"></a>定义作业时间表</h2><p>在向导的“ 计划” 步骤中，选择手动运行备份作业或安排作业定期运行。</p>
+<p>要指定作业计划：</p>
+<ol>
+<li>选择自动运行作业复选框。如果未选中此复选框，则必须手动启动作业才能创建VM备份。</li>
+<li><p>为作业定义调度设置：</p>
+<ul>
+<li>要在特定时间每天，在规定的工作日或特定周期内运行作业，请在此时选择每日。使用右侧的字段来配置必要的时间表。</li>
+<li>要在特定日期每月运行一次该作业，请选择每月一次。使用右侧的字段来配置必要的时间表。</li>
+<li><p>要在特定的时间间隔内每天重复运行作业，请选择“ 每隔一段时间” 。在右侧的字段中，选择必要的时间单位：小时或分钟。单击“ 计划” 并使用时间表为作业定义允许的时间窗口。在小时内的开始时间字段中，指定作业必须开始的确切时间。</p>
+<p>  重复运行的作业按以下规则启动：</p>
+<ul>
+<li>Veeam Backup＆Replication 始终从上午12:00开始计算定义的时间间隔。例如，如果您配置为以4小时为间隔运行作业，则作业将在上午12:00，上午4:00，上午8:00，下午12:00，下午4:00等等开始。</li>
+<li><p>如果为作业定义了允许的小时数，则在拒绝时间间隔结束后，Veeam Backup＆Replication 将立即启动作业，然后按定义的时间表运行作业。</p>
+<p>例如，您已将作业配置为以2小时的时间间隔运行，并定义了从上午9:00到下午5:00的允许时间。根据上述规则，该工作将首先在上午9:00运行，届时拒绝期结束。之后，工作将在上午10点，中午12点，下午2点和下午4点运行。</p>
+</li>
+<li><p>要连续运行作业，请选择“ 每隔一段时间” 选项，然后从右侧的列表中选择“ 连续”。前一个备份作业会话结束后，将立即开始新的备份作业会话。</p>
+</li>
+<li>要链接作业，请使用“ 此作业” 字段。在通常的做法中，工作是一个又一个开始的：当工作A 完成时，工作B 开始，等等。如果要创建一系列作业，则必须为链中的第一个作业定义时间表。对于链中的其他作业，请选择“ 此作业之后”选项，然后从列表中选择前一个作业。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>在“ 自动重试” 部分中，定义如果由于某种原因导致作业失败，Veeam Backup＆Replication 是否必须再次尝试运行备份作业。在作业重试期间，Veeam Backup＆Replication 仅处理失败的VM。输入运行作业的尝试次数并定义它们之间的时间间隔。如果您选择连续备份，Veeam Backup＆Replication 将在作业运行之间没有任何时间间隔的情况下重试作业达定义的次数。</p>
+</li>
+<li><p>在“ 备份”窗口部分中，定义备份作业必须完成的时间间隔。备份窗口可防止作业与生产时间重叠，并确保作业不会在生产环境中提供不必要的开销。为作业设置备份窗口：</p>
+<p> a. 如果超过允许的备份窗口，请选择终止作业复选框并单击窗口。<br> b. 在“ 时间段”部分中，定义备份的允许时间和禁止时间。如果作业超出允许的窗口，它将自动终止。</p>
+</li>
+</ol>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>注意：</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>在此作业后，如果链中的第一份工作是按计划自动启动功能才开始工作。如果第一个作业是手动启动的，链接到它的作业将不会启动。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><img src="https://blog-image.nos-eastchina1.126.net/92744193.jpg" alt="第10步。定义作业时间表"></p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>Goooo
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.sysctl.me/2018/06/11/Veeambk1/" title="Veeam B&amp;R 创建备份任务">https://www.sysctl.me/2018/06/11/Veeambk1/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/en" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Backup/" rel="tag"># Backup</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/06/09/VeeamBack/" rel="prev" title="Veeam B&R 关于备份的概念">
+      <i class="fa fa-chevron-left"></i> Veeam B&R 关于备份的概念
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/06/15/vSphereNetwork/" rel="next" title="vSphere 网络连接（标准交换机）">
+      vSphere 网络连接（标准交换机） <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#启动新的备份向导"><span class="nav-number">1.</span> <span class="nav-text">启动新的备份向导</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#指定作业名称和说明"><span class="nav-number">1.1.</span> <span class="nav-text">指定作业名称和说明</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#选择要备份的虚拟机"><span class="nav-number">1.2.</span> <span class="nav-text">选择要备份的虚拟机</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#从备份作业中排除对象"><span class="nav-number">1.3.</span> <span class="nav-text">从备份作业中排除对象</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#定义VM备份顺序"><span class="nav-number">1.4.</span> <span class="nav-text">定义VM备份顺序</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#指定备份存储设置"><span class="nav-number">1.5.</span> <span class="nav-text">指定备份存储设置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#指定高级备份设置"><span class="nav-number">1.6.</span> <span class="nav-text">指定高级备份设置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#备份设置"><span class="nav-number">1.6.1.</span> <span class="nav-text">备份设置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#维护设置"><span class="nav-number">1.6.2.</span> <span class="nav-text">维护设置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#存储设置"><span class="nav-number">1.6.3.</span> <span class="nav-text">存储设置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#通知设置"><span class="nav-number">1.6.4.</span> <span class="nav-text">通知设置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#vSphere设置"><span class="nav-number">1.6.5.</span> <span class="nav-text">vSphere设置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#集成设置"><span class="nav-number">1.6.6.</span> <span class="nav-text">集成设置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#脚本设置"><span class="nav-number">1.6.7.</span> <span class="nav-text">脚本设置</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#指定次要目标"><span class="nav-number">1.7.</span> <span class="nav-text">指定次要目标</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#指定访客处理设置"><span class="nav-number">1.8.</span> <span class="nav-text">指定访客处理设置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#应用程序感知处理"><span class="nav-number">1.8.1.</span> <span class="nav-text">应用程序感知处理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#事务日志设置：Microsoft-SQL-Server"><span class="nav-number">1.8.2.</span> <span class="nav-text">事务日志设置：Microsoft SQL Server</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#存档日志设置：Oracle"><span class="nav-number">1.8.3.</span> <span class="nav-text">存档日志设置：Oracle</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#VM-Guest-OS文件排除"><span class="nav-number">1.8.4.</span> <span class="nav-text">VM Guest OS文件排除</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#预冻结和解冻后脚本"><span class="nav-number">1.8.5.</span> <span class="nav-text">预冻结和解冻后脚本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#VM-Guest-OS文件索引"><span class="nav-number">1.8.6.</span> <span class="nav-text">VM Guest OS文件索引</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#定义作业时间表"><span class="nav-number">1.9.</span> <span class="nav-text">定义作业时间表</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Goooo"
+      src="/images/img.png">
+  <p class="site-author-name" itemprop="name">Goooo</p>
+  <div class="site-description" itemprop="description">一条啥也不会点废鱼</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">109</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">22</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">71</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/xth0331" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;xth0331" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:xietianhao0331@gmail.com" title="E-Mail → mailto:xietianhao0331@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/en" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+        
+        <script type="text/javascript" charset="utf-8" src="/js/tagcloud.js"></script>
+        <script type="text/javascript" charset="utf-8" src="/js/tagcanvas.js"></script>
+        <div class="widget-wrap">
+            <h3 class="widget-title">标签们</h3>
+            <div id="myCanvasContainer" class="widget tagcloud">
+                <canvas width="250" height="250" id="resCanvas" style="width=100%">
+                    <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ansible/" rel="tag">Ansible</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Backup/" rel="tag">Backup</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Bond/" rel="tag">Bond</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CPU/" rel="tag">CPU</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ceph/" rel="tag">Ceph</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cobbler/" rel="tag">Cobbler</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Coffee/" rel="tag">Coffee</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Corosync/" rel="tag">Corosync</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cyclic-invariant/" rel="tag">Cyclic invariant</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Docker/" rel="tag">Docker</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Effectiveness/" rel="tag">Effectiveness</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Exhaustion/" rel="tag">Exhaustion</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Filesystem/" rel="tag">Filesystem</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HAProxy/" rel="tag">HAProxy</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hardware/" rel="tag">Hardware</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Https/" rel="tag">Https</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ICMP/" rel="tag">ICMP</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JDK/" rel="tag">JDK</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Jenkins/" rel="tag">Jenkins</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JunOS/" rel="tag">JunOS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/KEEPALIVED/" rel="tag">KEEPALIVED</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Keepalived/" rel="tag">Keepalived</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/" rel="tag">Linux</a><span class="tag-list-count">19</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Log/" rel="tag">Log</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Markdown/" rel="tag">Markdown</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Modular-Programming/" rel="tag">Modular Programming</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Monitoring/" rel="tag">Monitoring</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Netconf/" rel="tag">Netconf</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Network/" rel="tag">Network</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Networking/" rel="tag">Networking</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Nginx/" rel="tag">Nginx</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OS/" rel="tag">OS</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OpenStack/" rel="tag">OpenStack</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Package-Manager/" rel="tag">Package Manager</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Partition/" rel="tag">Partition</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Programming/" rel="tag">Programming</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Python/" rel="tag">Python</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RAM/" rel="tag">RAM</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RHCS/" rel="tag">RHCS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RPM/" rel="tag">RPM</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Recursion/" rel="tag">Recursion</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Recursive/" rel="tag">Recursive</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Redirect/" rel="tag">Redirect</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Route/" rel="tag">Route</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SSH/" rel="tag">SSH</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Storage/" rel="tag">Storage</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Storage-and-Filesystem/" rel="tag">Storage and Filesystem</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Swap/" rel="tag">Swap</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Sys/" rel="tag">Sys</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Systemd/" rel="tag">Systemd</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Terminal/" rel="tag">Terminal</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Terraform/" rel="tag">Terraform</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Tools/" rel="tag">Tools</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ubuntu/" rel="tag">Ubuntu</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Veeam/" rel="tag">Veeam</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vim/" rel="tag">Vim</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Virtualization/" rel="tag">Virtualization</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vmware/" rel="tag">Vmware</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vsphere/" rel="tag">Vsphere</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Windows/" rel="tag">Windows</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Yum/" rel="tag">Yum</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/apple/" rel="tag">apple</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/elasticsearch/" rel="tag">elasticsearch</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/iteration/" rel="tag">iteration</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/logs/" rel="tag">logs</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/oop/" rel="tag">oop</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tools/" rel="tag">tools</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%88%86%E6%B2%BB/" rel="tag">分治</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E5%8E%8B%E7%BC%A9/" rel="tag">数据压缩</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%84%99%E8%A7%86%E9%93%BE/" rel="tag">鄙视链</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%87%8D%E5%A4%8D%E6%95%B0%E6%8D%AE%E5%88%A0%E9%99%A4/" rel="tag">重复数据删除</a><span class="tag-list-count">1</span></li></ul>
+                </canvas>
+            </div>
+        </div>
+        
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Goooo</span>
+</div>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.7.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://www-sysctl-me-1.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "https://www.sysctl.me/2018/06/11/Veeambk1/";
+    this.page.identifier = "2018/06/11/Veeambk1/";
+    this.page.title = "Veeam B&R 创建备份任务";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://www-sysctl-me-1.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/koharu.model.json"},"display":{"position":"left","width":300,"height":600},"mobile":{"show":false},"react":{"opacity":0.7}});</script></body>
+</html>

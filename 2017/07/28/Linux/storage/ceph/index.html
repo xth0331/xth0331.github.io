@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://www.sysctl.me').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","width":320,"display":"post","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="Whether you want to provide Ceph Object Storage and&#x2F;or Ceph Block Device services to Cloud Platforms, deploy a Ceph Filesystem or use Ceph for another purpose, all Ceph Storage Cluster deployments beg">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Ceph常用命令">
+<meta property="og:url" content="https://www.sysctl.me/2017/07/28/Linux/storage/ceph/index.html">
+<meta property="og:site_name" content="Sysctl">
+<meta property="og:description" content="Whether you want to provide Ceph Object Storage and&#x2F;or Ceph Block Device services to Cloud Platforms, deploy a Ceph Filesystem or use Ceph for another purpose, all Ceph Storage Cluster deployments beg">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/7jFFdagBFi.png">
+<meta property="article:published_time" content="2017-07-28T00:57:12.000Z">
+<meta property="article:modified_time" content="2020-01-22T14:35:15.061Z">
+<meta property="article:author" content="Goooo">
+<meta property="article:tag" content="Ceph">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog-image.nos-eastchina1.126.net/7jFFdagBFi.png">
+
+<link rel="canonical" href="https://www.sysctl.me/2017/07/28/Linux/storage/ceph/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>Ceph常用命令 | Sysctl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Sysctl" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Sysctl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">观察指南，博客</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="搜索..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/xth0331" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.sysctl.me/2017/07/28/Linux/storage/ceph/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/img.png">
+      <meta itemprop="name" content="Goooo">
+      <meta itemprop="description" content="一条啥也不会点废鱼">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Sysctl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Ceph常用命令
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2017-07-28 08:57:12" itemprop="dateCreated datePublished" datetime="2017-07-28T08:57:12+08:00">2017-07-28</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-01-22 22:35:15" itemprop="dateModified" datetime="2020-01-22T22:35:15+08:00">2020-01-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Ceph/" itemprop="url" rel="index">
+                    <span itemprop="name">Ceph</span>
+                  </a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2017/07/28/Linux/storage/ceph/#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2017/07/28/Linux/storage/ceph/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>Whether you want to provide Ceph Object Storage and/or Ceph Block Device services to Cloud Platforms, deploy a Ceph Filesystem or use Ceph for another purpose, all Ceph Storage Cluster deployments begin with setting up each Ceph Node, your network, and the Ceph Storage Cluster. A Ceph Storage Cluster requires at least one Ceph Monitor, Ceph Manager, and Ceph OSD (Object Storage Daemon). The Ceph Metadata Server is also required when running Ceph Filesystem clients.<br><a id="more"></a><br><img src="https://blog-image.nos-eastchina1.126.net/7jFFdagBFi.png" alt="mark"></p>
+<ul>
+<li><strong>Monitors</strong> : A Ceph Monitor (ceph-mon) maintains maps of the cluster state, including the monitor map, manager map, the OSD map, and the CRUSH map. These maps are critical cluster state required for Ceph daemons to coordinate with each other. Monitors are also responsible for managing authentication between daemons and clients. At least three monitors are normally required for redundancy and high availability.</li>
+<li><strong>Managers</strong> : A Ceph Manager daemon (ceph-mgr) is responsible for keeping track of runtime metrics and the current state of the Ceph cluster, including storage utilization, current performance metrics, and system load. The Ceph Manager daemons also host python-based plugins to manage and expose Ceph cluster information, including a web-based dashboard and REST API. At least two managers are normally required for high availability.</li>
+<li><strong>Ceph OSDs</strong> : A Ceph OSD (object storage daemon, ceph-osd) stores data, handles data replication, recovery, rebalancing, and provides some monitoring information to Ceph Monitors and Managers by checking other Ceph OSD Daemons for a heartbeat. At least 3 Ceph OSDs are normally required for redundancy and high availability.</li>
+<li><strong>MDSs</strong> : A Ceph Metadata Server (MDS, ceph-mds) stores metadata on behalf of the Ceph Filesystem (i.e., Ceph Block Devices and Ceph Object Storage do not use MDS). Ceph Metadata Servers allow POSIX file system users to execute basic commands (like ls, find, etc.) without placing an enormous burden on the Ceph Storage Cluster.</li>
+</ul>
+<p>Ceph stores data as objects within logical storage pools. Using the CRUSH algorithm, Ceph calculates which placement group should contain the object, and further calculates which Ceph OSD Daemon should store the placement group. The CRUSH algorithm enables the Ceph Storage Cluster to scale, rebalance, and recover dynamically.</p>
+<h1 id="控制命令"><a href="#控制命令" class="headerlink" title="控制命令"></a>控制命令</h1><h2 id="监视器命令"><a href="#监视器命令" class="headerlink" title="监视器命令"></a>监视器命令</h2><p>监视器命令用 <code>ceph</code> 工具发出：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph [-m monhost] &#123;<span class="built_in">command</span>&#125;</span><br></pre></td></tr></table></figure>
+<p>命令格式通常是（但不总是）：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph &#123;subsystem&#125; &#123;<span class="built_in">command</span>&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="系统命令"><a href="#系统命令" class="headerlink" title="系统命令"></a>系统命令</h2><p>下列命令显示集群状态：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ceph -s</span><br><span class="line">ceph status</span><br></pre></td></tr></table></figure>
+<p>下列命令显示集群状态的运行摘要、及主要事件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph -w</span><br></pre></td></tr></table></figure>
+<p>下列命令显示监视器法定人数状态，包括哪些监视器参与着、哪个是首领。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph quorum_status</span><br></pre></td></tr></table></figure>
+<p>下列命令查询单个监视器状态，包括是否在法定人数里。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph [-m monhost] mon_status</span><br></pre></td></tr></table></figure>
+<h2 id="认证子系统"><a href="#认证子系统" class="headerlink" title="认证子系统"></a>认证子系统</h2><p>要添加一个 OSD 的密钥环，执行下列命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph auth add &#123;osd&#125; &#123;--<span class="keyword">in</span>-file|-i&#125; &#123;path-to-osd-keyring&#125;</span><br></pre></td></tr></table></figure>
+<p>要列出集群的密钥及其能力，执行下列命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph auth list</span><br></pre></td></tr></table></figure>
+<h2 id="归置组子系统"><a href="#归置组子系统" class="headerlink" title="归置组子系统"></a>归置组子系统</h2><p>要显示所有归置组的统计信息，执行下列命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph pg dump [--format &#123;format&#125;]</span><br></pre></td></tr></table></figure>
+<p>可用输出格式有 <code>plain</code> （默认）和 <code>json</code> 。</p>
+<p>要显示卡在某状态的所有归置组，执行下列命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph pg dump_stuck inactive|unclean|stale|undersized|degraded [--format &#123;format&#125;] [-t|--threshold &#123;seconds&#125;]</span><br></pre></td></tr></table></figure>
+<p><code>--format</code> 可以是 <code>plain</code> （默认）或 <code>json</code></p>
+<p><code>--threshold</code> 定义了多久算“卡住了”（默认 300 秒）</p>
+<p><strong>Inactive</strong> 归置组不能处理读或写，因为它们在等待数据及时更新的 OSD 回来。</p>
+<p><strong>Unclean</strong> 归置组包含副本数未达期望值的对象，它们应该在恢复中。</p>
+<p><strong>Stale</strong> 归置组处于未知状态——归置组所托付的 OSD 有一阵没向监视器报告了（由 <code>mon osd report timeout</code> 配置）。</p>
+<p>删除“丢失”对象，或者恢复到其先前状态，可以是前一版本、或如果刚创建就干脆删除。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph pg &#123;pgid&#125; mark_unfound_lost revert|delete</span><br></pre></td></tr></table></figure>
+<h2 id="OSD-子系统"><a href="#OSD-子系统" class="headerlink" title="OSD 子系统"></a>OSD 子系统</h2><p>查询 OSD 子系统状态：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph osd <span class="built_in">stat</span></span><br></pre></td></tr></table></figure>
+<p>把最新的 OSD 运行图拷贝到一个文件，参见 <a href="http://docs.ceph.com/docs/master/man/8/osdmaptool/" target="_blank" rel="noopener">osdmaptool</a> ：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph osd getmap -o file</span><br></pre></td></tr></table></figure>
+<p>从最新 OSD 运行图拷出 CRUSH 图：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph osd getcrushmap -o file</span><br></pre></td></tr></table></figure>
+<p>前述功能等价于：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ceph osd getmap -o /tmp/osdmap</span><br><span class="line">osdmaptool /tmp/osdmap --<span class="built_in">export</span>-crush file</span><br></pre></td></tr></table></figure>
+<p>转储 OSD 运行图， <code>-f</code> 的可用格式有 <code>plain</code> 和 <code>json</code> ，如未指定 <code>--format</code> 则转储为纯文本。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph osd dump [--format &#123;format&#125;]</span><br></pre></td></tr></table></figure>
+<p>把 OSD 运行图转储为树，每个 OSD 一行、包含权重和状态。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph osd tree [--format &#123;format&#125;]</span><br></pre></td></tr></table></figure>
+<p>找出某对象在哪里或应该在哪里：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph osd map &lt;pool-name&gt; &lt;object-name&gt;</span><br></pre></td></tr></table></figure>
+<p>增加或挪动一个新 OSD 条目，要给出 id/name/weight 和位置参数。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph osd crush <span class="built_in">set</span> &#123;id&#125; &#123;weight&#125; [&#123;loc1&#125; [&#123;loc2&#125; ...]]</span><br></pre></td></tr></table></figure>
+<p>从现有 CRUSH 图删除存在的条目（ OSD ）：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph osd crush remove &#123;name&#125;</span><br></pre></td></tr></table></figure>
+<p>从现有 CRUSH 图删除存在的空桶：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph osd crush remove &#123;bucket-name&#125;</span><br></pre></td></tr></table></figure>
+<p>把有效的桶从分级结构里的一个位置挪到另一个。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph osd crush move &#123;id&#125; &#123;loc1&#125; [&#123;loc2&#125; ...]</span><br></pre></td></tr></table></figure>
+<p>设置 <code>{name}</code> 所指条目的权重为 <code>{weight}</code> 。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph osd crush reweight &#123;name&#125; &#123;weight&#125;</span><br></pre></td></tr></table></figure>
+<p>创建集群快照。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph osd cluster_snap &#123;name&#125;</span><br></pre></td></tr></table></figure>
+<p>把 OSD 标记为丢失，有可能导致永久性数据丢失，慎用！</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph osd lost &#123;id&#125; [--yes-i-really-mean-it]</span><br></pre></td></tr></table></figure>
+<p>创建新 OSD 。如果未指定 ID ，有可能的话将自动分配个新 ID 。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph osd create [&#123;uuid&#125;]</span><br></pre></td></tr></table></figure>
+<p>删除指定 OSD 。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph osd rm [&#123;id&#125;...]</span><br></pre></td></tr></table></figure>
+<p>查询 OSD 运行图里的 max_osd 参数。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph osd getmaxosd</span><br></pre></td></tr></table></figure>
+<p>导入指定 CRUSH 图。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph osd setcrushmap -i file</span><br></pre></td></tr></table></figure>
+<p>设置 OSD 运行图的 <code>max_osd</code> 参数，扩展存储集群时有必要。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph osd setmaxosd</span><br></pre></td></tr></table></figure>
+<p>把 ID 为 <code>{osd-num}</code> 的 OSD 标记为 down 。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph osd down &#123;osd-num&#125;</span><br></pre></td></tr></table></figure>
+<p>把 OSD <code>{osd-num}</code> 标记为数据分布之外（即不给分配数据）。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph osd out &#123;osd-num&#125;</span><br></pre></td></tr></table></figure>
+<p>把 OSD <code>{osd-num}</code> 标记为数据分布之内（即分配了数据）。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph osd <span class="keyword">in</span> &#123;osd-num&#125;</span><br></pre></td></tr></table></figure>
+<p>列出 Ceph 集群载入的类。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph class list</span><br></pre></td></tr></table></figure>
+<p>设置或清空 OSD 运行图里的暂停标记。若设置了，不会有 IO 请求发送到任何 OSD ；用 <code>unpause</code> 清空此标记会导致重发未决的请求。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ceph osd pause</span><br><span class="line">ceph osd unpause</span><br></pre></td></tr></table></figure>
+<p>把 <code>{osd-num}</code> 的权重设置为 <code>{weight}</code> ，权重相同的两个 OSD 大致会收到相同的 I/O 请求、并存储相同数量的数据。 <code>ceph osd reweight</code> 命令可给 OSD 设置一个增益权重，有效值在 0 和 1 之间，它使得 CRUSH 重新归置一定数量的、本应该放到此处的数据。它不会影响 crush 图里所分配的权重，在 CRUSH 分布算法没能理想地执行时，它可作为一种纠正手段。比如，假设你的某个 OSD 使用率达到了 90% ，但其它的大致都在 50% ，这时你就可以试着下调此权重来补偿它。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph osd reweight &#123;osd-num&#125; &#123;weight&#125;</span><br></pre></td></tr></table></figure>
+<p>重设所有滥用 OSD 的权重，它默认会下调达到平均利用率 120% 的那些OSD ，除非你指定了阀值。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph osd reweight-by-utilization [threshold]</span><br></pre></td></tr></table></figure>
+<p>增加、删除黑名单里的地址。增加地址的时候可以指定有效期，否则有效期为 1 小时。黑名单里的地址不允许连接任何 OSD ，此技术常用于防止滞后的元数据服务器“错爱” OSD 上的数据。</p>
+<p>这些命令大多只在故障测试时有用，因为黑名单是自动维护的，无需手动干涉。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ceph osd blacklist add ADDRESS[:source_port] [TIME]</span><br><span class="line">ceph osd blacklist rm ADDRESS[:source_port]</span><br></pre></td></tr></table></figure>
+<p>创建/删除存储池快照。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ceph osd pool mksnap &#123;pool-name&#125; &#123;snap-name&#125;</span><br><span class="line">ceph osd pool rmsnap &#123;pool-name&#125; &#123;snap-name&#125;</span><br></pre></td></tr></table></figure>
+<p>创建/删除/重命名存储池。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ceph osd pool create &#123;pool-name&#125; pg_num [pgp_num]</span><br><span class="line">ceph osd pool delete &#123;pool-name&#125; [&#123;pool-name&#125; --yes-i-really-really-mean-it]</span><br><span class="line">ceph osd pool rename &#123;old-name&#125; &#123;new-name&#125;</span><br></pre></td></tr></table></figure>
+<p>更改存储池设置。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph osd pool <span class="built_in">set</span> &#123;pool-name&#125; &#123;field&#125; &#123;value&#125;</span><br></pre></td></tr></table></figure>
+<p>可用的 field 值有：</p>
+<blockquote>
+<ul>
+<li><code>size</code>: 设置存储池内数据的副本数；</li>
+<li><code>crash_replay_interval</code>: 允许客户端重放确认而未提交的请求前等待的时间，秒；</li>
+<li><code>pg_num</code>: 归置组数量；</li>
+<li><code>pgp_num</code>: 计算归置组存放的有效数量；</li>
+<li><code>crush_ruleset</code>: 用于归置映射的规则号。</li>
+</ul>
+</blockquote>
+<p>获取存储池配置值。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph osd pool get &#123;pool-name&#125; &#123;field&#125;</span><br></pre></td></tr></table></figure>
+<p>可用的 field 值有：</p>
+<blockquote>
+<ul>
+<li><code>pg_num</code>: 归置组数量；</li>
+<li><code>pgp_num</code>: 计算归置组存放的有效数量；</li>
+<li><code>lpg_num</code>: 本地归置组数量；</li>
+<li><code>lpgp_num</code>: 用于存放本地归置组的数量。</li>
+</ul>
+</blockquote>
+<p>向 OSD <code>{osd-num}</code> 下达一个洗刷命令，用通配符 <code>*</code> 把命令下达到所有 OSD 。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph osd scrub &#123;osd-num&#125;</span><br></pre></td></tr></table></figure>
+<p>向 osdN 下达修复命令，用 <code>*</code> 下达到所有 OSD 。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph osd repair N</span><br></pre></td></tr></table></figure>
+<p>在 osdN 上进行个简单的吞吐量测试，每次写入 <code>BYTES_PER_WRITE</code> 、一共写入 <code>TOTAL_BYTES</code> 。默认以 4MB 增量写入 1GB 。 此压力测试是非破坏性的，不会覆盖已有 OSD 数据，但可能会暂时影响同时访问此 OSD 的客户端性能。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph tell osd.N bench [NUMER_OF_OBJECTS] [BYTES_PER_WRITE]</span><br></pre></td></tr></table></figure>
+<h2 id="MDS-子系统"><a href="#MDS-子系统" class="headerlink" title="MDS 子系统"></a>MDS 子系统</h2><p>更改在运行 mds 的参数：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph tell mds.&#123;mds-id&#125; injectargs --&#123;switch&#125; &#123;value&#125; [--&#123;switch&#125; &#123;value&#125;]</span><br></pre></td></tr></table></figure>
+<p>例如：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph tell mds.0 injectargs --debug_ms 1 --debug_mds 10</span><br></pre></td></tr></table></figure>
+<p>打开了调试消息。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph mds <span class="built_in">stat</span></span><br></pre></td></tr></table></figure>
+<p>显示所有元数据服务器状态。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ceph mds fail 0</span><br></pre></td></tr></table></figure>
+<p>把活跃 MDS 标记为失败，如果有候补此命令会触发故障转移。</p>
+<p>Todo</p>
+<p> <code>ceph mds</code> 子命令缺少文档：set, dump, getmap, stop, setmap</p>
+<h2 id="监视器子系统"><a href="#监视器子系统" class="headerlink" title="监视器子系统"></a>监视器子系统</h2><p>查看监视器状态：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">ceph mon <span class="built_in">stat</span></span><br><span class="line"></span><br><span class="line">2011-12-14 10:40:59.044395 mon &#123;- [mon,<span class="built_in">stat</span>]</span><br><span class="line">2011-12-14 10:40:59.057111 mon.1 -&#125; <span class="string">'e3: 5 mons at &#123;a=10.1.2.3:6789/0,b=10.1.2.4:6789/0,c=10.1.2.5:6789/0,d=10.1.2.6:6789/0,e=10.1.2.7:6789/0&#125;, election epoch 16, quorum 0,1,2,3'</span> (0)</span><br></pre></td></tr></table></figure>
+<p>末尾的 <code>quorum</code> 列表列出了当前法定人数里的监视器节点。</p>
+<p>也可以更直接地获取：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ ./ceph quorum_status</span><br><span class="line"></span><br><span class="line">2011-12-14 10:44:20.417705 mon &#123;- [quorum_status]</span><br><span class="line">2011-12-14 10:44:20.431890 mon.0 -&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">'&#123; "election_epoch": 10,</span><br><span class="line">  "quorum": [</span><br><span class="line">        0,</span><br><span class="line">        1,</span><br><span class="line">        2],</span><br><span class="line">  "monmap": &#123; "epoch": 1,</span><br><span class="line">      "fsid": "444b489c-4f16-4b75-83f0-cb8097468898",</span><br><span class="line">      "modified": "2011-12-12 13:28:27.505520",</span><br><span class="line">      "created": "2011-12-12 13:28:27.505520",</span><br><span class="line">      "mons": [</span><br><span class="line">            &#123; <span class="attr">"rank"</span>: <span class="number">0</span>,</span><br><span class="line">              <span class="attr">"name"</span>: <span class="string">"a"</span>,</span><br><span class="line">              "addr": "127.0.0.1:6789\/0"&#125;,</span><br><span class="line">            &#123; <span class="attr">"rank"</span>: <span class="number">1</span>,</span><br><span class="line">              <span class="attr">"name"</span>: <span class="string">"b"</span>,</span><br><span class="line">              "addr": "127.0.0.1:6790\/0"&#125;,</span><br><span class="line">            &#123; <span class="attr">"rank"</span>: <span class="number">2</span>,</span><br><span class="line">              <span class="attr">"name"</span>: <span class="string">"c"</span>,</span><br><span class="line">              "addr": "127.0.0.1:6791\/0"&#125;]&#125;&#125;' (0)</span><br></pre></td></tr></table></figure>
+<p>如果法定人数未形成，上述命令会一直等待。</p>
+<p>你刚刚连接的监视器的状态（用 <code>-m HOST:PORT</code> 另外指定）：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">ceph mon_status</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">2011-12-14 10:45:30.644414 mon &#123;- [mon_status]</span><br><span class="line">2011-12-14 10:45:30.644632 mon.0 -&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">'&#123; "name": "a",</span><br><span class="line">  "rank": 0,</span><br><span class="line">  "state": "leader",</span><br><span class="line">  "election_epoch": 10,</span><br><span class="line">  "quorum": [</span><br><span class="line">        0,</span><br><span class="line">        1,</span><br><span class="line">        2],</span><br><span class="line">  "outside_quorum": [],</span><br><span class="line">  "monmap": &#123; "epoch": 1,</span><br><span class="line">      "fsid": "444b489c-4f16-4b75-83f0-cb8097468898",</span><br><span class="line">      "modified": "2011-12-12 13:28:27.505520",</span><br><span class="line">      "created": "2011-12-12 13:28:27.505520",</span><br><span class="line">      "mons": [</span><br><span class="line">            &#123; <span class="attr">"rank"</span>: <span class="number">0</span>,</span><br><span class="line">              <span class="attr">"name"</span>: <span class="string">"a"</span>,</span><br><span class="line">              "addr": "127.0.0.1:6789\/0"&#125;,</span><br><span class="line">            &#123; <span class="attr">"rank"</span>: <span class="number">1</span>,</span><br><span class="line">              <span class="attr">"name"</span>: <span class="string">"b"</span>,</span><br><span class="line">              "addr": "127.0.0.1:6790\/0"&#125;,</span><br><span class="line">            &#123; <span class="attr">"rank"</span>: <span class="number">2</span>,</span><br><span class="line">              <span class="attr">"name"</span>: <span class="string">"c"</span>,</span><br><span class="line">              "addr": "127.0.0.1:6791\/0"&#125;]&#125;&#125;' (0)</span><br></pre></td></tr></table></figure>
+<p>监视器状态转储：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">ceph mon dump</span><br><span class="line"></span><br><span class="line">2011-12-14 10:43:08.015333 mon &#123;- [mon,dump]</span><br><span class="line">2011-12-14 10:43:08.015567 mon.0 -&#125; <span class="string">'dumped monmap epoch 1'</span> (0)</span><br><span class="line">epoch 1</span><br><span class="line">fsid 444b489c-4f16-4b75-83f0-cb8097468898</span><br><span class="line">last_changed 2011-12-12 13:28:27.505520</span><br><span class="line">created 2011-12-12 13:28:27.505520</span><br><span class="line">0: 127.0.0.1:6789/0 mon.a</span><br><span class="line">1: 127.0.0.1:6790/0 mon.b</span><br><span class="line">2: 127.0.0.1:6791/0 mon.c</span><br></pre></td></tr></table></figure>
+<p><a href="http://docs.ceph.com/docs/master/rados/operations/control/" target="_blank" rel="noopener">参考</a></p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>Goooo
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.sysctl.me/2017/07/28/Linux/storage/ceph/" title="Ceph常用命令">https://www.sysctl.me/2017/07/28/Linux/storage/ceph/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/en" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Ceph/" rel="tag"># Ceph</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2017/07/22/Virtualized-Resource/CPU-virtualization/" rel="prev" title="CPU虚拟化基本知识">
+      <i class="fa fa-chevron-left"></i> CPU虚拟化基本知识
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2017/07/28/Linux/storage/Deduplication/" rel="next" title="重复数据删除和数据压缩之间的确切区别">
+      重复数据删除和数据压缩之间的确切区别 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#控制命令"><span class="nav-number">1.</span> <span class="nav-text">控制命令</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#监视器命令"><span class="nav-number">1.1.</span> <span class="nav-text">监视器命令</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#系统命令"><span class="nav-number">1.2.</span> <span class="nav-text">系统命令</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#认证子系统"><span class="nav-number">1.3.</span> <span class="nav-text">认证子系统</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#归置组子系统"><span class="nav-number">1.4.</span> <span class="nav-text">归置组子系统</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#OSD-子系统"><span class="nav-number">1.5.</span> <span class="nav-text">OSD 子系统</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#MDS-子系统"><span class="nav-number">1.6.</span> <span class="nav-text">MDS 子系统</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#监视器子系统"><span class="nav-number">1.7.</span> <span class="nav-text">监视器子系统</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Goooo"
+      src="/images/img.png">
+  <p class="site-author-name" itemprop="name">Goooo</p>
+  <div class="site-description" itemprop="description">一条啥也不会点废鱼</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">109</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">22</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">71</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/xth0331" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;xth0331" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:xietianhao0331@gmail.com" title="E-Mail → mailto:xietianhao0331@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/en" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+        
+        <script type="text/javascript" charset="utf-8" src="/js/tagcloud.js"></script>
+        <script type="text/javascript" charset="utf-8" src="/js/tagcanvas.js"></script>
+        <div class="widget-wrap">
+            <h3 class="widget-title">标签们</h3>
+            <div id="myCanvasContainer" class="widget tagcloud">
+                <canvas width="250" height="250" id="resCanvas" style="width=100%">
+                    <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ansible/" rel="tag">Ansible</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Backup/" rel="tag">Backup</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Bond/" rel="tag">Bond</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CPU/" rel="tag">CPU</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ceph/" rel="tag">Ceph</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cobbler/" rel="tag">Cobbler</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Coffee/" rel="tag">Coffee</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Corosync/" rel="tag">Corosync</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cyclic-invariant/" rel="tag">Cyclic invariant</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Docker/" rel="tag">Docker</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Effectiveness/" rel="tag">Effectiveness</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Exhaustion/" rel="tag">Exhaustion</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Filesystem/" rel="tag">Filesystem</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HAProxy/" rel="tag">HAProxy</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hardware/" rel="tag">Hardware</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Https/" rel="tag">Https</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ICMP/" rel="tag">ICMP</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JDK/" rel="tag">JDK</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Jenkins/" rel="tag">Jenkins</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JunOS/" rel="tag">JunOS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/KEEPALIVED/" rel="tag">KEEPALIVED</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Keepalived/" rel="tag">Keepalived</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/" rel="tag">Linux</a><span class="tag-list-count">19</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Log/" rel="tag">Log</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Markdown/" rel="tag">Markdown</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Modular-Programming/" rel="tag">Modular Programming</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Monitoring/" rel="tag">Monitoring</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Netconf/" rel="tag">Netconf</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Network/" rel="tag">Network</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Networking/" rel="tag">Networking</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Nginx/" rel="tag">Nginx</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OS/" rel="tag">OS</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OpenStack/" rel="tag">OpenStack</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Package-Manager/" rel="tag">Package Manager</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Partition/" rel="tag">Partition</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Programming/" rel="tag">Programming</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Python/" rel="tag">Python</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RAM/" rel="tag">RAM</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RHCS/" rel="tag">RHCS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RPM/" rel="tag">RPM</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Recursion/" rel="tag">Recursion</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Recursive/" rel="tag">Recursive</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Redirect/" rel="tag">Redirect</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Route/" rel="tag">Route</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SSH/" rel="tag">SSH</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Storage/" rel="tag">Storage</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Storage-and-Filesystem/" rel="tag">Storage and Filesystem</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Swap/" rel="tag">Swap</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Sys/" rel="tag">Sys</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Systemd/" rel="tag">Systemd</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Terminal/" rel="tag">Terminal</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Terraform/" rel="tag">Terraform</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Tools/" rel="tag">Tools</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ubuntu/" rel="tag">Ubuntu</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Veeam/" rel="tag">Veeam</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vim/" rel="tag">Vim</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Virtualization/" rel="tag">Virtualization</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vmware/" rel="tag">Vmware</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vsphere/" rel="tag">Vsphere</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Windows/" rel="tag">Windows</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Yum/" rel="tag">Yum</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/apple/" rel="tag">apple</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/elasticsearch/" rel="tag">elasticsearch</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/iteration/" rel="tag">iteration</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/logs/" rel="tag">logs</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/oop/" rel="tag">oop</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tools/" rel="tag">tools</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%88%86%E6%B2%BB/" rel="tag">分治</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E5%8E%8B%E7%BC%A9/" rel="tag">数据压缩</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%84%99%E8%A7%86%E9%93%BE/" rel="tag">鄙视链</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%87%8D%E5%A4%8D%E6%95%B0%E6%8D%AE%E5%88%A0%E9%99%A4/" rel="tag">重复数据删除</a><span class="tag-list-count">1</span></li></ul>
+                </canvas>
+            </div>
+        </div>
+        
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Goooo</span>
+</div>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.7.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://www-sysctl-me-1.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "https://www.sysctl.me/2017/07/28/Linux/storage/ceph/";
+    this.page.identifier = "2017/07/28/Linux/storage/ceph/";
+    this.page.title = "Ceph常用命令";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://www-sysctl-me-1.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/koharu.model.json"},"display":{"position":"left","width":300,"height":600},"mobile":{"show":false},"react":{"opacity":0.7}});</script></body>
+</html>

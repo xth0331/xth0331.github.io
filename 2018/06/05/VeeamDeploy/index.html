@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://www.sysctl.me').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","width":320,"display":"post","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="部署要开始使用Veeam Backup＆Replication ，您必须配置备份服务器 - 在满足系统要求的机器上安装Veeam Backup＆Replication 。为此，您可以使用安装向导或以无人参与模式安装产品。 当您安装Veeam Backup＆Replication时，Veeam Backup＆Replication 控制台会自动安装在备份服务器上。如果您想远程访问Veeam Back">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Veeam B&amp;R部署">
+<meta property="og:url" content="https://www.sysctl.me/2018/06/05/VeeamDeploy/index.html">
+<meta property="og:site_name" content="Sysctl">
+<meta property="og:description" content="部署要开始使用Veeam Backup＆Replication ，您必须配置备份服务器 - 在满足系统要求的机器上安装Veeam Backup＆Replication 。为此，您可以使用安装向导或以无人参与模式安装产品。 当您安装Veeam Backup＆Replication时，Veeam Backup＆Replication 控制台会自动安装在备份服务器上。如果您想远程访问Veeam Back">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/GCg2897i8H.png?imageslim">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/ijjjHeHjG5.png?imageslim">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/8k8L2fk1eA.png?imageslim">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/mj1FeEfBGA.png?imageslim">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/k62LdEAcdj.png?imageslim">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/2Ai4dL7LJD.png?imageslim">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/C77F41Fb20.png?imageslim">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/8D5FH2aj64.png?imageslim">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/K0E3GhdI7c.png?imageslim">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/Fa2iBdihgC.png?imageslim">
+<meta property="article:published_time" content="2018-06-05T03:58:03.000Z">
+<meta property="article:modified_time" content="2020-01-22T14:40:01.305Z">
+<meta property="article:author" content="Goooo">
+<meta property="article:tag" content="Backup">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog-image.nos-eastchina1.126.net/GCg2897i8H.png?imageslim">
+
+<link rel="canonical" href="https://www.sysctl.me/2018/06/05/VeeamDeploy/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>Veeam B&R部署 | Sysctl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Sysctl" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Sysctl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">观察指南，博客</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="搜索..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/xth0331" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.sysctl.me/2018/06/05/VeeamDeploy/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/img.png">
+      <meta itemprop="name" content="Goooo">
+      <meta itemprop="description" content="一条啥也不会点废鱼">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Sysctl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Veeam B&R部署
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-06-05 11:58:03" itemprop="dateCreated datePublished" datetime="2018-06-05T11:58:03+08:00">2018-06-05</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-01-22 22:40:01" itemprop="dateModified" datetime="2020-01-22T22:40:01+08:00">2020-01-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Veeam/" itemprop="url" rel="index">
+                    <span itemprop="name">Veeam</span>
+                  </a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2018/06/05/VeeamDeploy/#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2018/06/05/VeeamDeploy/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="部署"><a href="#部署" class="headerlink" title="部署"></a>部署</h1><p>要开始使用Veeam Backup＆Replication ，您必须配置备份服务器 - 在满足系统要求的机器上安装Veeam Backup＆Replication 。为此，您可以使用安装向导或以无人参与模式安装产品。</p>
+<p>当您安装Veeam Backup＆Replication时，Veeam Backup＆Replication 控制台会自动安装在备份服务器上。如果您想远程访问Veeam Backup＆Replication ，则可以在专用机器上安装Veeam Backup＆Replication 控制台。</p>
+<h1 id="安装Veeam-Backup＆Replication"><a href="#安装Veeam-Backup＆Replication" class="headerlink" title="安装Veeam Backup＆Replication"></a>安装Veeam Backup＆Replication</h1><h2 id="第1步。启动安装向导"><a href="#第1步。启动安装向导" class="headerlink" title="第1步。启动安装向导"></a>第1步。启动安装向导</h2><p>要启动安装向导：</p>
+<ol>
+<li>从<a href="http://www.veeam.com/downloads.html" target="_blank" rel="noopener">www.veeam.com/downloads.html </a>下载最新版本的Veeam Backup＆Replication 安装映像。</li>
+<li>使用磁盘映像仿真软件将安装映像安装到您计划安装Veeam Backup＆Replication 的计算机上，或将映像文件刻录到空白CD / DVD上。如果您计划在虚拟机上安装Veeam Backup＆Replication ，请使用虚拟化管理软件的内置工具将安装映像安装到虚拟机上。</li>
+</ol>
+<p>要提取ISO的内容，还可以使用最新版本的实用程序，它们可以从大尺寸的ISO中正确提取数据，并且可以正确使用长文件路径。</p>
+<ol>
+<li>安装映像或插入磁盘后，自动运行将打开带有安装选项的启动画面。如果自动运行不可用或禁用，请从映像或磁盘运行Setup.exe 文件。</li>
+<li>在启动画面的Veeam Backup＆Replication 部分中，单击安装</li>
+</ol>
+<a id="more"></a>
+<p><img src="https://blog-image.nos-eastchina1.126.net/GCg2897i8H.png?imageslim" alt="mark"></p>
+<h2 id="第2步。阅读并接受许可协议"><a href="#第2步。阅读并接受许可协议" class="headerlink" title="第2步。阅读并接受许可协议"></a>第2步。阅读并接受许可协议</h2><p>在向导的许可协议步骤中，您必须接受Veeam Backup＆Replication 的许可协议。如果您不接受许可协议，则无法传递到安装向导的下一步。</p>
+<ol>
+<li>阅读许可协议。</li>
+<li>选择我接受许可协议选项中的条款，然后单击下一步。</li>
+</ol>
+<p><img src="https://blog-image.nos-eastchina1.126.net/ijjjHeHjG5.png?imageslim" alt="mark"></p>
+<h2 id="第3步。提供许可证文件"><a href="#第3步。提供许可证文件" class="headerlink" title="第3步。提供许可证文件"></a>第3步。提供许可证文件</h2><p>这步骤跳过许可，下一步</p>
+<h2 id="第4步。查看组件并选择安装文件夹"><a href="#第4步。查看组件并选择安装文件夹" class="headerlink" title="第4步。查看组件并选择安装文件夹"></a>第4步。查看组件并选择安装文件夹</h2><p>在向导的“ 程序功能” 步骤中，您可以检查安装向导将在机器上安装的组件，并选择安装文件夹。</p>
+<p>安装向导安装以下组件：</p>
+<ul>
+<li>Veeam备份和复制</li>
+<li>Veeam Backup Catalog（负责存储VM guest OS索引数据的组件）</li>
+<li>Veeam备份和复制控制台</li>
+</ul>
+<p>安装向导还会在后台安装以下组件：</p>
+<ul>
+<li>适用于Microsoft Active Directory的Veeam Explorer</li>
+<li>Veeam Explorer for Microsoft Exchange</li>
+<li>Veeam Explorer for Oracle</li>
+<li>适用于Microsoft SQL Server的Veeam Explorer</li>
+<li><p>适用于Microsoft SharePoint的Veeam Explorer</p>
+</li>
+<li><p>Veeam Backup PowerShell管理单元</p>
+</li>
+</ul>
+<p>这些组件不需要额外的许可证。它们与Veeam Backup＆Replication 集成。</p>
+<p>要选择安装文件夹：</p>
+<ol>
+<li>在“ 安装到” 字段的右侧，单击“ 浏览” 。</li>
+<li>在“ 浏览文件夹” 窗口中，选择产品的安装文件夹。默认安装文件夹是C:\Program Files\Veeam\Backup and Replication\ 。</li>
+</ol>
+<p><img src="https://blog-image.nos-eastchina1.126.net/8k8L2fk1eA.png?imageslim" alt="mark"></p>
+<h2 id="第5步。安装缺少的软件"><a href="#第5步。安装缺少的软件" class="headerlink" title="第5步。安装缺少的软件"></a>第5步。安装缺少的软件</h2><p>在向导的“ 系统配置检查” 步骤中，安装向导将检查机器上是否安装了所有必备软件。如果缺少所需的软件组件，安装向导将提供您安装它们。</p>
+<p>您可以自动或手动安装缺失的组件。</p>
+<ul>
+<li>要自动安装缺失的组件，请单击安装。安装向导不会中断安装过程并在当前工作会话期间安装缺失的组件。</li>
+<li>手动安装缺失的组件：</li>
+</ul>
+<ol>
+<li>单击取消并退出设置向导。</li>
+<li>在机器上手动安装并启用必要的组件。</li>
+<li>再次启动设置向导，进入向导的“ 系统配置检查” 步骤，然后单击“ 重新运行” 重复验证。</li>
+</ol>
+<p><img src="https://blog-image.nos-eastchina1.126.net/mj1FeEfBGA.png?imageslim" alt="mark"></p>
+<h2 id="第6步。指定安装设置"><a href="#第6步。指定安装设置" class="headerlink" title="第6步。指定安装设置"></a>第6步。指定安装设置</h2><p>在向导的默认配置步骤中，您可以选择使用默认安装设置来安装Veeam Backup＆Replication 或指定自定义安装设置。</p>
+<p>默认情况下，安装向导会使用以下设置安装Veeam Backup＆Replication ：</p>
+<ul>
+<li>安装文件夹：C:\Program Files\Veeam\Backup and Replication 。</li>
+<li>vPower缓存文件夹：C:\ProgramData\Veeam\Backup\NfsDatastore 。vPower缓存文件夹存储用于即时虚拟机恢复的写入缓存。确保您有至少10 GB的可用磁盘空间来存储写入缓存。</li>
+<li>来宾目录文件夹：C:\VBRC 目录。来宾目录文件夹存储VM来宾操作系统文件的索引数据。索引数据对于浏览和搜索备份中的VM guest虚拟机操作系统文件并执行1次单击还原是必需的。</li>
+<li>目录服务端口：9393 。目录服务端口由Veeam客服目录服务用于将目录数据从备份服务器复制到Veeam Backup企业管理器。</li>
+<li>服务帐号：本地系统。服务帐户是Veeam Backup Service运行的帐户。</li>
+<li>服务端口：9392 。Veeam Backup Enterprise Manager 使用服务端口从备份服务器收集数据。除此之外，Veeam Backup＆Replication 控制台还使用此服务端口连接到备份服务器。</li>
+<li>安全连接端口：9401 。安装服务器使用安全连接端口与备份服务器进行通信。</li>
+<li>SQL Server：LOCALHOST\VEEAMSQL2012 。在安装过程中，Veeam Backup＆Replication 将在备份服务器上本地安装一个新的Microsoft SQL Server 2012 SP3 Express Edition实例。</li>
+<li>数据库名称：VeeamBackup 。Veeam Backup＆Replication 在本地安装的Microsoft SQL Server 2012 SP3 Express Edition实例上部署Veeam Backup＆Replication 配置数据库。</li>
+</ul>
+<p>要使用默认安装设置：</p>
+<ol>
+<li>离开让我指定不同的设置复选框未选中。</li>
+<li>点击安装。安装过程将开始。</li>
+</ol>
+<p>要使用自定义安装设置，请选中让我指定不同的设置复选框。安装向导将包含额外的步骤，可让您配置安装设置。</p>
+<p><img src="https://blog-image.nos-eastchina1.126.net/k62LdEAcdj.png?imageslim" alt="mark"></p>
+<h2 id="第7步。指定服务帐户设置"><a href="#第7步。指定服务帐户设置" class="headerlink" title="第7步。指定服务帐户设置"></a>第7步。指定服务帐户设置</h2><p>如果您已选择手动配置安装设置，则向导的“ 服务帐户” 步骤可用。</p>
+<p>您可以选择要运行Veeam Backup Service的帐户：</p>
+<ul>
+<li>本地系统帐户（建议，默认使用）</li>
+<li>另一个用户帐户</li>
+</ul>
+<p>该帐户的用户名称必须以DOMAIN\USERNAME 格式指定。</p>
+<p>用户帐户必须具有以下权限和权限：</p>
+<ul>
+<li>该帐户必须是安装了Veeam Backup＆Replication 的计算机上的Administrators 组的成员。</li>
+<li>该帐户必须具有配置数据库的db_owner 权限。</li>
+</ul>
+<p>Veeam Backup＆Replication 自动授予作为服务登录权限到指定的用户帐户。</p>
+<p><img src="https://blog-image.nos-eastchina1.126.net/2Ai4dL7LJD.png?imageslim" alt="mark"></p>
+<h2 id="第8步。选择Microsoft-SQL-Server"><a href="#第8步。选择Microsoft-SQL-Server" class="headerlink" title="第8步。选择Microsoft SQL Server"></a>第8步。选择Microsoft SQL Server</h2><p>如果您已选择手动配置安装设置，则该向导的SQL Server实例步骤可用。</p>
+<p>您可以选择要在其上部署配置数据库的Microsoft SQL Server，然后选择身份验证模式。</p>
+<ol>
+<li>选择一个Microsoft SQL Server：</li>
+</ol>
+<ul>
+<li>如果未在本地或远程安装Microsoft SQL Server，请选择安装SQL Server的新实例选项。该安装程序将在备份服务器上本地安装Microsoft SQL Server 2012 SP3 Express Edition。</li>
+<li>如果已经在本地或远程安装了Microsoft SQL Server，请选择“ 使用SQL Server的现有实例” 选项。以HOSTNAME\INSTANCE 格式输入实例名称。在数据库字段中，为Veeam Backup＆Replication 配置数据库指定一个名称</li>
+</ul>
+<ol>
+<li>选择一个身份验证模式以连接到Microsoft SQL Server实例：Microsoft Windows身份验证或SQL服务器身份验证。如果您选择SQL Server身份验证，请输入Microsoft SQL Server帐户的凭据。</li>
+</ol>
+<p>如果配置数据库已经存在于Microsoft SQL Server上（例如，它是由以前安装的Veeam Backup＆Replication创建的），则安装向导将通知它。要连接到检测到的数据库，请单击是。如有必要，Veeam Backup＆Replication 将自动将数据库升级到最新版本。</p>
+<p><img src="https://blog-image.nos-eastchina1.126.net/C77F41Fb20.png?imageslim" alt="mark"></p>
+<h2 id="第9步-指定服务端口"><a href="#第9步-指定服务端口" class="headerlink" title="第9步.指定服务端口"></a>第9步.指定服务端口</h2><p>如果您已选择手动配置安装设置，则向导的端口配置步骤可用。</p>
+<p>您可以自定义将用于备份基础架构组件之间通信的端口号值：</p>
+<ul>
+<li>目录服务端口。目录服务端口由Veeam客服目录服务用于将目录数据从备份服务器复制到Veeam Backup企业管理器。默认情况下，使用端口9393。</li>
+<li>Veeam备份服务端口。Veeam Backup Enterprise Manager 使用服务端口从备份服务器收集数据。除此之外，Veeam Backup＆Replication 控制台还使用此服务端口连接到备份服务器。默认情况下，使用端口9392。</li>
+<li>安全连接端口。安装服务器使用安全连接端口与备份服务器进行通信。默认情况下，使用端口9401。</li>
+</ul>
+<p><img src="https://blog-image.nos-eastchina1.126.net/8D5FH2aj64.png?imageslim" alt="mark"></p>
+<h2 id="第10步-指定数据位置"><a href="#第10步-指定数据位置" class="headerlink" title="第10步.指定数据位置"></a>第10步.指定数据位置</h2><p>如果您已选择手动配置安装设置，则向导的“ 数据位置” 步骤可用。</p>
+<p>您可以指定必须存储Instant VM Recovery写入缓存和索引数据的位置。</p>
+<ol>
+<li>在vPower NFS 部分中，指定必须存储Instant VM Recovery写入缓存的文件夹的路径。默认文件夹是C:\ ProgramData\Veeam\Backup\NfsDatastore 。确保您有至少10 GB的可用磁盘空间来存储写入缓存。</li>
+<li>在Guest文件系统目录部分中，指定要存储索引文件的文件夹的路径。默认情况下，安装向导将使用最大可用空间在卷上创建VBRCatalog 文件夹，例如：C:\VBRCatalog 。</li>
+</ol>
+<p><img src="https://blog-image.nos-eastchina1.126.net/K0E3GhdI7c.png?imageslim" alt="mark"></p>
+<h2 id="第11步。开始安装"><a href="#第11步。开始安装" class="headerlink" title="第11步。开始安装"></a>第11步。开始安装</h2><p>如果已选择手动配置安装设置，则向导的“ 准备安装” 步骤可用。</p>
+<p>您可以查看安装设置并开始安装过程。</p>
+<ol>
+<li>如果您希望Veeam Backup＆Replication 定期检查并通知您有关产品更新的信息，请选择安装产品后定期检查更新并定期复选框。</li>
+<li>点击安装开始安装。</li>
+<li>等待安装过程完成，然后单击完成退出安装向导。</li>
+</ol>
+<p><img src="https://blog-image.nos-eastchina1.126.net/Fa2iBdihgC.png?imageslim" alt="mark"></p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>Goooo
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.sysctl.me/2018/06/05/VeeamDeploy/" title="Veeam B&amp;R部署">https://www.sysctl.me/2018/06/05/VeeamDeploy/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/en" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Backup/" rel="tag"># Backup</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/06/01/Program-design/Exhaustion/" rel="prev" title="穷举">
+      <i class="fa fa-chevron-left"></i> 穷举
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/06/09/VeeamArch/" rel="next" title="Veeam备份基础架构">
+      Veeam备份基础架构 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#部署"><span class="nav-number">1.</span> <span class="nav-text">部署</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#安装Veeam-Backup＆Replication"><span class="nav-number">2.</span> <span class="nav-text">安装Veeam Backup＆Replication</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#第1步。启动安装向导"><span class="nav-number">2.1.</span> <span class="nav-text">第1步。启动安装向导</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#第2步。阅读并接受许可协议"><span class="nav-number">2.2.</span> <span class="nav-text">第2步。阅读并接受许可协议</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#第3步。提供许可证文件"><span class="nav-number">2.3.</span> <span class="nav-text">第3步。提供许可证文件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#第4步。查看组件并选择安装文件夹"><span class="nav-number">2.4.</span> <span class="nav-text">第4步。查看组件并选择安装文件夹</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#第5步。安装缺少的软件"><span class="nav-number">2.5.</span> <span class="nav-text">第5步。安装缺少的软件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#第6步。指定安装设置"><span class="nav-number">2.6.</span> <span class="nav-text">第6步。指定安装设置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#第7步。指定服务帐户设置"><span class="nav-number">2.7.</span> <span class="nav-text">第7步。指定服务帐户设置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#第8步。选择Microsoft-SQL-Server"><span class="nav-number">2.8.</span> <span class="nav-text">第8步。选择Microsoft SQL Server</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#第9步-指定服务端口"><span class="nav-number">2.9.</span> <span class="nav-text">第9步.指定服务端口</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#第10步-指定数据位置"><span class="nav-number">2.10.</span> <span class="nav-text">第10步.指定数据位置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#第11步。开始安装"><span class="nav-number">2.11.</span> <span class="nav-text">第11步。开始安装</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Goooo"
+      src="/images/img.png">
+  <p class="site-author-name" itemprop="name">Goooo</p>
+  <div class="site-description" itemprop="description">一条啥也不会点废鱼</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">109</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">22</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">71</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/xth0331" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;xth0331" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:xietianhao0331@gmail.com" title="E-Mail → mailto:xietianhao0331@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/en" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+        
+        <script type="text/javascript" charset="utf-8" src="/js/tagcloud.js"></script>
+        <script type="text/javascript" charset="utf-8" src="/js/tagcanvas.js"></script>
+        <div class="widget-wrap">
+            <h3 class="widget-title">标签们</h3>
+            <div id="myCanvasContainer" class="widget tagcloud">
+                <canvas width="250" height="250" id="resCanvas" style="width=100%">
+                    <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ansible/" rel="tag">Ansible</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Backup/" rel="tag">Backup</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Bond/" rel="tag">Bond</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CPU/" rel="tag">CPU</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ceph/" rel="tag">Ceph</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cobbler/" rel="tag">Cobbler</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Coffee/" rel="tag">Coffee</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Corosync/" rel="tag">Corosync</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cyclic-invariant/" rel="tag">Cyclic invariant</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Docker/" rel="tag">Docker</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Effectiveness/" rel="tag">Effectiveness</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Exhaustion/" rel="tag">Exhaustion</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Filesystem/" rel="tag">Filesystem</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HAProxy/" rel="tag">HAProxy</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hardware/" rel="tag">Hardware</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Https/" rel="tag">Https</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ICMP/" rel="tag">ICMP</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JDK/" rel="tag">JDK</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Jenkins/" rel="tag">Jenkins</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JunOS/" rel="tag">JunOS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/KEEPALIVED/" rel="tag">KEEPALIVED</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Keepalived/" rel="tag">Keepalived</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/" rel="tag">Linux</a><span class="tag-list-count">19</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Log/" rel="tag">Log</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Markdown/" rel="tag">Markdown</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Modular-Programming/" rel="tag">Modular Programming</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Monitoring/" rel="tag">Monitoring</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Netconf/" rel="tag">Netconf</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Network/" rel="tag">Network</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Networking/" rel="tag">Networking</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Nginx/" rel="tag">Nginx</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OS/" rel="tag">OS</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OpenStack/" rel="tag">OpenStack</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Package-Manager/" rel="tag">Package Manager</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Partition/" rel="tag">Partition</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Programming/" rel="tag">Programming</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Python/" rel="tag">Python</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RAM/" rel="tag">RAM</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RHCS/" rel="tag">RHCS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RPM/" rel="tag">RPM</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Recursion/" rel="tag">Recursion</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Recursive/" rel="tag">Recursive</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Redirect/" rel="tag">Redirect</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Route/" rel="tag">Route</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SSH/" rel="tag">SSH</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Storage/" rel="tag">Storage</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Storage-and-Filesystem/" rel="tag">Storage and Filesystem</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Swap/" rel="tag">Swap</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Sys/" rel="tag">Sys</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Systemd/" rel="tag">Systemd</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Terminal/" rel="tag">Terminal</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Terraform/" rel="tag">Terraform</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Tools/" rel="tag">Tools</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ubuntu/" rel="tag">Ubuntu</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Veeam/" rel="tag">Veeam</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vim/" rel="tag">Vim</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Virtualization/" rel="tag">Virtualization</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vmware/" rel="tag">Vmware</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vsphere/" rel="tag">Vsphere</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Windows/" rel="tag">Windows</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Yum/" rel="tag">Yum</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/apple/" rel="tag">apple</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/elasticsearch/" rel="tag">elasticsearch</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/iteration/" rel="tag">iteration</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/logs/" rel="tag">logs</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/oop/" rel="tag">oop</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tools/" rel="tag">tools</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%88%86%E6%B2%BB/" rel="tag">分治</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E5%8E%8B%E7%BC%A9/" rel="tag">数据压缩</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%84%99%E8%A7%86%E9%93%BE/" rel="tag">鄙视链</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%87%8D%E5%A4%8D%E6%95%B0%E6%8D%AE%E5%88%A0%E9%99%A4/" rel="tag">重复数据删除</a><span class="tag-list-count">1</span></li></ul>
+                </canvas>
+            </div>
+        </div>
+        
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Goooo</span>
+</div>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.7.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://www-sysctl-me-1.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "https://www.sysctl.me/2018/06/05/VeeamDeploy/";
+    this.page.identifier = "2018/06/05/VeeamDeploy/";
+    this.page.title = "Veeam B&R部署";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://www-sysctl-me-1.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/koharu.model.json"},"display":{"position":"left","width":300,"height":600},"mobile":{"show":false},"react":{"opacity":0.7}});</script></body>
+</html>

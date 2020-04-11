@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://www.sysctl.me').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","width":320,"display":"post","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="Yum是Red Hat软件包管理器，它能够查询有关可用软件包的信息，从存储库获取软件包，安装和卸载软件包，以及将整个系统更新到最新的可用版本。Yum在更新，安装或删除软件包时执行自动依赖性解析，因此能够自动确定，获取和安装所有可用的依赖软件包。 Yum可以配置新的，额外的存储库或包源，还提供许多增强和扩展其功能的插件。百胜可以执行许多与RPM相同的任务; 此外，许多命令行选项都是类似的。Yum可以">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Yum">
+<meta property="og:url" content="https://www.sysctl.me/2018/08/24/Linux/CentOSYum/index.html">
+<meta property="og:site_name" content="Sysctl">
+<meta property="og:description" content="Yum是Red Hat软件包管理器，它能够查询有关可用软件包的信息，从存储库获取软件包，安装和卸载软件包，以及将整个系统更新到最新的可用版本。Yum在更新，安装或删除软件包时执行自动依赖性解析，因此能够自动确定，获取和安装所有可用的依赖软件包。 Yum可以配置新的，额外的存储库或包源，还提供许多增强和扩展其功能的插件。百胜可以执行许多与RPM相同的任务; 此外，许多命令行选项都是类似的。Yum可以">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog-image.nos-eastchina1.126.net/yum1.jpg">
+<meta property="article:published_time" content="2018-08-24T01:24:50.000Z">
+<meta property="article:modified_time" content="2020-01-22T14:36:40.910Z">
+<meta property="article:author" content="Goooo">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="Package Manager">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog-image.nos-eastchina1.126.net/yum1.jpg">
+
+<link rel="canonical" href="https://www.sysctl.me/2018/08/24/Linux/CentOSYum/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>Yum | Sysctl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Sysctl" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Sysctl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">观察指南，博客</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="搜索..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/xth0331" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.sysctl.me/2018/08/24/Linux/CentOSYum/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/img.png">
+      <meta itemprop="name" content="Goooo">
+      <meta itemprop="description" content="一条啥也不会点废鱼">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Sysctl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Yum
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-08-24 09:24:50" itemprop="dateCreated datePublished" datetime="2018-08-24T09:24:50+08:00">2018-08-24</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-01-22 22:36:40" itemprop="dateModified" datetime="2020-01-22T22:36:40+08:00">2020-01-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2018/08/24/Linux/CentOSYum/#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2018/08/24/Linux/CentOSYum/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><strong>Yum</strong>是Red Hat软件包管理器，它能够查询有关可用软件包的信息，从存储库获取软件包，安装和卸载软件包，以及将整个系统更新到最新的可用版本。Yum在更新，安装或删除软件包时执行自动依赖性解析，因此能够自动确定，获取和安装所有可用的依赖软件包。</p>
+<p>Yum可以配置新的，额外的存储库或<em>包源</em>，还提供许多增强和扩展其功能的插件。百胜可以执行许多与<strong>RPM</strong>相同的任务; 此外，许多命令行选项都是类似的。Yum可以在一台计算机或一组计算机上轻松简单地进行包管理。</p>
+<a id="more"></a>
+<h1 id="检查和更新包"><a href="#检查和更新包" class="headerlink" title="检查和更新包"></a>检查和更新包</h1><p>通过Yum，可以检查系统是否有等待应用的更新。可以列出需要更新的软件包并将其作为整体进行更新，也可以更新选定的单个软件包。</p>
+<h2 id="查询更新"><a href="#查询更新" class="headerlink" title="查询更新"></a>查询更新</h2><p>要查看系统上哪些已安装的软件包具有可用更新，请使用以下命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum check-update</span><br></pre></td></tr></table></figure>
+<p><em>yum check-update 的输出类似这样：</em></p>
+<p><img src="https://blog-image.nos-eastchina1.126.net/yum1.jpg" alt="yum check-update output"></p>
+<h2 id="更新包"><a href="#更新包" class="headerlink" title="更新包"></a>更新包</h2><p>您可以选择一次更新单个包，多个包或所有包。如果您更新的软件包或软件包的任何依赖项本身都有可用的更新，那么它们也会更新。</p>
+<h3 id="更新单个包"><a href="#更新单个包" class="headerlink" title="更新单个包"></a>更新单个包</h3><p>要更新单个程序包，请运行以下命令<code>root</code>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum update 包名</span><br></pre></td></tr></table></figure>
+<p>yum 提供更新信息，然后提示您确认更新; yum默认以交互方式运行。如果您已经知道<code>yum</code>命令计划执行哪些事务，则可以使用该<code>-y</code>选项自动回答<code>yes</code> yum请求的任何问题（在这种情况下，它以非交互方式运行）。但是，您应该始终检查yum计划对系统进行哪些更改，以便您可以轻松解决可能出现的任何问题。您也可以选择下载软件包而无需安装它。为此，请<code>d</code>在下载提示中选择该选项。这将启动所选包的后台下载。</p>
+<p>如果事务失败，您可以使用<code>yum history</code>所述的命令查看yum事务历史。</p>
+<p>无论您是否使用<code>yum update</code>或<code>yum install</code>命令，Yum始终<em>会安装</em>新内核。</p>
+<p>当使用<strong>RPM</strong>，而另一方面，它使用是很重要的<code>rpm -i kernel</code>，其安装一个新的内核，而不是命令<code>rpm -u kernel</code>其<em>替换</em>当前内核。</p>
+<p>同样，可以更新包组。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum group update 组名</span><br></pre></td></tr></table></figure>
+<h4 id="更新所有包及其依赖项"><a href="#更新所有包及其依赖项" class="headerlink" title="更新所有包及其依赖项"></a>更新所有包及其依赖项</h4><p>要更新所有包及其依赖项，请使用<code>yum update</code>不带任何参数的命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum update</span><br></pre></td></tr></table></figure>
+<h3 id="更新与安全相关的包"><a href="#更新与安全相关的包" class="headerlink" title="更新与安全相关的包"></a>更新与安全相关的包</h3><p>如果程序包具有可用的安全更新，则只能将这些程序包更新为其最新版本。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum update --security</span><br></pre></td></tr></table></figure>
+<p>您还可以仅将包更新到包含最新安全更新的版本。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum update-minimal --security</span><br></pre></td></tr></table></figure>
+<p>例如，假设：</p>
+<ul>
+<li><p>该内核3.10.0-1软件包安装在系统上;</p>
+</li>
+<li><p>该内核3.10.0-2包发布的安全更新;</p>
+</li>
+<li><p>该内核3.10.0-3包被发布了作为一个bug修复更新。</p>
+</li>
+</ul>
+<p>然后<code>yum update-minimal --security</code>将软件包更新到kernel-3.10.0-2，并将<code>yum update --security</code>软件包更新到kernel-3.10.0-3。</p>
+<h3 id="自动化包更新"><a href="#自动化包更新" class="headerlink" title="自动化包更新"></a>自动化包更新</h3><p>要刷新包数据库并自动下载更新，您可以使用该<code>yum-cron</code>服务。</p>
+<h2 id="使用ISO和Yum离线升级系统"><a href="#使用ISO和Yum离线升级系统" class="headerlink" title="使用ISO和Yum离线升级系统"></a>使用ISO和Yum离线升级系统</h2><p>对于与Internet或Red Hat Network断开连接的系统，使用<code>yum update</code>带有Red Hat Enterprise Linux安装的命令，ISO映像是将系统升级到最新次要版本的简便快捷方式。以下步骤说明了升级过程：</p>
+<ol>
+<li><p>创建目标目录以装入ISO映像。安装时不会自动创建此目录，因此请在继续下一步之前创建该目录。作为<code>root</code>，键入：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mkdir mount_dir</span><br></pre></td></tr></table></figure>
+<p>将<em>mount_dir</em>替换为mount目录的路径。通常，用户将其创建为目录中的<code>/media</code>子目录。</p>
+</li>
+<li><p>将Red Hat Enterprise Linux 7安装ISO映像挂载到先前创建的目标目录。作为<code>root</code>，键入：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mount -o loop iso_name  mount_dir</span><br></pre></td></tr></table></figure>
+<p>更换<em>ISO_NAME</em>与路径，以您的ISO映像，并<em>mount_dir</em>与到目标目录的路径。此处，<code>-o``loop</code>需要该选项将文件作为块设备安装。</p>
+</li>
+<li><p>将<code>media.repo</code>文件从mount目录复制到该<code>/etc/yum.repos.d/</code>目录。请注意，此目录中的配置文件必须具有<em>.repo</em>扩展名才能正常运行。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cp mount_dir/media.repo /etc/yum.repos.d/new.repo</span><br></pre></td></tr></table></figure>
+<p>这将为yum存储库创建配置文件。将<em>new.repo</em>替换为文件名，例如<em>rhel7.repo</em>。</p>
+</li>
+<li><p>编辑新配置文件，使其指向Red Hat Enterprise Linux安装ISO。将以下行添加到文件中： <code>/etc/yum.repos.d/*new.repo*</code></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">baseurl = file：/// mount_dir</span><br></pre></td></tr></table></figure>
+<p>将<em>mount_dir</em>替换为安装点的路径。</p>
+</li>
+<li><p>更新所有yum存储库，包括在先前步骤中创建的。作为，键入：<code>/etc/yum.repos.d/*new.repo*``root</code></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum update</span><br></pre></td></tr></table></figure>
+<p>这会将您的系统升级到安装的ISO映像提供的版本。</p>
+</li>
+<li><p>成功升级后，您可以卸载ISO映像。作为<code>root</code>，键入：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">umount mount_dir</span><br></pre></td></tr></table></figure>
+<p>其中<em>mount_dir</em>是mount目录的路径。此外，您可以删除在第一步中创建的安装目录。作为<code>root</code>，键入：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rmdir mount_dir</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>如果您不将先前创建的配置文件用于其他安装或更新，则可以将其删除。作为<code>root</code>，键入：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rm /etc/yum.repos.d/new.repo</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<p><strong>例：从CentOS7.0升级到7.5</strong></p>
+<p>如果需要使用具有较新版本系统的ISO映像升级系统而无法访问Internet，例如<code>CentOS-7-x86_64-Everything-1804.iso</code>，请创建用于安装的目标目录，例如<code>/media/centos7/</code>。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">〜]＃ mount -o loop CentOS-7-x86_64-Everything-1804.iso /media/centos7/</span><br></pre></td></tr></table></figure>
+<p>要使yum将挂载点识别为存储库，请将以下行添加到<code>/etc/yum.repos.d/centos.repo</code>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">baseurl=file:///media/centos7/</span><br></pre></td></tr></table></figure>
+<p>现在，更新yum存储库会将您的系统升级到由<code>CentOS-7-x86_64-Everything-1804.iso</code>。提供的版本。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">〜]＃ yum update</span><br></pre></td></tr></table></figure>
+<p>系统升级成功后，可以卸载映像，删除目标目录和配置文件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">〜]＃ umount /media/centos7/</span><br><span class="line">〜]＃ rmdir /media/centos7/</span><br><span class="line">〜]＃ rm /etc/yum.repos.d/centos.repo</span><br></pre></td></tr></table></figure>
+<h1 id="使用包"><a href="#使用包" class="headerlink" title="使用包"></a>使用包</h1><p>Yum使您能够使用软件包执行一整套操作，包括搜索包，查看有关包，安装和删除的信息。</p>
+<h2 id="搜索包"><a href="#搜索包" class="headerlink" title="搜索包"></a>搜索包</h2><p>您可以使用以下命令搜索所有RPM包名称，描述和摘要：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum search   xxx</span><br></pre></td></tr></table></figure>
+<p>获得更全更详尽的慢搜索：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum search all xxx</span><br></pre></td></tr></table></figure>
+<h2 id="清单包"><a href="#清单包" class="headerlink" title="清单包"></a>清单包</h2><p>要列出有关所有已安装<em>和</em>可用软件包的信息<em>，</em>请在shell提示符下键入以下内容：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum list all</span><br></pre></td></tr></table></figure>
+<p>要列出与插入的glob表达式匹配的已安装<em>和</em>可用的包，请使用以下命令： </p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum list glob_expression…</span><br></pre></td></tr></table></figure>
+<p>要列出系统上安装的所有软件包，请使用<code>installed</code>关键字。输出中最右边的列列出了从中检索包的存储库。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum list installed glob_expression ...</span><br></pre></td></tr></table></figure>
+<p>例如</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum list available gstreamer\*plugin\*</span><br></pre></td></tr></table></figure>
+<h3 id="列出存储库"><a href="#列出存储库" class="headerlink" title="列出存储库"></a>列出存储库</h3><p>要列出系统上每个已<em>启用</em>存储库的存储库ID，名称和程序包数，请使用以下命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum repolist</span><br></pre></td></tr></table></figure>
+<p>要列出有关这些存储库的更多信息，请添加该<code>-v</code>选项。启用此选项后，将为每个列出的存储库显示包括文件名，总大小，上次更新日期和基本URL的信息。或者，您可以使用<code>repoinfo</code>生成相同输出的命令。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum repoinfo</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum repolist -v</span><br></pre></td></tr></table></figure>
+<p>要列出启用和禁用的存储库，请使用以下命令。状态列将添加到输出列表中，以显示启用了哪些存储库。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum repolist all</span><br></pre></td></tr></table></figure>
+<p>通过<code>disabled</code>作为第一个参数传递，可以将命令输出减少到禁用的存储库。为了进一步说明，您可以将存储库的ID或名称或相关的glob_expressions作为参数传递。请注意，如果存储库ID或名称与插入的参数之间存在完全匹配，则即使未通过<em>启用</em>或<em>禁用的</em>过滤器，也会列出此存储库。</p>
+<h2 id="显示包信息"><a href="#显示包信息" class="headerlink" title="显示包信息"></a>显示包信息</h2><p>要显示有关一个或多个包的信息，请使用以下命令（glob表达式在此处也有效）：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum info package_name ...</span><br></pre></td></tr></table></figure>
+<p>例如显示nginx的包信息</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost ~]<span class="comment"># yum info nginx</span></span><br><span class="line">Loaded plugins: fastestmirror, langpacks, product-id, search-disabled-repos, subscription-manager</span><br><span class="line">This system is not registered with an entitlement server. You can use subscription-manager to register.</span><br><span class="line">Loading mirror speeds from cached hostfile</span><br><span class="line"> * base: mirrors.tuna.tsinghua.edu.cn</span><br><span class="line"> * epel: mirrors.tuna.tsinghua.edu.cn</span><br><span class="line"> * extras: mirrors.tuna.tsinghua.edu.cn</span><br><span class="line"> * updates: mirrors.tuna.tsinghua.edu.cn</span><br><span class="line">Installed Packages</span><br><span class="line">Name        : nginx</span><br><span class="line">Arch        : x86_64</span><br><span class="line">Epoch       : 1</span><br><span class="line">Version     : 1.12.2</span><br><span class="line">Release     : 2.el7</span><br><span class="line">Size        : 1.5 M</span><br><span class="line">Repo        : installed</span><br><span class="line">From repo   : epel</span><br><span class="line">Summary     : A high performance web server and reverse proxy server</span><br><span class="line">URL         : http://nginx.org/</span><br><span class="line">License     : BSD</span><br><span class="line">Description : Nginx is a web server and a reverse proxy server <span class="keyword">for</span> HTTP, SMTP, POP3 and</span><br><span class="line">            : IMAP protocols, with a strong focus on high concurrency, performance and low</span><br><span class="line">            : memory usage.</span><br></pre></td></tr></table></figure>
+<p><code>rpm -q --info package_name</code>同样可以查看包信息</p>
+<h3 id="使用yumdb"><a href="#使用yumdb" class="headerlink" title="使用yumdb"></a>使用yumdb</h3><p>还可以使用以下命令在yum数据库中查询有关包的替代和有用信息：</p>
+<p>此命令提供有关包的其他信息，包括包的校验和（以及用于生成它的算法，如SHA-256），在命令行上给出的用于安装包的命令（如果有）以及在系统上安装软件包的原因（<code>user</code>表示它是由用户安装的，并且<code>dep</code>表示它是作为依赖项引入的）。</p>
+<h2 id="安装包"><a href="#安装包" class="headerlink" title="安装包"></a>安装包</h2><p>要安装单个程序包及其所有未安装的依赖项</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum install package_name</span><br></pre></td></tr></table></figure>
+<p>还可以通过将其名称作为参数附加来同时安装多个软件包。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum install package_name  package_name ...</span><br></pre></td></tr></table></figure>
+<p>模糊匹配</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum install audacious-plugins-\*</span><br></pre></td></tr></table></figure>
+<p><code>yum install</code> 还可以提供文件名。如果您知道要安装的二进制文件的名称，而不知道其软件包名称，则可以指定<code>yum install</code>路径名称。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum install /usr/sbin/named</span><br></pre></td></tr></table></figure>
+<p>正如您在上面的示例中所看到的，<code>yum install</code>命令不需要严格定义的参数。它可以处理各种格式的包名称和glob表达式，这使得用户的安装更加容易。另一方面，<strong>yum</strong>需要一些时间才能正确解析输入，特别是如果指定了大量的包。要优化程序包搜索，可以使用以下命令显式定义如何解析参数：</p>
+<p>使用<code>install-n</code>，<strong>yum</strong>将<em>name</em>解释为包的确切名称。<code>install-na</code>命令告诉<strong>yum</strong>后续参数包含包名称和体系结构除以点字符。有了<code>install-nevra</code>，<strong>yum</strong>会期望以<em>name-epoch：version-release.architecture</em>的形式<em>出现</em>一个参数。同样，您可以在搜索要删除的包时使用<code>yum remove-n</code>，<code>yum remove-na</code>和<code>yum remove-nevra</code>。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">yum install-n package_name</span><br><span class="line">yum install-na name.architecture</span><br><span class="line">yum install-nevra name-epoch:version-release.architecture</span><br></pre></td></tr></table></figure>
+<p>如果您知道要安装包含<code>named</code>二进制文件的软件包，但您不知道文件安装在哪个目录<code>bin/</code>或<code>sbin/</code>目录中，请使用<code>yum provides</code>带有glob表达式的命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost ~]<span class="comment"># yum provides "*bin/mysql"</span></span><br><span class="line">Loaded plugins: fastestmirror, langpacks, product-id, search-disabled-repos, subscription-manager</span><br><span class="line">This system is not registered with an entitlement server. You can use subscription-manager to register.</span><br><span class="line">Loading mirror speeds from cached hostfile</span><br><span class="line"> * base: mirrors.nwsuaf.edu.cn</span><br><span class="line"> * epel: mirrors.tuna.tsinghua.edu.cn</span><br><span class="line"> * extras: mirrors.tuna.tsinghua.edu.cn</span><br><span class="line"> * updates: mirrors.163.com</span><br><span class="line">1:mariadb-5.5.56-2.el7.x86_64 : A community developed branch of MySQL</span><br><span class="line">Repo        : base</span><br><span class="line">Matched from:</span><br><span class="line">Filename    : /usr/bin/mysql</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">1:mariadb-5.5.60-1.el7_5.x86_64 : A community developed branch of MySQL</span><br><span class="line">Repo        : updates</span><br><span class="line">Matched from:</span><br><span class="line">Filename    : /usr/bin/mysql</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">1:mariadb-5.5.56-2.el7.x86_64 : A community developed branch of MySQL</span><br><span class="line">Repo        : @base</span><br><span class="line">Matched from:</span><br><span class="line">Filename    : /usr/bin/mysql</span><br></pre></td></tr></table></figure>
+<p><strong>安装过程</strong></p>
+<p>以下示例提供了使用<strong>yum</strong>进行安装的概述。要下载并安装最新版本的httpd软件包，</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">~]<span class="comment"># yum install httpd</span></span><br><span class="line">Loaded plugins: langpacks, product-id, subscription-manager</span><br><span class="line">Resolving Dependencies</span><br><span class="line">--&gt; Running transaction check</span><br><span class="line">---&gt; Package httpd.x86_64 0:2.4.6-12.el7 will be updated</span><br><span class="line">---&gt; Package httpd.x86_64 0:2.4.6-13.el7 will be an update</span><br><span class="line">--&gt; Processing Dependency: 2.4.6-13.el7 <span class="keyword">for</span> package: httpd-2.4.6-13.el7.x86_64</span><br><span class="line">--&gt; Running transaction check</span><br><span class="line">---&gt; Package httpd-tools.x86_64 0:2.4.6-12.el7 will be updated</span><br><span class="line">---&gt; Package httpd-tools.x86_64 0:2.4.6-13.el7 will be an update</span><br><span class="line">--&gt; Finished Dependency Resolution</span><br><span class="line"></span><br><span class="line">Dependencies Resolved</span><br></pre></td></tr></table></figure>
+<p>执行上述命令后，<strong>yum</strong>加载必要的插件并运行事务检查。在这种情况下，httpd已经安装。由于安装的软件包比最新的当前可用版本旧，因此将进行更新。这同样适用于httpd所依赖的httpd-tools包。然后，显示事务摘要：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">================================================================================</span><br><span class="line"> Package        Arch      Version                 Repository               Size</span><br><span class="line">================================================================================</span><br><span class="line">Updating:</span><br><span class="line"> httpd          x86_64    2.4.6-13.el7            rhel-x86_64-server-7    1.2 M</span><br><span class="line">Updating <span class="keyword">for</span> dependencies:</span><br><span class="line"> httpd-tools    x86_64    2.4.6-13.el7            rhel-x86_64-server-7     77 k</span><br><span class="line"></span><br><span class="line">Transaction Summary</span><br><span class="line">================================================================================</span><br><span class="line">Upgrade  1 Package (+1 Dependent package)</span><br><span class="line"></span><br><span class="line">Total size: 1.2 M</span><br><span class="line">Is this ok [y/d/N]:</span><br></pre></td></tr></table></figure>
+<p>在此步骤中，<strong>yum</strong>会提示您确认安装。除<code>y</code>（是）和<code>N</code>（否）选项外，您可以选择<code>d</code>（仅下载）下载软件包，但不能直接安装它们。如果选择<code>y</code>，安装将继续以下消息，直到成功完成。</p>
+<p>要从系统上的本地目录安装以前下载的软件包，请使用以下命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum localinstall path</span><br></pre></td></tr></table></figure>
+<p>将<em>path</em>替换为要安装的程序包的路径。</p>
+<h2 id="下载包"><a href="#下载包" class="headerlink" title="下载包"></a>下载包</h2><p>在某个安装过程中，系统会提示您使用以下消息确认安装：</p>
+<p>使用<code>d</code>选项，yum下载包而不立即安装它们。您可以稍后使用<code>yum localinstall</code>命令脱机安装这些软件包，也可以使用其他设备共享它们。默认情况下，下载的包保存在缓存目录的一个子目录中<code>/var/cache/yum/$basearch/$releasever/packages/</code>。下载以后台模式进行，以便您可以并行使用<strong>yum</strong>进行其他操作。</p>
+<h2 id="删除包"><a href="#删除包" class="headerlink" title="删除包"></a>删除包</h2><p>与软件包安装类似，yum允许您卸载它们。要卸载特定软件包以及依赖于它的任何软件包：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum remove package_name…</span><br></pre></td></tr></table></figure>
+<h1 id="使用包组"><a href="#使用包组" class="headerlink" title="使用包组"></a>使用包组</h1><p>包组是一组用于通用目的的包，例如<em>System Tools</em>或<em>Sound and Video</em>。安装软件包组会提取一组依赖软件包，从而大大节省了时间。<code>yum groups</code>命令是一个顶级命令，它涵盖了yum中对包组进行操作的所有操作。</p>
+<h2 id="列出包组"><a href="#列出包组" class="headerlink" title="列出包组"></a>列出包组</h2><p><code>summary</code>选项用于查看已安装组，可用组，可用环境组以及已安装和可用语言组的数量：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum groups summary</span><br></pre></td></tr></table></figure>
+<p>要列出yum存储库中的所有软件包组，请添加该<code>list</code>选项。您可以按组名称过滤命令输出。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum group list glob_expression ...</span><br></pre></td></tr></table></figure>
+<h3 id="安装包组"><a href="#安装包组" class="headerlink" title="安装包组"></a>安装包组</h3><p>每个包组都有一个名称和一个组ID（<em>groupid</em>）。要列出括号中显示的所有包组的名称及其组ID，请键入：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum group list ids</span><br></pre></td></tr></table></figure>
+<p><strong>查找包组的名称和groupid</strong></p>
+<p>要查找程序包组的名称或ID，例如与KDE桌面环境相关的组，</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">~]$ yum group list ids kde\*</span><br><span class="line">Available environment groups:</span><br><span class="line">   KDE Plasma Workspaces (kde-desktop-environment)</span><br><span class="line">Done</span><br></pre></td></tr></table></figure>
+<p>某些组被配置的存储库中的设置隐藏。例如，在服务器上，也可以使用<code>hidden</code>命令选项列出隐藏的组:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">~]$ yum group list hidden ids kde\*</span><br><span class="line">Loaded plugins: product-id, subscription-manager</span><br><span class="line">Available Groups:</span><br><span class="line">   KDE (kde-desktop)</span><br><span class="line">Done</span><br></pre></td></tr></table></figure>
+<p>您可以通过将其完整组名称（不带groupid部分）传递给<code>group install</code>命令来安装程序包组。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum group install <span class="string">"group name"</span></span><br></pre></td></tr></table></figure>
+<p>您也可以通过groupid安装。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum group install groupid</span><br></pre></td></tr></table></figure>
+<p>可以将groupid或带引号的组名称传递给该命令，<code>yum</code>表示您要执行该命令<code>group install</code></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum install @group</span><br></pre></td></tr></table></figure>
+<p><strong>安装KDE桌面组的四种等效方法</strong></p>
+<p>可以使用四种替代但等效的方法来安装软件包组。对于KDE Desktop，命令如下所示：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">~]<span class="comment"># yum group install "KDE Desktop"</span></span><br><span class="line">~]<span class="comment"># yum group install kde-desktop</span></span><br><span class="line">~]<span class="comment"># yum install @"KDE Desktop"</span></span><br><span class="line">~]<span class="comment"># yum install @kde-desktop</span></span><br></pre></td></tr></table></figure>
+<h2 id="删除包组"><a href="#删除包组" class="headerlink" title="删除包组"></a>删除包组</h2><p>可以使用类似于<code>install</code>语法的语法删除包组，并使用包组的名称或其ID</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">yum group remove group_name</span><br><span class="line">yum group remove groupid</span><br></pre></td></tr></table></figure>
+<p>此外，<code>remove</code>如果您使用@ -symbol 前面的命令，可以将groupid或带引号的名称传递给该命令，命令告诉yum您要执行该命令<code>group remove</code>。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum remove @group</span><br></pre></td></tr></table></figure>
+<p>将<em>group</em>替换为groupid或带引号的组名。同样，您可以替换环境组:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum remove @^group</span><br></pre></td></tr></table></figure>
+<p><strong>删除KDE Desktop组的四种等效方法</strong></p>
+<p>与安装类似，您可以使用四种替代但等效的方法来删除软件包组。对于KDE Desktop，命令如下所示：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">~]<span class="comment"># yum group remove "KDE Desktop"</span></span><br><span class="line">~]<span class="comment"># yum group remove kde-desktop</span></span><br><span class="line">~]<span class="comment"># yum remove @"KDE Desktop"</span></span><br><span class="line">~]<span class="comment"># yum remove @kde-desktop</span></span><br></pre></td></tr></table></figure>
+<h2 id="yum-历史记录"><a href="#yum-历史记录" class="headerlink" title="yum 历史记录"></a>yum 历史记录</h2><p><code>yum history</code>命令使用户能够查看有关yum事务的时间线, 它们发生的日期和时间，受影响的包的数量，这些事务是成功还是中止以及RPM数据库是否在事务之间更改的信息。此外，此命令可用于撤消或重做某些事务. 所有历史数据都存储在目录<code>/var/lib/yum/history/</code>中的历史DB中 </p>
+<h2 id="事务列表"><a href="#事务列表" class="headerlink" title="事务列表"></a>事务列表</h2><p>To display a list of the twenty most recent transactions, as <code>root</code>, either run <code>yum history</code>with no additional arguments, or type the following at a shell prompt:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum <span class="built_in">history</span> list</span><br></pre></td></tr></table></figure>
+<p>要显示所有事务，请添加<code>all</code>关键字</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum history list all</span><br></pre></td></tr></table></figure>
+<p>要仅显示给定范围内的事务，请使用以下格式的命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum <span class="built_in">history</span> list start_id..end_id</span><br></pre></td></tr></table></figure>
+<p>您还可以仅列出有关特定包或包的事务。为此，请使用包名称或glob表达式的命令：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum history list glob_expression…</span><br></pre></td></tr></table></figure>
+<p><strong>列出五个最旧的事务</strong></p>
+<p>在<code>yum history list</code>输出中，最近的事务显示在列表的顶部。要显示有关历史数据库中存储的五个最旧事务的信息，请键入：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">~]<span class="comment"># yum history list 1..5</span></span><br><span class="line">Loaded plugins: langpacks, product-id, subscription-manager</span><br><span class="line">ID     | Login user               | Date and time    | Action(s)      | Altered</span><br><span class="line">-------------------------------------------------------------------------------</span><br><span class="line">     5 | User &lt;user&gt;              | 2013-07-29 15:33 | Install        |    1</span><br><span class="line">     4 | User &lt;user&gt;              | 2013-07-21 15:10 | Install        |    1</span><br><span class="line">     3 | User &lt;user&gt;              | 2013-07-16 15:27 | I, U           |   73</span><br><span class="line">     2 | System &lt;<span class="built_in">unset</span>&gt;           | 2013-07-16 15:19 | Update         |    1</span><br><span class="line">     1 | System &lt;<span class="built_in">unset</span>&gt;           | 2013-07-16 14:38 | Install        | 1106</span><br><span class="line"><span class="built_in">history</span> list</span><br></pre></td></tr></table></figure>
+<p>所有形式的<code>yum history list</code>命令都会生成表格输出，每行包含以下列：</p>
+<ul>
+<li><code>ID</code> — 标识特定事务的整数值.</li>
+<li><code>Login user</code> — 登录会话用于启动事务的用户的名称。</li>
+<li><code>Date and time</code> — 事务发生的日期和时间。</li>
+<li><code>Action(s)</code> — 事务期间执行的操作列表。</li>
+<li><code>Altered</code> — 受事务影响的软件包数量。</li>
+</ul>
+<p><strong>Action（s）字段的可能值</strong></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Abbreviation</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Downgrade</code></td>
+<td><code>D</code></td>
+<td>至少有一个软件包已降级为旧版本。</td>
+</tr>
+<tr>
+<td><code>Erase</code></td>
+<td><code>E</code></td>
+<td>至少有一个包已被删除。</td>
+</tr>
+<tr>
+<td><code>Install</code></td>
+<td><code>I</code></td>
+<td>至少安装了一个新软件包。</td>
+</tr>
+<tr>
+<td><code>Obsoleting</code></td>
+<td><code>O</code></td>
+<td>至少有一个包被标记为已过时。</td>
+</tr>
+<tr>
+<td><code>Reinstall</code></td>
+<td><code>R</code></td>
+<td>至少已重新安装一个软件包。</td>
+</tr>
+<tr>
+<td><code>Update</code></td>
+<td><code>U</code></td>
+<td>至少有一个软件包已更新为更新版本。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Altered 字段的可能值</strong></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>Symbol</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>&lt;</code></td>
+<td>在事务完成之前，<code>rpmdb</code>数据库在yum之外被更改。</td>
+</tr>
+<tr>
+<td><code>&gt;</code></td>
+<td>事务完成后，<code>rpmdb</code>数据库在yum之外更改。</td>
+</tr>
+<tr>
+<td><code>*</code></td>
+<td>交易未能完成。</td>
+</tr>
+<tr>
+<td><code>#</code></td>
+<td>事务成功完成，但yum返回非零退出代码。</td>
+</tr>
+<tr>
+<td><code>E</code></td>
+<td>事务成功完成，但显示错误或警告。</td>
+</tr>
+<tr>
+<td><code>P</code></td>
+<td>事务已成功完成，但<code>rpmdb</code>数据库中已存在问题。</td>
+</tr>
+<tr>
+<td><code>s</code></td>
+<td>事务成功完成，但使用了<code>--skip-broken</code>命令行选项并跳过了某些包。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>同步的<code>rpmdb</code>或<code>yumdb</code>为任何已安装的包与当前使用的数据库的内容<code>rpmdb</code>或<code>yumdb</code>数据库，键入以下内容：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum <span class="built_in">history</span> sync</span><br></pre></td></tr></table></figure>
+<p>要显示有关当前使用的历史数据库的一些统计信息，请使用以下命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum <span class="built_in">history</span> stats</span><br></pre></td></tr></table></figure>
+<p><strong>yum历史统计信息的示例输出</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">~]<span class="comment"># yum history stats</span></span><br><span class="line">Loaded plugins: langpacks, product-id, subscription-manager </span><br><span class="line">File        : //var/lib/yum/<span class="built_in">history</span>/<span class="built_in">history</span>-2012-08-15.sqlite</span><br><span class="line">Size        : 2,766,848</span><br><span class="line">Transactions: 41</span><br><span class="line">Begin time  : Wed Aug 15 16:18:25 2012</span><br><span class="line">End time    : Wed Feb 27 14:52:30 2013</span><br><span class="line">Counts      :</span><br><span class="line">  NEVRAC :  2,204</span><br><span class="line">  NEVRA  :  2,204</span><br><span class="line">  NA     :  1,759</span><br><span class="line">  NEVR   :  2,204</span><br><span class="line">  rpm DB :  2,204</span><br><span class="line">  yum DB :  2,204</span><br><span class="line"><span class="built_in">history</span> stats</span><br></pre></td></tr></table></figure>
+<p>yum还允许您显示所有过去交易的摘要</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum <span class="built_in">history</span> summary</span><br></pre></td></tr></table></figure>
+<p>要仅显示给定范围内的事务，请键入</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum <span class="built_in">history</span> summary start_id..end_id</span><br></pre></td></tr></table></figure>
+<p>与<code>yum history list</code>命令类似，您还可以通过提供包名称或glob表达式来显示有关某个包或某些包的事务摘要：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum <span class="built_in">history</span> summary glob_expression…</span><br></pre></td></tr></table></figure>
+<p><strong>五项最新事务摘要</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">~]<span class="comment"># yum history summary 1..5</span></span><br><span class="line">Loaded plugins: langpacks, product-id, subscription-manager</span><br><span class="line">Login user                 | Time                | Action(s)        | Altered </span><br><span class="line">-------------------------------------------------------------------------------</span><br><span class="line">Jaromir ... &lt;jhradilek&gt;    | Last day            | Install          |        1</span><br><span class="line">Jaromir ... &lt;jhradilek&gt;    | Last week           | Install          |        1</span><br><span class="line">Jaromir ... &lt;jhradilek&gt;    | Last 2 weeks        | I, U             |       73</span><br><span class="line">System &lt;<span class="built_in">unset</span>&gt;             | Last 2 weeks        | I, U             |     1107</span><br><span class="line"><span class="built_in">history</span> summary</span><br></pre></td></tr></table></figure>
+<p>有形式的<code>yum history summary</code>命令都产生类似于输出的简化表格输出<code>yum history list</code>。</p>
+<p>从包的角度列出事务</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum <span class="built_in">history</span> package-list glob_expression…</span><br></pre></td></tr></table></figure>
+<p><strong>追踪包的历史</strong></p>
+<p>要跟踪订阅管理器和相关包的历史记录，请在shell提示符下键入以下内容：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">~]<span class="comment"># yum history package-list subscription-manager\*</span></span><br><span class="line">Loaded plugins: langpacks, product-id, search-disabled-repos, subscription-manager</span><br><span class="line">ID     | Action(s)      | Package</span><br><span class="line">-------------------------------------------------------------------------------</span><br><span class="line">     2 | Updated        | subscription-manager-1.13.22-1.el7.x86_64          EE</span><br><span class="line">     2 | Update         |                      1.15.9-15.el7.x86_64          EE</span><br><span class="line">     2 | Obsoleted      | subscription-manager-firstboot-1.13.22-1.el7.x86_64 EE</span><br><span class="line">     2 | Updated        | subscription-manager-gui-1.13.22-1.el7.x86_64      EE</span><br><span class="line">     2 | Update         |                          1.15.9-15.el7.x86_64      EE</span><br><span class="line">     2 | Obsoleting     | subscription-manager-initial-setup-addon-1.15.9-15.el7.x86_64 EE</span><br><span class="line">     1 | Install        | subscription-manager-1.13.22-1.el7.x86_64</span><br><span class="line">     1 | Install        | subscription-manager-firstboot-1.13.22-1.el7.x86_64</span><br><span class="line">     1 | Install        | subscription-manager-gui-1.13.22-1.el7.x86_64</span><br><span class="line"><span class="built_in">history</span> package-list</span><br></pre></td></tr></table></figure>
+<p>在此示例中，在初始系统安装期间安装了三个软件包：subscription-manager，subscription-manager-firstboot和subscription-manager-gui。在第三个事务中，所有这些包都从版本1.10.11更新到版本1.10.17。</p>
+<h2 id="检查事务"><a href="#检查事务" class="headerlink" title="检查事务"></a>检查事务</h2><p>要显示单个事务的摘要，请使用<code>yum history summary</code>以下格式的命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum <span class="built_in">history</span> summary id</span><br></pre></td></tr></table></figure>
+<p>这里，<em>id</em>代表事务的ID。</p>
+<p>要更详细地检查特定事务或事务，请运行以下命令</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum <span class="built_in">history</span> info id…</span><br></pre></td></tr></table></figure>
+<p><em>ID</em>参数是可选的，当你忽略它，yum会自动使用最后一个事务。请注意，在指定多个事务时，您还可以使用范围：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum <span class="built_in">history</span> info start_id..end_id</span><br></pre></td></tr></table></figure>
+<p><strong>yum历史信息的示例输出</strong></p>
+<p>以下是两个事务的示例输出，每个事务安装一个新包：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">~]<span class="comment"># yum history info 4..5</span></span><br><span class="line">Loaded plugins: langpacks, product-id, search-disabled-repos, subscription-manager</span><br><span class="line">Transaction ID : 4..5</span><br><span class="line">Begin time     : Mon Dec  7 16:51:07 2015</span><br><span class="line">Begin rpmdb    : 1252:d2b62b7b5768e855723954852fd7e55f641fbad9</span><br><span class="line">End time       :            17:18:49 2015 (27 minutes)</span><br><span class="line">End rpmdb      : 1253:cf8449dc4c53fc0cbc0a4c48e496a6c50f3d43c5</span><br><span class="line">User           : Maxim Svistunov &lt;msvistun&gt;</span><br><span class="line">Return-Code    : Success</span><br><span class="line">Command Line   : install tigervnc-server.x86_64</span><br><span class="line">Command Line   : reinstall tigervnc-server</span><br><span class="line">Transaction performed with:</span><br><span class="line">    Installed     rpm-4.11.3-17.el7.x86_64                  @rhel-7-server-rpms</span><br><span class="line">    Installed     subscription-manager-1.15.9-15.el7.x86_64 @rhel-7-server-rpms</span><br><span class="line">    Installed     yum-3.4.3-132.el7.noarch                  @rhel-7-server-rpms</span><br><span class="line">Packages Altered:</span><br><span class="line">    Reinstall tigervnc-server-1.3.1-3.el7.x86_64 @rhel-7-server-rpms</span><br><span class="line"><span class="built_in">history</span> info</span><br></pre></td></tr></table></figure>
+<p>您还可以查看其他信息，例如在事务处理时使用的配置选项，或者从哪个存储库以及安装某些软件包的原因。要确定某个特定事务可用的附加信息，在shell提示符下键入以下内容</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum <span class="built_in">history</span> addon-info id</span><br></pre></td></tr></table></figure>
+<p>与此类似<code>yum history info</code>，当没有提供<em>id</em>时，yum会自动使用最新的事务。引用最新事务的另一种方法是使用<code>last</code>关键字：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum <span class="built_in">history</span> addon-info last</span><br></pre></td></tr></table></figure>
+<p><strong>示例输出yum history addon-info</strong></p>
+<p>对于历史记录中的第四个事务，该<code>yum history addon-info</code>命令提供以下输出：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">~]<span class="comment"># yum history addon-info 4</span></span><br><span class="line">Loaded plugins: langpacks, product-id, subscription-manager</span><br><span class="line">Transaction ID: 4</span><br><span class="line">Available additional <span class="built_in">history</span> information:</span><br><span class="line">  config-main</span><br><span class="line">  config-repos</span><br><span class="line">  saved_tx</span><br><span class="line"></span><br><span class="line"><span class="built_in">history</span> addon-info</span><br></pre></td></tr></table></figure>
+<h2 id="恢复和重复事务"><a href="#恢复和重复事务" class="headerlink" title="恢复和重复事务"></a>恢复和重复事务</h2><p>除了查看事务历史之外，该<code>yum history</code>命令还提供了还原或重复所选事务的方法。要还原事务，请在shell提示符下键入以下内容</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum <span class="built_in">history</span> undo id</span><br></pre></td></tr></table></figure>
+<p>要重复特定事务</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum <span class="built_in">history</span> redo id</span><br></pre></td></tr></table></figure>
+<p>这两个命令还接受<code>last</code>关键字来撤消或重复最新的事务。</p>
+<p>请注意，两者<code>yum history undo</code>和<code>yum history redo</code>命令仅还原或重复事务期间执行的步骤。如果事务安装了一个新包，该<code>yum history undo</code>命令将卸载它，如果事务卸载了一个包，该命令将再次安装它。如果这些旧软件包仍然可用，此命令还会尝试将所有更新的软件包降级到其先前的版本。</p>
+<p>在管理多个相同的系统时，yum还允许您在其中一个系统上执行事务，将事务详细信息存储在文件中，经过一段时间的测试后，在其余系统上重复相同的事务。要将事务详细信息存储到文件，请在shell提示符下键入以下内容</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum -q <span class="built_in">history</span> addon-info id saved_tx &gt; file_name</span><br></pre></td></tr></table></figure>
+<p>Once you copy this file to the target system, you can repeat the transaction by using the following command as <code>root</code>:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum load-transaction file_name</span><br></pre></td></tr></table></figure>
+<p>您可以配置<code>load-transaction</code>为忽略缺少的软件包或rpmdb版本。有关这些配置选项的更多信息，请参见<code>yum.conf</code>（5）手册页。</p>
+<h2 id="启动新的事务记录"><a href="#启动新的事务记录" class="headerlink" title="启动新的事务记录"></a>启动新的事务记录</h2><p>Yum将事务历史记录存储在单个SQLite数据库文件中。要启动新的事务历史记录，请运行以下命令</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum <span class="built_in">history</span> new</span><br></pre></td></tr></table></figure>
+<p>这将在<code>/var/lib/yum/history/</code>目录中创建一个新的空数据库文件。旧的事务历史记录将保留，但只要目录中存在较新的数据库文件，就无法访问。</p>
+<h1 id="配置YUM和YUM存储库"><a href="#配置YUM和YUM存储库" class="headerlink" title="配置YUM和YUM存储库"></a>配置YUM和YUM存储库</h1><p>yum和相关实用程序的配置信息位于 <code>/etc/yum.conf</code>. 此文件包含一个必需的<code>[main]</code> 部分, 使您可以设置具有全局效果的yum选项，还可以包含一个或多个 <code>[*repository*]</code> 部分, 这些部分允许您设置特定于存储库的选项. 但是，建议在目录中的新文件或现有文件中定义单个存储库 <code>.repo</code>文件在 <code>/etc/yum.repos.d/</code>目录中. 在文件的各个部分定义[<em>repository</em>]<code>部分覆盖</code>/etc/yum.conf<code>文件中</code>[main]` 部分设置的值.</p>
+<h2 id="设置-main-选项"><a href="#设置-main-选项" class="headerlink" title="设置[main]选项"></a>设置[main]选项</h2><p><code>/etc/yum.conf</code> 配置文件只包含一个 <code>[main]</code> 部分, 本节中的一些键值对会影响yum的运行方式，但其他键值会影响yum对待存储库的方式. 您可以在 <code>/etc/yum.conf</code>下<code>[main]</code>部分添加许多其他选项 .</p>
+<p><code>/etc/yum.conf</code>配置文件可能如下所示：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">[main]</span><br><span class="line">cachedir=/var/cache/yum/<span class="variable">$basearch</span>/<span class="variable">$releasever</span></span><br><span class="line">keepcache=0</span><br><span class="line">debuglevel=2</span><br><span class="line">logfile=/var/<span class="built_in">log</span>/yum.log</span><br><span class="line">exactarch=1</span><br><span class="line">obsoletes=1</span><br><span class="line">gpgcheck=1</span><br><span class="line">plugins=1</span><br><span class="line">installonly_limit=5</span><br><span class="line">bugtracker_url=http://bugs.centos.org/set_project.php?project_id=23&amp;ref=http://bugs.centos.org/bug_report_page.php?category=yum</span><br><span class="line">distroverpkg=centos-release</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">#  This is the default, if you make this bigger yum won't see if the metadata</span></span><br><span class="line"><span class="comment"># is newer on the remote and so you'll "gain" the bandwidth of not having to</span></span><br><span class="line"><span class="comment"># download the new metadata and "pay" for it by yum not having correct</span></span><br><span class="line"><span class="comment"># information.</span></span><br><span class="line"><span class="comment">#  It is esp. important, to have correct metadata, for distributions like</span></span><br><span class="line"><span class="comment"># Fedora which don't keep old packages around. If you don't like this checking</span></span><br><span class="line"><span class="comment"># interupting your command line usage, it's much better to have something</span></span><br><span class="line"><span class="comment"># manually check the metadata once an hour (yum-updatesd will do this).</span></span><br><span class="line"><span class="comment"># metadata_expire=90m</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># PUT YOUR REPOS HERE OR IN separate files named file.repo</span></span><br><span class="line"><span class="comment"># in /etc/yum.repos.d</span></span><br></pre></td></tr></table></figure>
+<p><code>[main]</code>部分最常用的选项：</p>
+<ul>
+<li><p><code>assumeyes</code>=<em>value</em></p>
+<p><code>assumeyes</code>选项确定yum是否提示确认关键操作。用以下之一替换<em>value</em>:</p>
+<p><code>0</code> (<em>default</em>) — 提示确认其执行的关键操作。</p>
+<p><code>1</code> — 不要提示确认关键<code>yum</code>行为。如果<code>assumeyes=1</code>设置，yum的行为以同样的方式作为命令行选项<code>-y</code>和<code>--assumeyes</code></p>
+</li>
+<li><p><code>cachedir</code>=<em>directory</em></p>
+<p>使用此选项可设置yum存储其缓存和数据库文件的目录。将<em>目录</em>替换为<em>目录</em>的绝对路径。默认情况下，yum的缓存目录是<code>/var/cache/yum/$basearch/$releasever/</code>。</p>
+</li>
+<li><p><code>debuglevel</code>=<em>value</em></p>
+<p>此选项指定yum生成的调试输出的详细信息。这里，<em>value</em>是<code>1</code>和之间的整数<code>10</code>。设置更高的<code>debuglevel</code>值会导致yum显示更详细的调试输出。<code>debuglevel=2</code>是默认值，同时<code>debuglevel=0</code>禁用调试输出。</p>
+</li>
+<li><p><code>exactarch</code>=<em>value</em></p>
+<p>使用此选项，您可以将yum设置为在更新已安装的软件包时考虑确切的体系结构。替换<em>值</em>：</p>
+<p><code>0</code> - 更新包时不要考虑确切的体系结构。</p>
+<p><code>1</code>（<em>默认</em>） - 在更新包时考虑确切的体系结构。使用此设置，yum不会安装32位体系结构的软件包来更新已安装在具有64位体系结构的系统上的软件包。</p>
+</li>
+<li><p><code>exclude</code>=<em>package_name</em> [<em>more_package_names</em>]</p>
+<p><code>exclude</code>选项使您可以在安装或系统更新期间按关键字排除包。列出多个要排除的包可以通过引用以空格分隔的包列表来完成。允许使用通配符（例如，<code>*</code>和<code>?</code>）的Shell glob表达式。</p>
+</li>
+<li><p><code>gpgcheck</code>=<em>value</em></p>
+<p>使用该<code>gpgcheck</code>选项指定yum是否应对包执行GPG签名检查。替换<em>value</em>：</p>
+<p><code>0</code> — 禁用所有存储库中软件包的GPG签名检查，包括本地软件包安装。</p>
+<p><code>1</code> (<em>default</em>) — 启用检查所有存储库中所有软件包的GPG签名，包括本地软件包安装。与<code>gpgcheck</code>启用，所有包的签名进行检查。</p>
+</li>
+</ul>
+<ul>
+<li><p><code>group_command</code>=<em>value</em></p>
+<p>使用<code>group_command</code>选项指定如何<code>yum group install</code>，<code>yum group upgrade</code>和<code>yum group remove</code>命令处理程序包组。用以下内容替换<em>值</em>：</p>
+<p><code>simple</code> - 安装软件包组的所有成员。仅升级以前安装的软件包，但不要同时安装已添加到组中的软件包。</p>
+<p><code>compat</code>- 类似于<code>simple</code>但<code>yum upgrade</code>也安装自上次升级以来添加到组中的软件包。</p>
+<p><code>objects</code>- （<em>默认值</em>。）使用此选项，yum会跟踪以前安装的组，并区分作为组的一部分安装的软件包和单独安装的软件包。</p>
+</li>
+<li><p><code>group_package_types</code>=<em>package_type</em> [<em>more_package_types</em>]</p>
+<p>您可以在此处指定调用<code>yum</code> <code>group</code> <code>install</code>命令时安装的软件包类型 (<em>optional</em>, <em>default</em> or <em>mandatory</em>) is installed when the . <em>默认</em>和<em>强制</em>封装类型是默认选择的.</p>
+</li>
+<li><p><code>history_record</code>=<em>value</em></p>
+<p>使用此选项，您可以设置yum以记录交易历史记录。用以下之一替换<em>value</em></p>
+<p><code>0</code> — yum应该<em>没有</em>记录的交易历史记录条目。</p>
+<p><code>1</code> (<em>default</em>) — yum应记录事务的历史记录条目。此操作占用一定数量的磁盘空间，并在事务中占用一些额外时间，但它提供了有关过去操作的大量信息，可以使用该<code>yum</code> <code>history</code>命令显示。<code>history_record=1</code>是默认值。</p>
+</li>
+</ul>
+<ul>
+<li><p><code>installonlypkgs</code>= <em>space</em> <em>separated</em> <em>list</em> <em>of</em> <em>packages</em></p>
+<p>在这里，您可以提供以空格分隔的软件包列表，yum可以<em>安装</em>这些软件包，但永远不会<em>更新</em>。请参阅<code>yum.conf</code>（5）手册页以获取默认情况下仅安装的软件包列表。</p>
+<p>如果您将<code>installonlypkgs</code>指令添加到<code>/etc/yum.conf</code>，则应确保列出<em>所有</em>应仅安装的软件包，包括（5）<code>installonlypkgs</code>部分中列出的任何软件包<code>yum.conf</code>。特别是，应始终列出内核包<code>installonlypkgs</code>（默认情况下），并且<code>installonly_limit</code>应始终将其设置为大于某个值，<code>2</code>以便在默认启动无法启动时始终可以使用备份内核。</p>
+<p>-<code>installonly_limit</code>= <em>value</em></p>
+<p>此选项设置<code>installonlypkgs</code>可以同时安装指令中列出的包数。将<em>value</em>替换为一个整数，该整数表示可以同时为其中列出的任何单个程序包安装的最大版本数<code>installonlypkgs</code>。</p>
+</li>
+<li><p><code>installonlypkgs</code>指令的默认值包括几个不同的内核包，因此请注意，更改值<code>installonly_limit</code>也会影响任何单个内核包的最大安装版本数。在列出的默认值<code>/etc/yum.conf</code>是<code>installonly_limit=3</code>，并且不建议减小该值，特别是低于<code>2</code>。</p>
+</li>
+<li><p><code>keepcache</code>= <em>value</em></p>
+<p><code>keepcache</code>选项确定yum在成功安装后是否保留标头和包的缓存。在这里，<em>value</em>是以下之一：</p>
+<p><code>0</code>（<em>默认</em>） - 成功安装后，不要保留标头和包的缓存。</p>
+<p><code>1</code> - 成功安装后保留缓存。</p>
+</li>
+<li><p><code>logfile</code>= <em>file_name</em></p>
+<p>要指定日志记录输出的位置，请将<em>file_name</em>替换为yum应写入其日志记录输出的文件的绝对路径。默认情况下，yum会记录到<code>/var/log/yum.log</code>。</p>
+</li>
+<li><p><code>max_connenctions</code>= <em>number</em></p>
+<p>此处<em>value</em>表示最大并发连接数，默认值为5。</p>
+</li>
+<li><p><code>multilib_policy</code>= <em>value</em></p>
+<p><code>multilib_policy</code>如果有多个体系结构版本可用于程序包安装，则 该选项会设置安装行为。这里，<em>value</em>代表：</p>
+<p><code>best</code> - 为此系统安装最佳选择架构。例如，<code>multilib_policy=best</code>在AMD64系统上进行设置会导致yum安装所有软件包的64位版本。</p>
+<p><code>all</code> - 始终为每个包安装每个可能的架构。例如，如果<code>multilib_policy</code>设置为<code>all</code>AMD64系统，yum将同时安装i686和AMD64版本的软件包（如果两者都可用）。</p>
+</li>
+<li><p><code>obsoletes</code>= <em>value</em></p>
+<p><code>obsoletes</code>选项在更新期间启用过时的进程逻辑。当一个包在其spec文件中声明它<em>废弃了</em>另一个包时，后一个包在安装前一个包时被前一个包替换。例如，在重命名包时声明过时。用以下之一替换<em>value</em>：</p>
+<p><code>0</code> - 执行更新时禁用yum的过时处理逻辑。</p>
+<p><code>1</code>（<em>默认</em>） - 执行更新时启用yum的过时处理逻辑。</p>
+</li>
+<li><p><code>plugins</code>= <em>值</em></p>
+<p>这是一个启用或禁用yum插件的全局开关，<em>value</em>是以下之一：</p>
+<p><code>0</code> - 全局禁用所有yum插件。</p>
+<p><code>1</code> (<em>default</em>) —  全局启用所有yum插件。使用<code>plugins=1</code>，您仍然可以通过设置<code>enabled=0</code>该插件的配置文件来禁用特定的yum插件。</p>
+</li>
+</ul>
+<ul>
+<li><p><code>reposdir</code>= <em>directory</em></p>
+<p>这里，<em>directory</em>是<code>.repo</code>文件所在<em>目录</em>的绝对路径。所有<code>.repo</code>文件都包含存储库信息（类似于部分）。Yum从.repo文件和/etc/yum.conf文件[<em>repository</em>]部分收集所有存储库信息，以创建用于事务的存储库主列表。如果<code>reposdir</code>未设置，则yum使用默认目录<code>/etc/yum.repos.d/</code>。</p>
+</li>
+<li><p><code>retries</code>= <em>value</em></p>
+<p>此选项设置yum在返回错误之前应尝试检索文件的次数。<em>value</em>是整数<code>0</code>或更大。设置值<code>0</code>使yum永远重试。默认值为<code>10</code>。</p>
+</li>
+</ul>
+<h3 id="设置-repository-选项"><a href="#设置-repository-选项" class="headerlink" title="设置[repository]选项"></a>设置[repository]选项</h3><p><em><code>[repository]</code></em> 部分,  <em>repository</em> 是一个唯一的存储库ID如 <code>my_personal_repo</code> (不允许空格), 为避免冲突，自定义存储库不应使用Red Hat存储库使用的名称</p>
+<p>以下是一个 <code>[*repository*]</code>部分的最小例子 </p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[repository]</span><br><span class="line">name=repository_name</span><br><span class="line">baseurl=repository_url</span><br></pre></td></tr></table></figure>
+<p>每个 <code>[*repository*]</code> 部分必须包含以下指令： </p>
+<p><code>name</code>=<em>repository_name</em></p>
+<p>这里，<em>repository_name</em>是描述存储库的可读字符串。</p>
+<p><code>baseurl</code>=<em>repository_url</em></p>
+<p>将<em>repository_url</em>替换为<em>存储库</em>的repodata目录所在目录的URL：</p>
+<ul>
+<li>如果存储库可通过HTTP使用，请使用： <code>http://path/to/repo</code></li>
+<li>如果存储库可通过FTP使用，请使用： <code>ftp://path/to/repo</code></li>
+<li>如果存储库是计算机的本地存储库，请使用： <code>file:///path/to/local/repo</code></li>
+<li>如果特定的在线存储库需要基本的HTTP身份验证，您可以通过将其作为前缀添加到URL来指定您的用户名和密码。. 例如，如果 <a href="http://www.example.com/repo/" target="_blank" rel="noopener">http://www.example.com/repo/</a> 需要用户名”user”和密码”password” 则可将链接指定为 <code>http://user:password@www.example.com/repo/</code>.</li>
+</ul>
+<p>通常此URL是HTTP链接，例如：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">baseurl=http://path/to/repo/releases/<span class="variable">$releasever</span>/server/<span class="variable">$basearch</span>/os/</span><br></pre></td></tr></table></figure>
+<p>其他可用于 <em><code>[repository]</code></em>部分的选项:</p>
+<ul>
+<li><p><code>enabled</code>=<em>value</em></p>
+<p>这是告诉yum使用或忽略特定存储库的简单方法，<em>value</em>是以下<em>值</em>之一：</p>
+<p><code>0</code> - 执行更新和安装时，请勿将此存储库包含为包源。这是一种快速打开和关闭存储库的简单方法，当您需要来自存储库的单个包时，这是非常有用的，您不希望为更新或安装启用。</p>
+<p><code>1</code> - 将此存储库包含为包源。</p>
+</li>
+<li><p><code>async</code>=<em>value</em></p>
+<p>控制存储库包的并行下载，value为以下之一：</p>
+<p><code>auto</code>（<em>默认</em>） - 如果可能，使用并行下载，这意味着<strong>yum会</strong>自动为插件创建的存储库禁用它，以避免出现故障。</p>
+<p><code>on</code> - 为存储库启用了并行下载。</p>
+<p><code>off</code> - 为存储库禁用并行下载。</p>
+</li>
+</ul>
+<h2 id="使用Yum变量"><a href="#使用Yum变量" class="headerlink" title="使用Yum变量"></a>使用Yum变量</h2><p>您可以在<code>yum</code>命令和所有yum配置文件（即目录中的<code>/etc/yum.conf</code>所有<code>.repo</code>文件）中使用和引用以下内置变量<code>/etc/yum.repos.d/</code>：</p>
+<ul>
+<li><p><code>$releasever</code></p>
+<p>您可以使用此变量来引用Red Hat Enterprise Linux的发行版本.  <code>$releasever</code> 从配置文件<code>/etc/yum.conf</code>中 <code>distroverpkg=value</code> 行获取值. 如果没有这样的行，那么yum通过从提供文件的包中获取版本号来推断出正确的值</p>
+</li>
+<li><p><code>$arch</code></p>
+<p>您可以使用此变量来引用在调用Python <code>os.uname()</code>函数时返回的系统CPU体系结构。<code>$arch</code>包含的有效值：<code>i586</code>，<code>i686</code>和<code>x86_64</code>。</p>
+</li>
+<li><p><code>$basearch</code></p>
+<p>您可以使用它<code>$basearch</code>来引用系统的基本体系结构。例如，i686和i586机器都有基本架构<code>i386</code>，而AMD64和Intel 64机器都有基本架构<code>x86_64</code>。</p>
+</li>
+<li><p><code>$YUM0-9</code></p>
+<p>这十个变量每个都被替换为具有相同名称的任何shell环境变量的值。如果引用其中一个变量（例如<code>/etc/yum.conf</code>）并且不存在具有相同名称的shell环境变量，则不替换配置文件变量。</p>
+</li>
+</ul>
+<p>要定义自定义变量或覆盖现有变量的值，请在目录中创建与变量同名（不带“ <code>$</code>”符号）的<code>/etc/yum/vars/</code>文件，并在其第一行添加所需的值。</p>
+<p>库描述通常包括操作系统名称。要定义一个名为的新变量<code>$osname</code>，请在第一行创建一个带有“ Red Hat Enterprise Linux ”的新文件，并将其另存为<code>/etc/yum/vars/osname</code>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">~]<span class="comment"># echo "Red Hat Enterprise Linux 7" &gt; /etc/yum/vars/osname</span></span><br></pre></td></tr></table></figure>
+<p>您现在可以在文件中使用以下内容， 而不是“ Red Hat Enterprise Linux 7”<code>.repo</code>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">name=<span class="variable">$osname</span> <span class="variable">$releasever</span></span><br></pre></td></tr></table></figure>
+<h2 id="查看当前配置"><a href="#查看当前配置" class="headerlink" title="查看当前配置"></a>查看当前配置</h2><p>要显示全局yum选项的当前值（即文件<code>[main]</code>部分中指定的选项<code>/etc/yum.conf</code>），请执行<code>yum-config-manager</code>不带命令行选项的命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum-config-manager</span><br></pre></td></tr></table></figure>
+<p>要列出不同配置节的内容，请使用以下格式的命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum-config-manager section…</span><br></pre></td></tr></table></figure>
+<p>You can also use a glob expression to display the configuration of all matching sections:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum-config-manager glob_expression…</span><br></pre></td></tr></table></figure>
+<p><strong>查看主要部分的配置</strong></p>
+<p>要列出主要部分的所有配置选项及其对应值，请在shell提示符下键入以下内容：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">~]$ yum-config-manager main \*</span><br><span class="line">Loaded plugins: langpacks, product-id, subscription-manager</span><br><span class="line">================================== main ===================================</span><br><span class="line">[main]</span><br><span class="line">alwaysprompt = True</span><br><span class="line">assumeyes = False</span><br><span class="line">bandwith = 0</span><br><span class="line">bugtracker_url = https://bugzilla.redhat.com/enter_bug.cgi?product=Red%20Hat%20Enterprise%20Linux%206&amp;component=yum</span><br><span class="line">cache = 0</span><br><span class="line">[output truncated]</span><br></pre></td></tr></table></figure>
+<h2 id="添加，启用和禁用Yum存储库"><a href="#添加，启用和禁用Yum存储库" class="headerlink" title="添加，启用和禁用Yum存储库"></a>添加，启用和禁用Yum存储库</h2><h3 id="添加Yum存储库"><a href="#添加Yum存储库" class="headerlink" title="添加Yum存储库"></a>添加Yum存储库</h3><p>要定义新存储库，可以在文件中添加一个<code>[repository]</code>部分，也可以在<code>/etc/yum.repos.d/</code>目录中添加一个<code>.repo</code>文件。yum读取此目录中具有文件扩展名的所有文件，建议您在此处而不是在<code>/etc/yum.conf</code>中定义存储库。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum-config-manager --add-repo repository_url</span><br></pre></td></tr></table></figure>
+<p>…其中<em>repository_url</em>是<code>.repo</code>文件的链接。</p>
+<p><strong>添加example.repo</strong></p>
+<p>要添加位于<a href="http://www.example.com/example.repo的存储库，请在shell提示符下键入以下内容：" target="_blank" rel="noopener">http://www.example.com/example.repo的存储库，请在shell提示符下键入以下内容：</a></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">~]<span class="comment"># yum-config-manager --add-repo http://www.example.com/example.repo</span></span><br><span class="line">Loaded plugins: langpacks, product-id, subscription-manager</span><br><span class="line">adding repo from: http://www.example.com/example.repo</span><br><span class="line">grabbing file http://www.example.com/example.repo to /etc/yum.repos.d/example.repo</span><br><span class="line">example.repo                                             |  413 B     00:00</span><br><span class="line">repo saved to /etc/yum.repos.d/example.repo</span><br></pre></td></tr></table></figure>
+<h4 id="启用Yum存储库"><a href="#启用Yum存储库" class="headerlink" title="启用Yum存储库"></a>启用Yum存储库</h4><p>要启用特定存储库或存储库，请在shell提示符下键入以下内容</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum-config-manager --<span class="built_in">enable</span> repository…</span><br></pre></td></tr></table></figure>
+<p>…其中<em>repository</em>是唯一的存储库ID（用于<code>yum repolist all</code>列出可用的存储库ID）。或者，您可以使用glob表达式来启用所有匹配的存储库：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum-config-manager --<span class="built_in">enable</span> glob_expression…</span><br></pre></td></tr></table></figure>
+<p><strong>启用在/etc/yum.conf的自定义部分中定义的存储库。</strong></p>
+<p>启用定义的<code>[example]</code>, <code>[example-debuginfo]</code>, 和 <code>[example-source]</code>部分:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">~]<span class="comment"># yum-config-manager --enable example\*</span></span><br><span class="line">Loaded plugins: langpacks, product-id, subscription-manager</span><br><span class="line">============================== repo: example ==============================</span><br><span class="line">[example]</span><br><span class="line">bandwidth = 0</span><br><span class="line">base_persistdir = /var/lib/yum/repos/x86_64/7Server</span><br><span class="line">baseurl = http://www.example.com/repo/7Server/x86_64/</span><br><span class="line">cache = 0</span><br><span class="line">cachedir = /var/cache/yum/x86_64/7Server/example</span><br><span class="line">[output truncated]</span><br></pre></td></tr></table></figure>
+<p><strong>启用所有存储库</strong></p>
+<p>要启用<code>/etc/yum.conf</code>文件和<code>/etc/yum.repos.d/</code>目录中定义的所有存储库，请键入：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">~]<span class="comment"># yum-config-manager --enable \*</span></span><br><span class="line">Loaded plugins: langpacks, product-id, subscription-manager</span><br><span class="line">============================== repo: example ==============================</span><br><span class="line">[example]</span><br><span class="line">bandwidth = 0</span><br><span class="line">base_persistdir = /var/lib/yum/repos/x86_64/7Server</span><br><span class="line">baseurl = http://www.example.com/repo/7Server/x86_64/</span><br><span class="line">cache = 0</span><br><span class="line">cachedir = /var/cache/yum/x86_64/7Server/example</span><br><span class="line">[output truncated]</span><br></pre></td></tr></table></figure>
+<p>成功后，该<code>yum-config-manager --enable</code>命令将显示当前存储库配置。</p>
+<h3 id="禁用Yum存储库"><a href="#禁用Yum存储库" class="headerlink" title="禁用Yum存储库"></a>禁用Yum存储库</h3><p>要禁用yum存储库，请运行以下命令:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum-config-manager --<span class="built_in">disable</span> repository…</span><br></pre></td></tr></table></figure>
+<p>…其中<em>repository</em>是唯一的存储库ID（用于<code>yum repolist all</code>列出可用的存储库ID）。与之类似<code>yum-config-manager --enable</code>，您可以使用glob表达式同时禁用所有匹配的存储库：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum-config-manager --<span class="built_in">disable</span> glob_expression…</span><br></pre></td></tr></table></figure>
+<p><strong>禁用所有存储库</strong></p>
+<p>要禁用<code>/etc/yum.conf</code>文件和<code>/etc/yum.repos.d/</code>目录中定义的所有存储库，请键入：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">~]<span class="comment"># yum-config-manager --disable \*</span></span><br><span class="line">Loaded plugins: langpacks, product-id, subscription-manager</span><br><span class="line">============================== repo: example ==============================</span><br><span class="line">[example]</span><br><span class="line">bandwidth = 0</span><br><span class="line">base_persistdir = /var/lib/yum/repos/x86_64/7Server</span><br><span class="line">baseurl = http://www.example.com/repo/7Server/x86_64/</span><br><span class="line">cache = 0</span><br><span class="line">cachedir = /var/cache/yum/x86_64/7Server/example</span><br><span class="line">[output truncated]</span><br></pre></td></tr></table></figure>
+<p>成功后，该<code>yum-config-manager --disable</code>命令将显示当前配置。</p>
+<h2 id="创建Yum存储库"><a href="#创建Yum存储库" class="headerlink" title="创建Yum存储库"></a>创建Yum存储库</h2><p>要设置yum存储库：</p>
+<ol>
+<li><p>安装createrepo包:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># yum install createrepo</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>将新存储库的所有包复制到一个目录中，例如 <code>/tmp/local_repo/</code>:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cp /your/packages/*.rpm /tmp/local_repo/</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>执行创建存储库：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">createrepo /tmp/local_repo/</span><br></pre></td></tr></table></figure>
+<p>这将为yum存储库创建必要的元数据，并将元数据放在新创建的子目录中<code>repodata</code>。</p>
+</li>
+</ol>
+<h3 id="将包添加到已创建的yum存储库"><a href="#将包添加到已创建的yum存储库" class="headerlink" title="将包添加到已创建的yum存储库"></a>将包添加到已创建的yum存储库</h3><p>要将包添加到已创建的yum存储库：</p>
+<ol>
+<li><p>将新包复制到存储库目录，例如<code>/tmp/local_repo/</code>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cp /your/packages/*.rpm /tmp/local_repo/</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>要反映元数据中新添加的包，请运行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">createrepo --update /tmp/local_repo/</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>Optional:如果您已使用任何yum命令和新更新的存储库，请运行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum clean expire-cache</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h1 id="YUM-插件"><a href="#YUM-插件" class="headerlink" title="YUM 插件"></a>YUM 插件</h1><p>Yum提供扩展和增强其操作的插件。默认情况下会安装某些插件。当您调用任何<code>yum</code>命令时，yum总会通知您哪些插件（如果有）已加载并处于活动状态。例如：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost repodata]<span class="comment"># yum info yum</span></span><br><span class="line">Loaded plugins: fastestmirror, langpacks, product-id, search-disabled-repos, subscription-manager</span><br><span class="line">This system is not registered with an entitlement server. You can use subscription-manager to register.</span><br></pre></td></tr></table></figure>
+<p>使用 <code>--disableplugin=plugin_name</code> 选项来选择哪个yum插件被禁用</p>
+<h2 id="启用，配置和禁用Yum插件"><a href="#启用，配置和禁用Yum插件" class="headerlink" title="启用，配置和禁用Yum插件"></a>启用，配置和禁用Yum插件</h2><p>要启用yum插件。请确认在<code>/etc/yum.conf</code>文件的<code>[main]</code>部分plugin=1:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">plugins=1</span><br></pre></td></tr></table></figure>
+<p>您可以通过将此行更改为<code>plugins=0</code>禁用所有插件。</p>
+<p>每个已安装的插件在<code>/etc/yum/pluginconf.d/</code>目录中都有自己的配置文件。您可以在这些文件中设置插件特定选项。例如，以下是<strong>别名</strong>插件的<code>aliases.conf</code>配置文件</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[main] </span><br><span class="line">enabled = 1</span><br></pre></td></tr></table></figure>
+<p>与<code>/etc/yum.conf</code>文件类似，插件配置文件始终包含一个<code>[main]</code>部分，其中该<code>enabled=</code>选项控制在运行<code>yum</code>命令时是否启用插件。如果缺少此选项，则可以手动将其添加到文件中。</p>
+<p>如果您通过设置<code>/etc/yum.conf</code>中<code>enabled=0</code>中禁用所有插件，那么所有的插件，无论他们在各个配置文件是否启用禁用。</p>
+<p>如果您只想为单个<code>yum</code>命令禁用所有yum插件，请使用<code>--noplugins</code>选项。</p>
+<p>如果要为单个<code>yum</code>命令禁用一个或多个yum插件，请将该选项添加到该命令。例如，要在更新系统时禁用<strong>别名</strong>插件，请键入： <code>--disableplugin=plugin_name</code></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">〜]＃ yum update --disableplugin=aliases</span><br></pre></td></tr></table></figure>
+<p>为该<code>--disableplugin=</code>选项提供的插件名称<code>Loaded plugins</code>与任何<code>yum</code>命令输出中的行后面列出的名称相同。您可以通过用逗号分隔名称来禁用多个插件。此外，您可以使用glob表达式匹配多个插件名称或缩短长插件名称：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">〜]＃ yum update --disableplugin=aliases,lang*</span><br></pre></td></tr></table></figure>
+<h2 id="安装其他Yum插件"><a href="#安装其他Yum插件" class="headerlink" title="安装其他Yum插件"></a>安装其他Yum插件</h2><p>Yum插件通常遵循包命名约定，但并非总是如此：例如，提供<strong>kabi</strong>插件的包被命名。您可以像安装其他软件包一样安装yum插件。例如，要安装<strong>yum-aliases</strong>插件，请在shell提示符下键入以下内容:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">〜]＃ yum install yum-plugin-aliases</span><br></pre></td></tr></table></figure>
+<h2 id="使用Yum插件"><a href="#使用Yum插件" class="headerlink" title="使用Yum插件"></a>使用Yum插件</h2><p>以下列表提供了几个有用的yum插件的说明和使用说明。插件按名称列出，括号包含包的名称。</p>
+<p><strong>search-disabled-repos</strong></p>
+<p><strong>search-disabled-repos</strong>插件可以让你暂时或永久启用已禁用的存储库，以帮助解决依赖关系。启用此插件后，当Yum由于依赖项解析失败而无法安装软件包时，它会暂时启用已禁用的存储库并重试。如果安装成功，Yum还提供永久启用使用的存储库。请注意，该插件仅适用于由<strong>subscription-manager</strong>管理的存储库，而不适用于自定义存储库。</p>
+<p>To configure the <strong>search-disabled-repos</strong> plug-in, edit the configuration file located in <code>/etc/yum/pluginconf.d/search-disabled-repos.conf</code>. For the list of directives you can use in the <code>[main]</code> section, see the table below.</p>
+<p><strong>Table 9.3. Supported search-disabled-repos.conf directives</strong></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>Directive</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>enabled</code>=<em>value</em></td>
+<td>Allows you to enable or disable the plug-in. The <em>value</em> must be either <code>1</code> (enabled), or <code>0</code> (disabled). The plug-in is enabled by default.</td>
+</tr>
+<tr>
+<td><code>notify_only</code>=<em>value</em></td>
+<td>Allows you to restrict the behavior of the plug-in to notifications only. The <em>value</em> must be either <code>1</code> (notify only without modifying the behavior of Yum), or <code>0</code> (modify the behavior of Yum). By default the plug-in only notifies the user.</td>
+</tr>
+<tr>
+<td><code>ignored_repos</code>=<em>repositories</em></td>
+<td>Allows you to specify the repositories that will not be enabled by the plug-in.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>kabi</strong> (kabi-yum-plugins)</p>
+<p>The <strong>kabi</strong> plug-in checks whether a driver update package conforms with the official Red Hat <em>kernel Application Binary Interface</em> (kABI). With this plug-in enabled, when a user attempts to install a package that uses kernel symbols which are not on a whitelist, a warning message is written to the system log. Additionally, configuring the plug-in to run in enforcing mode prevents such packages from being installed at all.</p>
+<p>To configure the <strong>kabi</strong> plug-in, edit the configuration file located in <code>/etc/yum/pluginconf.d/kabi.conf</code>. A list of directives that can be used in the <code>[main]</code>section is shown in the table below.</p>
+<p><strong>Table 9.4. Supported kabi.conf directives</strong></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>Directive</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>enabled</code>=<em>value</em></td>
+<td>Allows you to enable or disable the plug-in. The <em>value</em> must be either <code>1</code> (enabled), or <code>0</code> (disabled). When installed, the plug-in is enabled by default.</td>
+</tr>
+<tr>
+<td><code>whitelists</code>=<em>directory</em></td>
+<td>Allows you to specify the <em>directory</em> in which the files with supported kernel symbols are located. By default, the <strong>kabi</strong> plug-in uses files provided by the kernel-abi-whitelists package (that is, the <code>/usr/lib/modules/kabi-rhel70/</code> directory).</td>
+</tr>
+<tr>
+<td><code>enforce</code>=<em>value</em></td>
+<td>Allows you to enable or disable enforcing mode. The <em>value</em> must be either <code>1</code> (enabled), or <code>0</code> (disabled). By default, this option is commented out and the <strong>kabi</strong> plug-in only displays a warning message.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>product-id</strong> (subscription-manager)</p>
+<p>The <strong>product-id</strong> plug-in manages product identity certificates for products installed from the Content Delivery Network. The <strong>product-id</strong> plug-in is installed by default.</p>
+<p><strong>langpacks</strong> (yum-langpacks)</p>
+<p>The <strong>langpacks</strong> plug-in is used to search for locale packages of a selected language for every package that is installed. The <strong>langpacks</strong> plug-in is installed by default.</p>
+<p><strong>aliases</strong> (yum-plugin-aliases)</p>
+<p>The <strong>aliases</strong> plug-in adds the <code>alias</code> command-line option which enables configuring and using aliases for <code>yum</code> commands.</p>
+<p><strong>yum-changelog</strong> (yum-plugin-changelog)</p>
+<p>The <strong>yum-changelog</strong> plug-in adds the <code>--changelog</code> command-line option that enables viewing package change logs before and after updating.</p>
+<p><strong>yum-tmprepo</strong> (yum-plugin-tmprepo)</p>
+<p>The <strong>yum-tmprepo</strong> plug-in adds the <code>--tmprepo</code> command-line option that takes the URL of a repository file, downloads and enables it for only one transaction. This plug-in tries to ensure the safe temporary usage of repositories. By default, it does not allow to disable the gpg check.</p>
+<p><strong>yum-verify</strong> (yum-plugin-verify)</p>
+<p>The <strong>yum-verify</strong> plug-in adds the <code>verify</code>, <code>verify-rpm</code>, and <code>verify-all</code> command-line options for viewing verification data on the system.</p>
+<p><strong>yum-versionlock</strong> (yum-plugin-versionlock)</p>
+<p>The <strong>yum-versionlock</strong> plug-in excludes other versions of selected packages, which enables protecting packages from being updated by newer versions. With the <code>versionlock</code>command-line option, you can view and edit the list of locked packages.</p>
+<h1 id="自动刷新包数据库并使用YUM-CRON下载更新"><a href="#自动刷新包数据库并使用YUM-CRON下载更新" class="headerlink" title="自动刷新包数据库并使用YUM-CRON下载更新"></a>自动刷新包数据库并使用YUM-CRON下载更新</h1><p>该<code>yum-cron</code>服务自动检查和下载包更新。<code>yum-cron</code>安装yum-cron软件包后，服务提供的cron作业立即生效。该<code>yum-cron</code>服务还可以自动安装下载的更新。</p>
+<p>使用默认设置，<code>yum-cron</code>服务：</p>
+<ul>
+<li>每小时更新yum缓存中的元数据一次。</li>
+<li>每天下载一次对yum缓存的包更新。如果存储库中有新包，则会发送电子邮件。</li>
+</ul>
+<p>该<code>yum-cron</code>服务有两个配置文件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/etc/yum/yum-cron.conf</span><br></pre></td></tr></table></figure>
+<p>对于日常任务。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/etc/yum/yum-cron-hourly.conf</span><br></pre></td></tr></table></figure>
+<p>每小时任务。</p>
+<h2 id="启用自动安装更新"><a href="#启用自动安装更新" class="headerlink" title="启用自动安装更新"></a>启用自动安装更新</h2><p>要启用下载更新的自动安装，请通过设置以下<code>apply_updates</code>选项编辑每日安装的每日配置文件或每小时安装的每小时配置文件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">apply_updates = yes</span><br></pre></td></tr></table></figure>
+<h2 id="设置可选的电子邮件通知"><a href="#设置可选的电子邮件通知" class="headerlink" title="设置可选的电子邮件通知"></a>设置可选的电子邮件通知</h2><p>默认情况下，该<code>yum-cron</code>服务用于<code>cron</code>发送包含已执行命令输出的电子邮件。此电子邮件根据<code>cron</code>配置发送，通常发送给本地超级用户并存储在<code>/var/spool/mail/root</code>文件中。</p>
+<p>您可以使用与影响所有<code>cron</code>作业的设置不同的特定电子邮件配置。但是，此电子邮件配置不支持TLS，整体电子邮件内置逻辑非常基本。</p>
+<p>要启用<code>yum-cron</code>内置电子邮件通知：</p>
+<ol>
+<li><p>打开选定的<code>yum-cron</code>配置文件：</p>
+<ul>
+<li><p><code>/etc/yum/yum-cron.conf</code></p>
+<p>对于日常任务。</p>
+</li>
+<li><p><code>/etc/yum/yum-cron-hourly.conf</code></p>
+<p>每小时任务。</p>
+</li>
+</ul>
+</li>
+<li><p>在该<code>[emitters]</code>部分中，设置以下选项：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">emit_via = email</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>设置<code>email_from</code>，<code>email_to</code>，<code>email_host</code>因为所需的选项</p>
+</li>
+</ol>
+<h2 id="启用或禁用特定存储库"><a href="#启用或禁用特定存储库" class="headerlink" title="启用或禁用特定存储库"></a>启用或禁用特定存储库</h2><p>在<code>yum-cron</code>不支持存储库的具体配置。至于启用或禁用特定仓库的解决方法，<code>yum-cron</code>而不是<code>yum</code>一般的请执行下列步骤：</p>
+<ol>
+<li><p>在系统的任何位置创建一个空的存储库配置目录。</p>
+</li>
+<li><p>将所有配置文件从<code>/etc/yum.repos.d/</code>目录复制到此新创建的目录。</p>
+</li>
+<li><p>在其中的相应<code>.repo</code>配置文件中<code>/etc/yum.repos.d/</code>，设置<code>enabled</code>选项如下：</p>
+<ul>
+<li><p><code>enabled = 1</code></p>
+<p>要启用存储库。</p>
+</li>
+<li><p><code>enabled = 0</code></p>
+<p>要禁用存储库。</p>
+</li>
+</ul>
+</li>
+<li><p>在所选<code>yum-cron</code>配置文件的末尾添加以下选项，该选项指向新创建的存储库目录：</p>
+</li>
+</ol>
+<ol>
+<li><p>```bash<br>reposdir=/path/to/new/reposdir</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">## 测试Yum-cron设置</span><br><span class="line"></span><br><span class="line">要在&#96;yum-cron&#96;不等待下一个计划&#96;yum-cron&#96;任务的情况下测试设置：</span><br><span class="line"></span><br><span class="line">1. 打开选定的&#96;yum-cron&#96;配置文件：</span><br><span class="line"></span><br><span class="line">   - &#96;&#x2F;etc&#x2F;yum&#x2F;yum-cron.conf&#96;</span><br><span class="line"></span><br><span class="line">     对于日常任务。</span><br><span class="line"></span><br><span class="line">   - &#96;&#x2F;etc&#x2F;yum&#x2F;yum-cron-hourly.conf&#96;</span><br><span class="line"></span><br><span class="line">     每小时任务。</span><br><span class="line"></span><br><span class="line">2. &#96;random_sleep&#96;在所选配置文件中 设置选项，如下所示：</span><br><span class="line"></span><br><span class="line">   &#96;&#96;&#96;bash</span><br><span class="line">   random_sleep &#x3D; 0</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>运行配置文件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#yum -cron /etc/yum/yum-cron.conf</span></span><br><span class="line"><span class="comment">#yum-cron/etc/yum/yum-cron-hourly.conf</span></span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h2 id="禁用Yum-cron消息"><a href="#禁用Yum-cron消息" class="headerlink" title="禁用Yum-cron消息"></a>禁用Yum-cron消息</h2><p><code>yum-cron</code>消息不能完全禁用，但可被限制为仅具有临界优先级的消息。限制消息：</p>
+<ol>
+<li><p>打开选定的<code>yum-cron</code>配置文件：</p>
+<ul>
+<li><p><code>/etc/yum/yum-cron.conf</code></p>
+<p>对于日常任务。</p>
+</li>
+<li><p><code>/etc/yum/yum-cron-hourly.conf</code></p>
+<p>每小时任务。</p>
+</li>
+</ul>
+</li>
+<li><p>[base] 在配置文件 的部分中设置以下选项：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">debuglevel = -4</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h2 id="自动清洁包"><a href="#自动清洁包" class="headerlink" title="自动清洁包"></a>自动清洁包</h2><p><code>yum-cron</code>服务不支持任何用于删除与<code>yum clean all</code>命令类似的包的配置选项。要自动清理包，可以将cron作业创建为可执行shell脚本：</p>
+<ol>
+<li><p>在<code>/etc/cron.daily/</code>包含以下内容的目录中创建shell脚本：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/sh </span></span><br><span class="line">yum clean all</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>使脚本可执行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#chmod + x /etc/cron.daily/ script-name.sh</span></span><br></pre></td></tr></table></figure></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>Goooo
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.sysctl.me/2018/08/24/Linux/CentOSYum/" title="Yum">https://www.sysctl.me/2018/08/24/Linux/CentOSYum/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/en" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Linux/" rel="tag"># Linux</a>
+              <a href="/tags/Package-Manager/" rel="tag"># Package Manager</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/08/22/Virtualized-Resource/Introduction-to-Virtual-Resource-Management/" rel="prev" title="虚拟化资源管理简介">
+      <i class="fa fa-chevron-left"></i> 虚拟化资源管理简介
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/08/24/Program-design/Divide-and-conquer%20/" rel="next" title="分治">
+      分治 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#检查和更新包"><span class="nav-number">1.</span> <span class="nav-text">检查和更新包</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#查询更新"><span class="nav-number">1.1.</span> <span class="nav-text">查询更新</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#更新包"><span class="nav-number">1.2.</span> <span class="nav-text">更新包</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#更新单个包"><span class="nav-number">1.2.1.</span> <span class="nav-text">更新单个包</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#更新所有包及其依赖项"><span class="nav-number">1.2.1.1.</span> <span class="nav-text">更新所有包及其依赖项</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#更新与安全相关的包"><span class="nav-number">1.2.2.</span> <span class="nav-text">更新与安全相关的包</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#自动化包更新"><span class="nav-number">1.2.3.</span> <span class="nav-text">自动化包更新</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#使用ISO和Yum离线升级系统"><span class="nav-number">1.3.</span> <span class="nav-text">使用ISO和Yum离线升级系统</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#使用包"><span class="nav-number">2.</span> <span class="nav-text">使用包</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#搜索包"><span class="nav-number">2.1.</span> <span class="nav-text">搜索包</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#清单包"><span class="nav-number">2.2.</span> <span class="nav-text">清单包</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#列出存储库"><span class="nav-number">2.2.1.</span> <span class="nav-text">列出存储库</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#显示包信息"><span class="nav-number">2.3.</span> <span class="nav-text">显示包信息</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#使用yumdb"><span class="nav-number">2.3.1.</span> <span class="nav-text">使用yumdb</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#安装包"><span class="nav-number">2.4.</span> <span class="nav-text">安装包</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#下载包"><span class="nav-number">2.5.</span> <span class="nav-text">下载包</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#删除包"><span class="nav-number">2.6.</span> <span class="nav-text">删除包</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#使用包组"><span class="nav-number">3.</span> <span class="nav-text">使用包组</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#列出包组"><span class="nav-number">3.1.</span> <span class="nav-text">列出包组</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#安装包组"><span class="nav-number">3.1.1.</span> <span class="nav-text">安装包组</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#删除包组"><span class="nav-number">3.2.</span> <span class="nav-text">删除包组</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#yum-历史记录"><span class="nav-number">3.3.</span> <span class="nav-text">yum 历史记录</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#事务列表"><span class="nav-number">3.4.</span> <span class="nav-text">事务列表</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#检查事务"><span class="nav-number">3.5.</span> <span class="nav-text">检查事务</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#恢复和重复事务"><span class="nav-number">3.6.</span> <span class="nav-text">恢复和重复事务</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#启动新的事务记录"><span class="nav-number">3.7.</span> <span class="nav-text">启动新的事务记录</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#配置YUM和YUM存储库"><span class="nav-number">4.</span> <span class="nav-text">配置YUM和YUM存储库</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#设置-main-选项"><span class="nav-number">4.1.</span> <span class="nav-text">设置[main]选项</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#设置-repository-选项"><span class="nav-number">4.1.1.</span> <span class="nav-text">设置[repository]选项</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#使用Yum变量"><span class="nav-number">4.2.</span> <span class="nav-text">使用Yum变量</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#查看当前配置"><span class="nav-number">4.3.</span> <span class="nav-text">查看当前配置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#添加，启用和禁用Yum存储库"><span class="nav-number">4.4.</span> <span class="nav-text">添加，启用和禁用Yum存储库</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#添加Yum存储库"><span class="nav-number">4.4.1.</span> <span class="nav-text">添加Yum存储库</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#启用Yum存储库"><span class="nav-number">4.4.1.1.</span> <span class="nav-text">启用Yum存储库</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#禁用Yum存储库"><span class="nav-number">4.4.2.</span> <span class="nav-text">禁用Yum存储库</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#创建Yum存储库"><span class="nav-number">4.5.</span> <span class="nav-text">创建Yum存储库</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#将包添加到已创建的yum存储库"><span class="nav-number">4.5.1.</span> <span class="nav-text">将包添加到已创建的yum存储库</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#YUM-插件"><span class="nav-number">5.</span> <span class="nav-text">YUM 插件</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#启用，配置和禁用Yum插件"><span class="nav-number">5.1.</span> <span class="nav-text">启用，配置和禁用Yum插件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#安装其他Yum插件"><span class="nav-number">5.2.</span> <span class="nav-text">安装其他Yum插件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#使用Yum插件"><span class="nav-number">5.3.</span> <span class="nav-text">使用Yum插件</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#自动刷新包数据库并使用YUM-CRON下载更新"><span class="nav-number">6.</span> <span class="nav-text">自动刷新包数据库并使用YUM-CRON下载更新</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#启用自动安装更新"><span class="nav-number">6.1.</span> <span class="nav-text">启用自动安装更新</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#设置可选的电子邮件通知"><span class="nav-number">6.2.</span> <span class="nav-text">设置可选的电子邮件通知</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#启用或禁用特定存储库"><span class="nav-number">6.3.</span> <span class="nav-text">启用或禁用特定存储库</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#禁用Yum-cron消息"><span class="nav-number">6.4.</span> <span class="nav-text">禁用Yum-cron消息</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#自动清洁包"><span class="nav-number">6.5.</span> <span class="nav-text">自动清洁包</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Goooo"
+      src="/images/img.png">
+  <p class="site-author-name" itemprop="name">Goooo</p>
+  <div class="site-description" itemprop="description">一条啥也不会点废鱼</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">109</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">22</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">71</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/xth0331" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;xth0331" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:xietianhao0331@gmail.com" title="E-Mail → mailto:xietianhao0331@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/en" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+        
+        <script type="text/javascript" charset="utf-8" src="/js/tagcloud.js"></script>
+        <script type="text/javascript" charset="utf-8" src="/js/tagcanvas.js"></script>
+        <div class="widget-wrap">
+            <h3 class="widget-title">标签们</h3>
+            <div id="myCanvasContainer" class="widget tagcloud">
+                <canvas width="250" height="250" id="resCanvas" style="width=100%">
+                    <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ansible/" rel="tag">Ansible</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Backup/" rel="tag">Backup</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Bond/" rel="tag">Bond</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CPU/" rel="tag">CPU</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ceph/" rel="tag">Ceph</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cobbler/" rel="tag">Cobbler</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Coffee/" rel="tag">Coffee</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Corosync/" rel="tag">Corosync</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cyclic-invariant/" rel="tag">Cyclic invariant</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Docker/" rel="tag">Docker</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Effectiveness/" rel="tag">Effectiveness</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Exhaustion/" rel="tag">Exhaustion</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Filesystem/" rel="tag">Filesystem</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HAProxy/" rel="tag">HAProxy</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hardware/" rel="tag">Hardware</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Https/" rel="tag">Https</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ICMP/" rel="tag">ICMP</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JDK/" rel="tag">JDK</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Jenkins/" rel="tag">Jenkins</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JunOS/" rel="tag">JunOS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/KEEPALIVED/" rel="tag">KEEPALIVED</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Keepalived/" rel="tag">Keepalived</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/" rel="tag">Linux</a><span class="tag-list-count">19</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Log/" rel="tag">Log</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Markdown/" rel="tag">Markdown</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Modular-Programming/" rel="tag">Modular Programming</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Monitoring/" rel="tag">Monitoring</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Netconf/" rel="tag">Netconf</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Network/" rel="tag">Network</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Networking/" rel="tag">Networking</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Nginx/" rel="tag">Nginx</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OS/" rel="tag">OS</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OpenStack/" rel="tag">OpenStack</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Package-Manager/" rel="tag">Package Manager</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Partition/" rel="tag">Partition</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Programming/" rel="tag">Programming</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Python/" rel="tag">Python</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RAM/" rel="tag">RAM</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RHCS/" rel="tag">RHCS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RPM/" rel="tag">RPM</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Recursion/" rel="tag">Recursion</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Recursive/" rel="tag">Recursive</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Redirect/" rel="tag">Redirect</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Route/" rel="tag">Route</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SSH/" rel="tag">SSH</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Storage/" rel="tag">Storage</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Storage-and-Filesystem/" rel="tag">Storage and Filesystem</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Swap/" rel="tag">Swap</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Sys/" rel="tag">Sys</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Systemd/" rel="tag">Systemd</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Terminal/" rel="tag">Terminal</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Terraform/" rel="tag">Terraform</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Tools/" rel="tag">Tools</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ubuntu/" rel="tag">Ubuntu</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Veeam/" rel="tag">Veeam</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vim/" rel="tag">Vim</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Virtualization/" rel="tag">Virtualization</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vmware/" rel="tag">Vmware</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vsphere/" rel="tag">Vsphere</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Windows/" rel="tag">Windows</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Yum/" rel="tag">Yum</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/apple/" rel="tag">apple</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/elasticsearch/" rel="tag">elasticsearch</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/iteration/" rel="tag">iteration</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/logs/" rel="tag">logs</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/oop/" rel="tag">oop</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tools/" rel="tag">tools</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%88%86%E6%B2%BB/" rel="tag">分治</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E5%8E%8B%E7%BC%A9/" rel="tag">数据压缩</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%84%99%E8%A7%86%E9%93%BE/" rel="tag">鄙视链</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%87%8D%E5%A4%8D%E6%95%B0%E6%8D%AE%E5%88%A0%E9%99%A4/" rel="tag">重复数据删除</a><span class="tag-list-count">1</span></li></ul>
+                </canvas>
+            </div>
+        </div>
+        
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Goooo</span>
+</div>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.7.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://www-sysctl-me-1.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "https://www.sysctl.me/2018/08/24/Linux/CentOSYum/";
+    this.page.identifier = "2018/08/24/Linux/CentOSYum/";
+    this.page.title = "Yum";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://www-sysctl-me-1.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/koharu.model.json"},"display":{"position":"left","width":300,"height":600},"mobile":{"show":false},"react":{"opacity":0.7}});</script></body>
+</html>
