@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>Linux/OPENSSH/Convert-OpenSSH-Key</title>
-    <url>/2020/06/14/Linux/OPENSSH/Convert-OpenSSH-Key/</url>
+    <title>配置OPENSSH</title>
+    <url>/2020/06/13/Linux/OPENSSH/Convert-OpenSSH-Key/</url>
     <content><![CDATA[<h1 id="转换OpenSSH-private-key为RSA-private-key"><a href="#转换OpenSSH-private-key为RSA-private-key" class="headerlink" title="转换OpenSSH private key为RSA private key"></a>转换OpenSSH private key为RSA private key</h1><p>今天下午，想把本机的<code>Private KEY</code>添加到堡垒机，倒是也没仔细看，直接复制粘贴到堡垒机中，低能堡垒机提示说私钥格式无效。</p>
 <p>==WTF?==</p>
 <p>应该是SSH版本太高了，看了下发现第一行有区别（内容也不同）。</p>
@@ -16,6 +16,12 @@
 <p><img src="https://blog-image.nos-eastchina1.126.net/yitiao02" alt=""></p>
 <p><img src="https://blog-image.nos-eastchina1.126.net/yitiao03" alt=""></p>
 ]]></content>
+      <categories>
+        <category>Linux</category>
+      </categories>
+      <tags>
+        <tag>SSH</tag>
+      </tags>
   </entry>
   <entry>
     <title>如何测试一个端口是否可达</title>
