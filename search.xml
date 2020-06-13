@@ -1,6 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>Linux/OPENSSH/Convert-OpenSSH-Key</title>
+    <url>/2020/06/14/Linux/OPENSSH/Convert-OpenSSH-Key/</url>
+    <content><![CDATA[<h1 id="转换OpenSSH-private-key为RSA-private-key"><a href="#转换OpenSSH-private-key为RSA-private-key" class="headerlink" title="转换OpenSSH private key为RSA private key"></a>转换OpenSSH private key为RSA private key</h1><p>今天下午，想把本机的<code>Private KEY</code>添加到堡垒机，倒是也没仔细看，直接复制粘贴到堡垒机中，低能堡垒机提示说私钥格式无效。</p>
+<p>==WTF?==</p>
+<p>应该是SSH版本太高了，看了下发现第一行有区别（内容也不同）。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line"># OpenSSH_8.1p1</span><br><span class="line">-----BEGIN OPENSSH PRIVATE KEY-----</span><br><span class="line">xxx</span><br><span class="line">-----END OPENSSH PRIVATE KEY-----</span><br><span class="line"># OpenSSH_7.5p1</span><br><span class="line">-----BEGIN RSA PRIVATE KEY-----</span><br><span class="line">xxx</span><br><span class="line">-----END RSA PRIVATE KEY-----</span><br></pre></td></tr></table></figure>
+<p>0202年了，SSH版本也要升级到8.0了，先不管了，转换吧，一条命令：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">cp ~/.ssh/id_rsa /tmp/path/to/key</span><br><span class="line"><span class="comment"># 就这一条</span></span><br><span class="line">ssh-keygen -p -N <span class="string">""</span> -m pem -f /tmp/path/to/key</span><br><span class="line"><span class="comment"># 记得保管好呀</span></span><br><span class="line">rm -f /tmp/path/to/key</span><br></pre></td></tr></table></figure>
+<p>复制<code>private key</code>转换后填到堡垒机，删掉，一定保管好<code>private key</code>。</p>
+<p>==堡垒机是真的垃圾，谁家都一样。==</p>
+<p>以后在家基本告别电脑了，我家一条是真的爱玩电脑hhhh。</p>
+<p><img src="https://blog-image.nos-eastchina1.126.net/yitiao01" alt=""></p>
+<p><img src="https://blog-image.nos-eastchina1.126.net/yitiao02" alt=""></p>
+<p><img src="https://blog-image.nos-eastchina1.126.net/yitiao03" alt=""></p>
+]]></content>
+  </entry>
+  <entry>
     <title>如何测试一个端口是否可达</title>
     <url>/2020/04/11/Networking/How-to-testing-UDP-port/</url>
     <content><![CDATA[<h1 id="TCP与UDP连接"><a href="#TCP与UDP连接" class="headerlink" title="TCP与UDP连接"></a>TCP与UDP连接</h1><blockquote>

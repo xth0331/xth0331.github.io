@@ -49,12 +49,12 @@
   };
 </script>
 
-  <meta name="description" content="一条啥也不会的废鱼">
+  <meta name="description" content="真正的粉丝">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Sysctl">
 <meta property="og:url" content="https://www.sysctl.me/page/6/index.html">
 <meta property="og:site_name" content="Sysctl">
-<meta property="og:description" content="一条啥也不会的废鱼">
+<meta property="og:description" content="真正的粉丝">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:author" content="Goooo">
 <meta name="twitter:card" content="summary">
@@ -120,7 +120,7 @@
         <span class="logo-line-after"><i></i></span>
       </a>
     </div>
-        <p class="site-subtitle">观察指南，博客</p>
+        <p class="site-subtitle">Too young, too simple. Sometimes, naive & stupid</p>
   </div>
 
   <div class="site-nav-toggle">
@@ -211,12 +211,117 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.sysctl.me/2018/08/01/Program-design/Python/Python-variables/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/img.png">
+      <meta itemprop="name" content="Goooo">
+      <meta itemprop="description" content="真正的粉丝">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Sysctl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2018/08/01/Program-design/Python/Python-variables/" class="post-title-link" itemprop="url">变量（Python）</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-08-01 12:25:00" itemprop="dateCreated datePublished" datetime="2018-08-01T12:25:00+08:00">2018-08-01</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-01-22 22:37:14" itemprop="dateModified" datetime="2020-01-22T22:37:14+08:00">2020-01-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Python/" itemprop="url" rel="index">
+                    <span itemprop="name">Python</span>
+                  </a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2018/08/01/Program-design/Python/Python-variables/#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2018/08/01/Program-design/Python/Python-variables/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="增加一个变量"><a href="#增加一个变量" class="headerlink" title="增加一个变量"></a>增加一个变量</h1><p>Python脚本的运行并非天马行空，它取决于不同的平台和启动方式，Python程序可能有各种特定的环境，即程序启动时，操作系统会自动传给程序的信息。比如，脚本可以获取如下几类系统级的输入和接口：</p>
+<p><em>当前工作路径（CWD）</em></p>
+<p>​    <code>os.getcwd</code>可以获取脚本启动目录，许多文件工具隐式地使用该变量。</p>
+<p><em>命令行参数</em></p>
+<p>​    <code>sys.argv</code>可以获取在命令行键入的启动参数，将其作为脚本的输入。</p>
+<p><em>shell变量</em></p>
+<p>​    <code>os.environ</code>可以获取运行它的shell（或父程序）中命名的变量，并传给脚本。</p>
+<p><em>标准流</em></p>
+<p>​    <code>sys.stdin</code>、<code>sys.stdout</code>和<code>sys.stderr</code>是三个核心的命令行shell工具，负责输入/输出流，他们可以被脚本以如下方式使用：<code>print</code>,<code>os.popen</code>调用以及<code>subprocess</code>模块，<code>io.StringIO</code>l类等。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2018/08/01/Program-design/Python/Python-variables/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://www.sysctl.me/2018/06/16/vSphereNetwork2/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/img.png">
       <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
+      <meta itemprop="description" content="真正的粉丝">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -319,7 +424,7 @@
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/img.png">
       <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
+      <meta itemprop="description" content="真正的粉丝">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -427,7 +532,7 @@
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/img.png">
       <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
+      <meta itemprop="description" content="真正的粉丝">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -538,7 +643,7 @@
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/img.png">
       <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
+      <meta itemprop="description" content="真正的粉丝">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -641,7 +746,7 @@
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/img.png">
       <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
+      <meta itemprop="description" content="真正的粉丝">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -747,7 +852,7 @@
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/img.png">
       <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
+      <meta itemprop="description" content="真正的粉丝">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -855,7 +960,7 @@
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/img.png">
       <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
+      <meta itemprop="description" content="真正的粉丝">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -978,7 +1083,7 @@
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/img.png">
       <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
+      <meta itemprop="description" content="真正的粉丝">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -1075,7 +1180,7 @@
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/img.png">
       <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
+      <meta itemprop="description" content="真正的粉丝">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -1172,7 +1277,7 @@
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/img.png">
       <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
+      <meta itemprop="description" content="真正的粉丝">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -1280,7 +1385,7 @@
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/img.png">
       <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
+      <meta itemprop="description" content="真正的粉丝">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -1385,113 +1490,6 @@
   
   
 
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.sysctl.me/2018/05/01/Program-design/Modular-programming/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/img.png">
-      <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Sysctl">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2018/05/01/Program-design/Modular-programming/" class="post-title-link" itemprop="url">模块化程序设计</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2018-05-01 19:43:00" itemprop="dateCreated datePublished" datetime="2018-05-01T19:43:00+08:00">2018-05-01</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-01-22 22:37:57" itemprop="dateModified" datetime="2020-01-22T22:37:57+08:00">2020-01-22</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Program-design/" itemprop="url" rel="index">
-                    <span itemprop="name">Program design</span>
-                  </a>
-                </span>
-            </span>
-
-          
-  
-  <span class="post-meta-item">
-    
-      <span class="post-meta-item-icon">
-        <i class="fa fa-comment-o"></i>
-      </span>
-      <span class="post-meta-item-text">Disqus：</span>
-    
-    <a title="disqus" href="/2018/05/01/Program-design/Modular-programming/#comments" itemprop="discussionUrl">
-      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2018/05/01/Program-design/Modular-programming/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1 id="模块化程序设计（Modular-Programming）"><a href="#模块化程序设计（Modular-Programming）" class="headerlink" title="模块化程序设计（Modular Programming）"></a>模块化程序设计（Modular Programming）</h1><p><em>将一个大规模程序自顶向下划分为一些较小的相对独立又相互关联的模块</em></p>
-<ul>
-<li>程序设计中最重要的思想之一</li>
-<li>几乎所有的商用程序都采用了模块化程序设计的理念</li>
-<li>面向对象编程在某种程度上也是对模块化程序思想的一种延伸</li>
-</ul>
-<p><strong>模块分解的目标</strong></p>
-<ul>
-<li>使模块内部的实现细节对外不可见，实现信息隐藏（Information Hiding）</li>
-<li>限制模块的复杂性和规模</li>
-<li>保证模块的相对独立性（Module Independence）和正确性
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2018/05/01/Program-design/Modular-programming/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
   </div>
 
   
@@ -1557,14 +1555,14 @@
     <img class="site-author-image" itemprop="image" alt="Goooo"
       src="/images/img.png">
   <p class="site-author-name" itemprop="name">Goooo</p>
-  <div class="site-description" itemprop="description">一条啥也不会的废鱼</div>
+  <div class="site-description" itemprop="description">真正的粉丝</div>
 </div>
 <div class="site-state-wrap motion-element">
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">109</span>
+          <span class="site-state-item-count">110</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>

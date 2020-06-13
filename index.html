@@ -49,12 +49,12 @@
   };
 </script>
 
-  <meta name="description" content="一条啥也不会的废鱼">
+  <meta name="description" content="真正的粉丝">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Sysctl">
 <meta property="og:url" content="https://www.sysctl.me/index.html">
 <meta property="og:site_name" content="Sysctl">
-<meta property="og:description" content="一条啥也不会的废鱼">
+<meta property="og:description" content="真正的粉丝">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:author" content="Goooo">
 <meta name="twitter:card" content="summary">
@@ -120,7 +120,7 @@
         <span class="logo-line-after"><i></i></span>
       </a>
     </div>
-        <p class="site-subtitle">观察指南，博客</p>
+        <p class="site-subtitle">Too young, too simple. Sometimes, naive & stupid</p>
   </div>
 
   <div class="site-nav-toggle">
@@ -211,12 +211,96 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.sysctl.me/2020/06/14/Linux/OPENSSH/Convert-OpenSSH-Key/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/img.png">
+      <meta itemprop="name" content="Goooo">
+      <meta itemprop="description" content="真正的粉丝">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Sysctl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/14/Linux/OPENSSH/Convert-OpenSSH-Key/" class="post-title-link" itemprop="url">Linux/OPENSSH/Convert-OpenSSH-Key</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-14 00:25:41 / 修改时间：01:03:03" itemprop="dateCreated datePublished" datetime="2020-06-14T00:25:41+08:00">2020-06-14</time>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2020/06/14/Linux/OPENSSH/Convert-OpenSSH-Key/#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2020/06/14/Linux/OPENSSH/Convert-OpenSSH-Key/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="转换OpenSSH-private-key为RSA-private-key"><a href="#转换OpenSSH-private-key为RSA-private-key" class="headerlink" title="转换OpenSSH private key为RSA private key"></a>转换OpenSSH private key为RSA private key</h1><p>今天下午，想把本机的<code>Private KEY</code>添加到堡垒机，倒是也没仔细看，直接复制粘贴到堡垒机中，低能堡垒机提示说私钥格式无效。</p>
+<p>==WTF?==</p>
+<p>应该是SSH版本太高了，看了下发现第一行有区别（内容也不同）。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"># OpenSSH_8.1p1</span><br><span class="line">-----BEGIN OPENSSH PRIVATE KEY-----</span><br><span class="line">xxx</span><br><span class="line">-----END OPENSSH PRIVATE KEY-----</span><br><span class="line"># OpenSSH_7.5p1</span><br><span class="line">-----BEGIN RSA PRIVATE KEY-----</span><br><span class="line">xxx</span><br><span class="line">-----END RSA PRIVATE KEY-----</span><br></pre></td></tr></table></figure>
+<p>0202年了，SSH版本也要升级到8.0了，先不管了，转换吧，一条命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">cp ~/.ssh/id_rsa /tmp/path/to/key</span><br><span class="line"><span class="comment"># 就这一条</span></span><br><span class="line">ssh-keygen -p -N <span class="string">""</span> -m pem -f /tmp/path/to/key</span><br><span class="line"><span class="comment"># 记得保管好呀</span></span><br><span class="line">rm -f /tmp/path/to/key</span><br></pre></td></tr></table></figure>
+<p>复制<code>private key</code>转换后填到堡垒机，删掉，一定保管好<code>private key</code>。</p>
+<p>==堡垒机是真的垃圾，谁家都一样。==</p>
+<p>以后在家基本告别电脑了，我家一条是真的爱玩电脑hhhh。</p>
+<p><img src="https://blog-image.nos-eastchina1.126.net/yitiao01" alt=""></p>
+<p><img src="https://blog-image.nos-eastchina1.126.net/yitiao02" alt=""></p>
+<p><img src="https://blog-image.nos-eastchina1.126.net/yitiao03" alt=""></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://www.sysctl.me/2020/04/11/Networking/How-to-testing-UDP-port/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/img.png">
       <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
+      <meta itemprop="description" content="真正的粉丝">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -744,7 +828,7 @@
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/img.png">
       <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
+      <meta itemprop="description" content="真正的粉丝">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -936,7 +1020,7 @@
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/img.png">
       <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
+      <meta itemprop="description" content="真正的粉丝">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -1040,7 +1124,7 @@
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/img.png">
       <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
+      <meta itemprop="description" content="真正的粉丝">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -1148,7 +1232,7 @@
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/img.png">
       <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
+      <meta itemprop="description" content="真正的粉丝">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -1256,7 +1340,7 @@
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/img.png">
       <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
+      <meta itemprop="description" content="真正的粉丝">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -1361,7 +1445,7 @@
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/img.png">
       <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
+      <meta itemprop="description" content="真正的粉丝">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -1459,7 +1543,7 @@
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/img.png">
       <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
+      <meta itemprop="description" content="真正的粉丝">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -1572,7 +1656,7 @@
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/img.png">
       <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
+      <meta itemprop="description" content="真正的粉丝">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -1680,7 +1764,7 @@
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/img.png">
       <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
+      <meta itemprop="description" content="真正的粉丝">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -1797,7 +1881,7 @@
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/img.png">
       <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
+      <meta itemprop="description" content="真正的粉丝">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -1896,105 +1980,6 @@
   
   
 
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.sysctl.me/2019/01/06/Linux/Performance-tuning/MEMORY/Configure-system-memory-capacity/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/img.png">
-      <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Sysctl">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2019/01/06/Linux/Performance-tuning/MEMORY/Configure-system-memory-capacity/" class="post-title-link" itemprop="url">配置系统内存容量</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2019-01-06 23:11:00" itemprop="dateCreated datePublished" datetime="2019-01-06T23:11:00+08:00">2019-01-06</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-01-22 22:34:17" itemprop="dateModified" datetime="2020-01-22T22:34:17+08:00">2020-01-22</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux</span>
-                  </a>
-                </span>
-            </span>
-
-          
-  
-  <span class="post-meta-item">
-    
-      <span class="post-meta-item-icon">
-        <i class="fa fa-comment-o"></i>
-      </span>
-      <span class="post-meta-item-text">Disqus：</span>
-    
-    <a title="disqus" href="/2019/01/06/Linux/Performance-tuning/MEMORY/Configure-system-memory-capacity/#comments" itemprop="discussionUrl">
-      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/01/06/Linux/Performance-tuning/MEMORY/Configure-system-memory-capacity/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>这些内核参数有可能有助于提高系统的内存利用率。通过更改<code>/proc</code>文件系统中相应的文件的值来临时设置这些参数以用于测试目的。确定用例生成最佳性能的值后，可以使用<code>sysctl</code>命令永久设置它们。</p>
-<p>通常通过设置一个或多个内核参数的值来配置内存使用情况。可以通过更改<code>/proc</code>文件系统中文件的内容来临时设置这些参数，也可以使用<code>procps-ng</code>软件包提供的<code>sysctl</code>工具永久设置这些参数。</p>
-<p>例如，要将<code>overcommit_memory</code>参数临时设置为1：<br>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2019/01/06/Linux/Performance-tuning/MEMORY/Configure-system-memory-capacity/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
   </div>
 
   
@@ -2060,14 +2045,14 @@
     <img class="site-author-image" itemprop="image" alt="Goooo"
       src="/images/img.png">
   <p class="site-author-name" itemprop="name">Goooo</p>
-  <div class="site-description" itemprop="description">一条啥也不会的废鱼</div>
+  <div class="site-description" itemprop="description">真正的粉丝</div>
 </div>
 <div class="site-state-wrap motion-element">
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">109</span>
+          <span class="site-state-item-count">110</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>

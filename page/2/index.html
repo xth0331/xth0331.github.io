@@ -49,12 +49,12 @@
   };
 </script>
 
-  <meta name="description" content="一条啥也不会的废鱼">
+  <meta name="description" content="真正的粉丝">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Sysctl">
 <meta property="og:url" content="https://www.sysctl.me/page/2/index.html">
 <meta property="og:site_name" content="Sysctl">
-<meta property="og:description" content="一条啥也不会的废鱼">
+<meta property="og:description" content="真正的粉丝">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:author" content="Goooo">
 <meta name="twitter:card" content="summary">
@@ -120,7 +120,7 @@
         <span class="logo-line-after"><i></i></span>
       </a>
     </div>
-        <p class="site-subtitle">观察指南，博客</p>
+        <p class="site-subtitle">Too young, too simple. Sometimes, naive & stupid</p>
   </div>
 
   <div class="site-nav-toggle">
@@ -211,12 +211,111 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.sysctl.me/2019/01/06/Linux/Performance-tuning/MEMORY/Configure-system-memory-capacity/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/img.png">
+      <meta itemprop="name" content="Goooo">
+      <meta itemprop="description" content="真正的粉丝">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Sysctl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2019/01/06/Linux/Performance-tuning/MEMORY/Configure-system-memory-capacity/" class="post-title-link" itemprop="url">配置系统内存容量</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-01-06 23:11:00" itemprop="dateCreated datePublished" datetime="2019-01-06T23:11:00+08:00">2019-01-06</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-01-22 22:34:17" itemprop="dateModified" datetime="2020-01-22T22:34:17+08:00">2020-01-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2019/01/06/Linux/Performance-tuning/MEMORY/Configure-system-memory-capacity/#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/01/06/Linux/Performance-tuning/MEMORY/Configure-system-memory-capacity/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>这些内核参数有可能有助于提高系统的内存利用率。通过更改<code>/proc</code>文件系统中相应的文件的值来临时设置这些参数以用于测试目的。确定用例生成最佳性能的值后，可以使用<code>sysctl</code>命令永久设置它们。</p>
+<p>通常通过设置一个或多个内核参数的值来配置内存使用情况。可以通过更改<code>/proc</code>文件系统中文件的内容来临时设置这些参数，也可以使用<code>procps-ng</code>软件包提供的<code>sysctl</code>工具永久设置这些参数。</p>
+<p>例如，要将<code>overcommit_memory</code>参数临时设置为1：<br>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2019/01/06/Linux/Performance-tuning/MEMORY/Configure-system-memory-capacity/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://www.sysctl.me/2019/01/03/Linux/Performance-tuning/MEMORY/Configure-large-memory-pages/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/img.png">
       <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
+      <meta itemprop="description" content="真正的粉丝">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -319,7 +418,7 @@
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/img.png">
       <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
+      <meta itemprop="description" content="真正的粉丝">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -411,7 +510,7 @@
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/img.png">
       <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
+      <meta itemprop="description" content="真正的粉丝">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -515,7 +614,7 @@
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/img.png">
       <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
+      <meta itemprop="description" content="真正的粉丝">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -608,7 +707,7 @@
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/img.png">
       <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
+      <meta itemprop="description" content="真正的粉丝">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -707,7 +806,7 @@
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/img.png">
       <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
+      <meta itemprop="description" content="真正的粉丝">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -806,7 +905,7 @@
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/img.png">
       <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
+      <meta itemprop="description" content="真正的粉丝">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -907,7 +1006,7 @@
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/img.png">
       <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
+      <meta itemprop="description" content="真正的粉丝">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -1007,7 +1106,7 @@
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/img.png">
       <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
+      <meta itemprop="description" content="真正的粉丝">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -1104,7 +1203,7 @@
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/img.png">
       <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
+      <meta itemprop="description" content="真正的粉丝">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -1210,7 +1309,7 @@
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/img.png">
       <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
+      <meta itemprop="description" content="真正的粉丝">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -1302,109 +1401,6 @@
   
   
 
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.sysctl.me/2018/12/17/Linux/RPM/RPM-package/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/img.png">
-      <meta itemprop="name" content="Goooo">
-      <meta itemprop="description" content="一条啥也不会的废鱼">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Sysctl">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2018/12/17/Linux/RPM/RPM-package/" class="post-title-link" itemprop="url">RPM包</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2018-12-17 10:48:11" itemprop="dateCreated datePublished" datetime="2018-12-17T10:48:11+08:00">2018-12-17</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-01-22 22:35:00" itemprop="dateModified" datetime="2020-01-22T22:35:00+08:00">2020-01-22</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux</span>
-                  </a>
-                </span>
-            </span>
-
-          
-  
-  <span class="post-meta-item">
-    
-      <span class="post-meta-item-icon">
-        <i class="fa fa-comment-o"></i>
-      </span>
-      <span class="post-meta-item-text">Disqus：</span>
-    
-    <a title="disqus" href="/2018/12/17/Linux/RPM/RPM-package/#comments" itemprop="discussionUrl">
-      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2018/12/17/Linux/RPM/RPM-package/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1 id="什么是RPM？"><a href="#什么是RPM？" class="headerlink" title="什么是RPM？"></a>什么是RPM？</h1><p>RPM包只是一个包含系统所需的其他文件和信息的文件。具体来说，RPM包由包含文件的<code>cpio</code>存档和包含有关包的元数据的RPM标头组成。<code>rpm</code>软件包管理器使用这种元数据来确定的依赖。在那安装文件和其他信息。</p>
-<p>有两种类型的RPM包：</p>
-<ul>
-<li>源RPM（SRPM）</li>
-<li>二进制RPM</li>
-</ul>
-<p>SRPM和二进制RPM弓箭文件格式和工具，但具有不同的内容并用于不同的目的。SRPM包含源代码，可选的补丁和SPEC文件，它描述了如何将源代码构建为二进制文件。<br>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2018/12/17/Linux/RPM/RPM-package/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
   </div>
 
   
@@ -1470,14 +1466,14 @@
     <img class="site-author-image" itemprop="image" alt="Goooo"
       src="/images/img.png">
   <p class="site-author-name" itemprop="name">Goooo</p>
-  <div class="site-description" itemprop="description">一条啥也不会的废鱼</div>
+  <div class="site-description" itemprop="description">真正的粉丝</div>
 </div>
 <div class="site-state-wrap motion-element">
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">109</span>
+          <span class="site-state-item-count">110</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
