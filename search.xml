@@ -1,6 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>又是拖延的一年，0202</title>
+    <url>/2020/10/01/Other/Daily-complaints20200930/</url>
+    <content><![CDATA[<h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>明天要放假了（虽然只有四天），这一年的工作中充斥的琐事（大于60%），那么琐事是什么呢?</p>
+<blockquote>
+<p>琐事就是运维服务中手动性的，重复性的，可以被自动化的，战术性，没有持久价值的工作。</p>
+<p>​                                                                                       ── Google SRE</p>
+</blockquote>
+<p>（当然，也包括主观认为不怎么喜欢做但又不得不做的事😂。</p>
+<p>回想去年年底也是许了不少愿，包括但不限于把<code>Golang</code>，<code>Kubernetes</code>学个差不多，监控弄得像个人样，<code>Terraform</code>和<code>Ansible</code>去处理些边缘业务的自动化顺带Gitlab，还有就是去看<em>渴望力量系列</em>，现在看，今年的进度四舍五入约等于0。</p>
+<p>今年的工作中，扮演的角色就很有趣，之前我其实只要做好自己管理的系统就好了，其余时间可以自己去找些东西学习，搭建测试，去满足需求就好了，所以琐事的比例很小。今年感觉自己需要参与的工作（不是数量，而是类别）变多了，多数也就是配合作用（也就是无法做主），其实也很舒服，但是嘛，毕竟还需要协调资源（传话）去配合其他老师，免不了与人沟通。就贼难受。</p>
+<h1 id="琐事"><a href="#琐事" class="headerlink" title="琐事"></a>琐事</h1><ol>
+<li>堡垒机日常工作</li>
+<li>疫情+校庆这段期间虚拟机的交付，虽然用了<code>terraform</code>，但是后端状态并没有持久化，很烦。</li>
+<li>需求翻译，我很奇怪这个事，但是也有收获，比如我理解运维与开发之间的矛盾是如何产生的，233333。</li>
+<li>写毫无意义的日报（工作记录很有意思，但是我这种，意义：0）。</li>
+<li>跟一些工程师沟通，跟你们沟通使我变得更菜。</li>
+</ol>
+<h1 id="非琐事"><a href="#非琐事" class="headerlink" title="非琐事"></a>非琐事</h1><ol>
+<li><code>terraform</code>真香，尝到了甜头。</li>
+<li>读《Kubernetes In Action》,K8s大法好，这本书香。</li>
+<li>配合大佬。</li>
+<li>Netbox</li>
+<li>vSphere Tanzu Cluster</li>
+<li>有一丁点安全意识了，知道不关防火墙了。</li>
+</ol>
+<h1 id="收获"><a href="#收获" class="headerlink" title="收获"></a>收获</h1><ol>
+<li>以后不准备用CentOS了。</li>
+<li>Kubernetes的理念是真的巧妙。</li>
+<li>与人沟通，并非易事。</li>
+<li>与人协作，先确认价值观，价值观不符时，做好自己的就好。</li>
+<li>找到一个合适的团队很难，不要拿自己的标准衡量别人。</li>
+</ol>
+<h1 id="吐槽"><a href="#吐槽" class="headerlink" title="吐槽"></a>吐槽</h1><p>有些厂商的工程师，真的差劲。</p>
+]]></content>
+      <categories>
+        <category>Other</category>
+      </categories>
+      <tags>
+        <tag>talking</tag>
+        <tag>complaints</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>配置OPENSSH</title>
     <url>/2020/06/13/Linux/OPENSSH/Convert-OpenSSH-Key/</url>
     <content><![CDATA[<h1 id="转换OpenSSH-private-key为RSA-private-key"><a href="#转换OpenSSH-private-key为RSA-private-key" class="headerlink" title="转换OpenSSH private key为RSA private key"></a>转换OpenSSH private key为RSA private key</h1><p>今天下午，想把本机的<code>Private KEY</code>添加到堡垒机，倒是也没仔细看，直接复制粘贴到堡垒机中，低能堡垒机提示说私钥格式无效。</p>
